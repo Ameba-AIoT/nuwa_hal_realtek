@@ -1,0 +1,37 @@
+name: hal_realtek
+build:
+  cmake: .
+  kconfig: Kconfig
+blobs:
+  - path: amebadplus/bin/km0_image2_all.bin
+    sha256: 66c757a69621176af7c24130f4ee78fa8624e163e5719786d15d77178dabadd8
+    type: img
+    version: '1.0'
+    license-path: LICENSE
+    url: https://github.com/Ameba-AIoT/nuwa_lib/raw/e958ddc3fe3d1753cacc6a9b4e36df2edb996b9b/amebadplus/bin/km0_image2_all.bin
+    description: "Binary libraries supporting the Ameba series RF subsystems"
+    doc-url: https://github.com/Ameba-AIoT/nuwa_lib
+  - path: amebadplus/bin/km4_boot_all.bin
+    sha256: 21064f16a1d3b479e1bf00e86e9e561dada847e97d035c2392825d6ba1c91a6e
+    type: img
+    version: '1.0'
+    license-path: LICENSE
+    url: https://github.com/Ameba-AIoT/nuwa_lib/raw/e958ddc3fe3d1753cacc6a9b4e36df2edb996b9b/amebadplus/bin/km4_boot_all.bin
+    description: "Binary libraries supporting the Ameba series RF subsystems"
+    doc-url: https://github.com/Ameba-AIoT/nuwa_lib
+  - path: amebad/bin/bootloader_all.bin
+    sha256: 83825bfb035b3d34f51fcb9f8896748a962133cb2fcf60f773cc9c1203a83d7a
+    type: img
+    version: '1.0'
+    license-path: LICENSE
+    url: https://github.com/Ameba-AIoT/nuwa_lib/raw/e958ddc3fe3d1753cacc6a9b4e36df2edb996b9b/amebad/bin/bootloader_all.bin
+    description: "Binary libraries supporting the Ameba series RF subsystems"
+    doc-url: https://github.com/Ameba-AIoT/nuwa_lib
+  - path: amebad/bin/km0_image2_all.bin
+    sha256: 26a765f9bf61083985071080245b2a0b4ee24b213d398114099196bf3aa9fcff
+    type: img
+    version: '1.0'
+    license-path: LICENSE
+    url: https://github.com/Ameba-AIoT/nuwa_lib/raw/e958ddc3fe3d1753cacc6a9b4e36df2edb996b9b/amebad/bin/km0_image2_all.bin
+    description: "Binary libraries supporting the Ameba series RF subsystems"
+    doc-url: https://github.com/Ameba-AIoT/nuwa_lib
