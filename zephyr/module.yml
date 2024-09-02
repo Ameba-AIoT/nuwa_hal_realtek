@@ -1,0 +1,4 @@
+name: hal_realtek
+build:
+  cmake: .
+  kconfig: Kconfig
