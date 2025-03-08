@@ -1,0 +1,42 @@
+# Copyright (c) 2024 Realtek Semiconductor Corp.
+# SPDX-License-Identifier: Apache-2.0
+
+config REALTEK_AMEBA_ZEPHYR_WIFI
+	bool "RealTek Ameba Zephyr WIFI"
+	default n
+	help
+	  This option enables the Realtek Ameba WIFI.
+
+if REALTEK_AMEBA_ZEPHYR_WIFI
+config WLAN
+	bool "enable wifi"
+	default y
+
+config AS_INIC_AP
+	bool
+
+config SINGLE_CORE_WIFI
+	bool
+
+config REALTEK_AMEBA_WIFI_TEST
+	bool "RealTek Ameba Zephyr WIFI TEST"
+	help
+	  This option enables the Realtek Ameba Zephyr WIFI TEST.
+
+config REALTEK_AMEBA_WIFI_INIC
+	bool "RealTek Ameba Zephyr WIFI INIC"
+	default y
+	help
+	  This option use inic ipc or not
+
+config RTK_WIFI_EVENT_TASK_PRIO
+	int "Event Task Priority"
+	default 4
+
+config REALTEK_AMEBA_WIFI_FASTCONN
+	bool "RealTek Ameba Zephyr WIFI Fast Connect"
+	default n
+	help
+	  This option enable Fast connect or not
+
+endif # REALTEK_AMEBA_ZEPHYR_WIFI
