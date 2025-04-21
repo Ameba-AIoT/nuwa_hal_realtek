@@ -172,6 +172,7 @@ _LONG_CALL_ void RCC_PeriphClockSource_RTC(u32 Xtal);
 _LONG_CALL_ void RCC_PeriphClockSource_I2C(UNUSED_WARN_DIS u32 Idx, u32 Source);
 _LONG_CALL_ void RCC_PeriphClockSource_QDEC(UNUSED_WARN_DIS u32 Idx, u32 Source);
 _LONG_CALL_ void RCC_PeriphClockSource_UART(UART_TypeDef *UARTx, u32 Source);
+_LONG_CALL_ u8 RCC_PeriphClockEnableChk(u32 APBPeriph_Clock_in);
 
 /**
   * @brief  Enables or disables the AON APB peripheral clock and function

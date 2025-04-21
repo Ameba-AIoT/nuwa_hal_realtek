@@ -1556,7 +1556,7 @@ typedef struct {
 #define CAPTOUCH_DEV		((CAPTOUCH_TypeDef		*) CTC_REG_BASE)				/*KM0 */
 #define IR_DEV				((IR_TypeDef 				*) IR_REG_BASE)				/*KM0 */
 #define QDEC_DEV			((QDEC_TypeDef			*) QDEC_REG_BASE)			/*KM0 */
-#define RTC_DEV				((RTC_TypeDef			*) (RTC_BASE - 0x08000000); 	/*KM0 */
+#define RTC_DEV				((RTC_TypeDef			*) (RTC_BASE - 0x08000000)); 	/*KM0 */
 #define PINMUX				((PINMUX_TypeDef			*) PINMUX_REG_BASE)			/*KM0 */
 #define GPIOA_BASE			((GPIO_TypeDef			*) GPIO_REG_BASE)			/*KM0 */
 #define GPIOB_BASE			((GPIO_TypeDef			*) (GPIO_REG_BASE + 0x400))	/*KM0 */

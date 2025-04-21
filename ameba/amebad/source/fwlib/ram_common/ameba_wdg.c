@@ -65,9 +65,8 @@ void WDG_Scalar(u32 Period, u32 *pCountProcess, u32 *pDivFacProcess)
   *         the configuration information for the WDG peripheral.
   * @retval None
   */
-void WDG_Init(WDG_InitTypeDef *WDG_InitStruct)
+void WDG_Init(WDG_TypeDef *WDG, WDG_InitTypeDef *WDG_InitStruct)
 {
-	WDG_TypeDef *WDG = ((WDG_TypeDef *) WDG_REG_BASE);
 	u32 wdg_reg = 0;
 	u32 temp = 0;
 
@@ -106,6 +105,51 @@ void WDG_IrqClear(void)
 }
 
 /**
+  * @brief  Clear WDG interrupt.
+  * @param  WDG: WDG peripheral base.
+  * @param  INTrBit specifies the interrupt sources to be cleared
+  * @note
+  * 	- For compatibility with Zephyr.
+  * @retval None
+  */
+void WDG_ClearINT(WDG_TypeDef *WDG, u32 INTrBit)
+{
+	UNUSED(INTrBit);
+	u32 temp = WDG->VENDOR;
+
+	/* Clear ISR */
+	temp |= WDG_BIT_ISR_CLEAR;
+	WDG->VENDOR = temp;
+
+	/*WDG reset system*/
+	WDG_Reset();
+}
+
+/**
+  * @brief  Use wdg to reset system in 5ms.
+  * @note
+  * 	- For compatibility with Zephyr.
+  * @retval None
+  */
+void WDG_Reset(void)
+{
+	WDG_InitTypeDef WDG_InitStruct;
+	WDG_TypeDef *WDG = ((WDG_TypeDef *) WDG_REG_BASE);
+	u32 CountProcess;
+	u32 DivFacProcess;
+
+	RTK_LOGI(NOTAG, "Rebooting ...\n\r");
+	WDG_Scalar(5, &CountProcess, &DivFacProcess);
+	WDG_InitStruct.CountProcess = CountProcess;
+	WDG_InitStruct.DivFacProcess = DivFacProcess;
+	WDG_Init(WDG, &WDG_InitStruct);
+	WDG_Cmd(WDG, ENABLE);
+}
+
+
+
+
+/**
   * @brief  Init WDG as interrupt mode (close reset mode).
   * @param  handler: WDG interrupt handler
   * @param  Id: WDG interrupt handler parameter
@@ -125,15 +169,25 @@ void WDG_IrqInit(void *handler, u32 Id)
 }
 
 /**
+  * @brief  This function is meaningless, only for compatibility with Zephyr.
+  */
+void WDG_INTConfig(WDG_TypeDef *WDG, u32 WDG_IT, u32 NewState)
+{
+	UNUSED(WDG);
+	UNUSED(WDG_IT);
+	UNUSED(NewState);
+}
+
+/**
   * @brief  Disable/Enable WDG
+  * @param  WDG: WDG peripheral base.
   * @param  NewState: new state of the WDG.
   *          This parameter can be: ENABLE or DISABLE
   * @note   To enable WDG timer, set 0x1 to WDG register Bit[16]
   * @retval None
   */
-void WDG_Cmd(u32 NewState)
+void WDG_Cmd(WDG_TypeDef *WDG, u32 NewState)
 {
-	WDG_TypeDef *WDG = ((WDG_TypeDef *) WDG_REG_BASE);
 	u32 temp = WDG->VENDOR;
 
 	/* WdgEnBit */
@@ -143,6 +197,27 @@ void WDG_Cmd(u32 NewState)
 		temp &= ~WDG_BIT_ENABLE;
 	}
 
+	WDG->VENDOR = temp;
+
+	WDG_IrqClear();
+}
+
+/**
+  * @brief  Enable WDG
+  * @param  WDG: WDG peripheral base.
+  * @note
+  * 	- For compatibility with Zephyr.
+  * @retval None
+  */
+void WDG_Enable(WDG_TypeDef *WDG)
+{
+	u32 temp = WDG->VENDOR;
+
+	temp |= WDG_BIT_ISR_CLEAR;
+	/* INT_MODE */
+	temp &= ~WDG_BIT_RST_MODE;
+	/* WdgEnBit */
+	temp |= WDG_BIT_ENABLE;
 	WDG->VENDOR = temp;
 
 	WDG_IrqClear();
@@ -164,4 +239,22 @@ void WDG_Refresh(WDG_TypeDef *WDG)
 	WDG->VENDOR = temp;
 }
 
+/**
+  * @brief  Set the structure according to the parameters passed in.
+  * @param  WDG_InitStruct: pointer to a WDG_InitTypeDef structure that contains
+  *         the configuration information for the WDG peripheral.
+  * @param  timeout: WDG timeout (ms).
+  * @param  window: unused param.
+  * @param  eicnt:  unused param.
+  * @note
+  * 	- For compatibility with Zephyr.
+  * @retval None
+  */
+void WDG_StructMemValueSet(WDG_InitTypeDef *WDG_InitStruct, u32 window, u32 timeout, u32 eicnt)
+{
+	UNUSED(eicnt);
+	UNUSED(window);
+	WDG_InitStruct->RstAllPERI = 0;
+	WDG_Scalar(timeout, &WDG_InitStruct->CountProcess, &WDG_InitStruct->DivFacProcess);
+}
 /******************* (C) COPYRIGHT 2016 Realtek Semiconductor *****END OF FILE****/

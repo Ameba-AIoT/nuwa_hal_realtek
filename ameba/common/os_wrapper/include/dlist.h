@@ -37,7 +37,7 @@ struct list_head {
 } while (0)
 
 #define LIST_CONTAINOR(ptr, type, member) \
-	((type *)(void*)((char *)(ptr)-(SIZE_T)((char *)&((type *)(void*)ptr)->member - (char *)ptr)))
+	((type *)(void*)((char *)(ptr)-(size_t)((char *)&((type *)(void*)ptr)->member - (char *)ptr)))
 
 
 /*

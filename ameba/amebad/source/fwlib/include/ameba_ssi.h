@@ -664,6 +664,11 @@ extern const SPI_DevTable SPI_DEV_TABLE[2];
 #define SPI_SLAVE_TXERR_WORK_AROUND		1
 
 /* redirect some bits to be compatible with the later chips */
+/* SPI_SR */
+#define SPI_BIT_DCOL		BIT_SR_DCOL
+#define SPI_BIT_TFE			BIT_SR_TFE
+#define SPI_BIT_BUSY		BIT_SR_BUSY
+
 /* SPI_ISR */
 #define SPI_BIT_TXOIS		BIT_ISR_TXOIS
 #define SPI_BIT_RXUIS		BIT_ISR_RXUIS

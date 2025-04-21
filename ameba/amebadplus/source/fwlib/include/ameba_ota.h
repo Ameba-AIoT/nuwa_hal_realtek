@@ -7,6 +7,7 @@
 #ifndef _AMEBA_OTA_H_
 #define _AMEBA_OTA_H_
 
+#include "ameba_secure_boot.h"
 #include <mbedtls/config.h>
 #include <mbedtls/platform.h>
 #include <mbedtls/net_sockets.h>
@@ -15,17 +16,12 @@
 /** @addtogroup Ameba_Platform
   * @{
   */
-#define MAX_IMG_NUM		2
-
 #define OTA_CLEAR_PATTERN	0
 
 #define BUF_SIZE			2048								/*the size of the buffer used for receiving firmware data from server*/
 #define HEADER_BAK_LEN		32
 #define HEADER_LEN			8
 #define SUB_HEADER_LEN		24
-
-#define HTTP_OTA_UPDATE
-#define HTTPS_OTA_UPDATE
 
 /* Exported constants --------------------------------------------------------*/
 
@@ -35,17 +31,22 @@
 /** @defgroup OTA_system_parameter_definitions
   * @{
   */
-
 #define OTA_IMGID_BOOT		0
 #define OTA_IMGID_APP		1
 #define OTA_IMGID_MAX		2
 
-#define OTA_IMAG			0								/*identify the OTA image*/
+#define MAX_IMG_NUM			OTA_IMGID_MAX
 
-#define OTA_LOCAL			0
+/* OTA download type */
+#define OTA_USER			0
 #define OTA_HTTP			1
 #define OTA_HTTPS			2
+#define OTA_VFS				3
 
+/* OTA download status */
+#define OTA_RET_ERR			-1
+#define OTA_RET_OK			0
+#define OTA_RET_FINISH		1
 /**
   * @}
   */
@@ -117,27 +118,12 @@ typedef struct {
 } update_dw_info;
 
 /**
-  * @brief  OTA target image manifest structure definition
-  */
-typedef struct {
-	u32 Pattern[2];
-	u8 Rsvd1[8];
-	u8 Ver;
-	u8 ImgID;
-	u8 AuthAlg;
-	u8 HashAlg;
-	u16 MajorImgVer;
-	u16 MinorImgVer;
-} update_manifest_info;
-
-
-/**
   * @brief  OTA target image header structure definition
   */
 typedef struct {
 	update_file_hdr	FileHdr;			/*!< Specifies the firmware file header. */
 	update_file_img_hdr	FileImgHdr[MAX_IMG_NUM];	/*!< Specifies the target OTA image firmware file header. */
-	update_manifest_info Manifest[MAX_IMG_NUM];			/*!< Specifies the manifest of target image. */
+	Manifest_TypeDef Manifest[MAX_IMG_NUM];			/*!< Specifies the manifest of target image. */
 	u8 ValidImgCnt;						/*!< Specifies valid image number in file. */
 } update_ota_target_hdr;
 
@@ -159,7 +145,8 @@ typedef struct {
 	u8 SigFg;		/*!< Specifies the Flag that Manifest received finished. */
 	u8 SkipBootOTAFg;	/*!< Specifies the Flag that skip update the bootloader. */
 	u8 FirstBufFg;		/*!< Specifies the Flag that exist a buffer before downloading. */
-	u8 IsGetHdr;		/*!< Specifies the Flag that get ota target header. */
+	u8 IsGetOTAHdr;		/*!< Specifies the Flag that get ota target header. */
+	u8 IsDnldInit;		/*!< Specifies the Flag that download initialize. */
 	u8 targetIdx;		/*!< Specifies the ota target index. */
 	int index;			/*!< Specifies the current image index. */
 } update_ota_ctrl_info;
@@ -208,6 +195,7 @@ u32 ota_update_manifest(update_ota_target_hdr *pOtaTgtHdr, u32 ota_target_index,
 int ota_update_init(ota_context *ctx, char *host, int port, char *resource, u8 type);
 void ota_update_deinit(ota_context *ctx);
 int ota_update_start(ota_context *ctx);
+int ota_update_fw_program(ota_context *ctx, u8 *buf, u32 len);
 
 #define OTA_GET_FWVERSION(address) \
 	(HAL_READ16(SPI_FLASH_BASE, address + 22) << 16) | HAL_READ16(SPI_FLASH_BASE, address + 20)

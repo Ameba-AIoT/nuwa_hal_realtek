@@ -19,10 +19,12 @@
 #if defined (CONFIG_ARM_CORE_CM4)
 const IPC_INIT_TABLE  ipc_init_config[] = {
 	//USER_MSG_TYPE		IRQFUNC								IRQDATA
+#ifndef __ZEPHYR__ // Zephyr does not support shell for now
 	{IPC_USER_DATA,		shell_switch_ipc_int,	(void *) NULL},//channel 0: IPC_INT_CHAN_SHELL_SWITCH
 	{IPC_USER_DATA,		NULL,	(void *) NULL},    //channel 1: IPC_INT_CHAN_WIFI_FW
 	{IPC_USER_DATA,		FLASH_Write_IPC_Int,	(void *) NULL},//channel 2: IPC_INT_CHAN_FLASHPG_REQ
 	{IPC_USER_POINT,	NULL,	(void *) NULL},    //channel 3: IPC_INT_KM4_TICKLESS_INDICATION
+#endif
 	{IPC_USER_DATA,		NULL,	(void *) NULL},    //channel 4: Reserved for Realtek use
 	{IPC_USER_DATA,		NULL,	(void *) NULL},    //channel 5: Reserved for Realtek use
 	{IPC_USER_DATA,		NULL,	(void *) NULL},    //channel 6: Reserved for Realtek use

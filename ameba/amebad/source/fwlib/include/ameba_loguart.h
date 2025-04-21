@@ -80,16 +80,20 @@ _LONG_CALL_ void LOGUART_INTConfig(UART_TypeDef *UARTLOG, u32 UART_IT, u32 newSt
 #define DiagGetChar		LOGUART_GetChar
 
 #ifdef __ZEPHYR__
-#define LOGUART_BIT_TIMEOUT_INT       RUART_TIME_OUT_INDICATION
-#define LOGUART_BIT_TP1F_EMPTY        RUART_TX_FIFO_EMPTY
-#define LOGUART_BIT_DRDY              RUART_RECEIVER_DATA_AVAILABLE
-#define LOGUART_BIT_RXFIFO_INT        0 //RUART_RECEIVE_LINE_STATUS
-#define LOGUART_BIT_TOICF             RUART_TIME_OUT_INDICATION /* Used to clear rx timeout int in Dplus */
+/* UART line status bit */
+#define LOGUART_BIT_TIMEOUT_INT       RUART_BIT_TIMEOUT_INT
+#define LOGUART_BIT_TP1F_EMPTY        RUART_BIT_TX_EMPTY
+#define LOGUART_BIT_DRDY              RUART_BIT_DRDY
+#define LOGUART_BIT_RXFIFO_INT        RUART_BIT_RXFIFO_INT
 
-#define LOGUART_BIT_ERBI              RUART_IER_ERBI
-#define LOGUART_BIT_ETOI              RUART_IER_ETOI
-#define LOGUART_BIT_ELSI              RUART_IER_ELSI
-#define LOGUART_TX_EMPTY_PATH_1_INTR  RUART_IER_ETBEI
+/* UART interrupt clear bit */
+#define LOGUART_BIT_TOICF             RUART_BIT_TOICF /* Used to clear rx timeout int in Dplus */
+
+/* UART interrupt enable bit */
+#define LOGUART_BIT_ERBI              RUART_BIT_ERBI
+#define LOGUART_BIT_ETOI              RUART_BIT_ETOI
+#define LOGUART_BIT_ELSI              RUART_BIT_ELSI
+#define LOGUART_TX_EMPTY_PATH_1_INTR  RUART_BIT_ETBEI
 
 #define LOGUART_DEV			((UART_TypeDef		*) UART2_DEV)
 

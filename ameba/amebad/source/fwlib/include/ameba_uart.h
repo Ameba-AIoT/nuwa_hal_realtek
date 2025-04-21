@@ -775,6 +775,45 @@ extern u32 UART_StateRx[4];
 
 #define MAX_UART_INDEX			(4)
 
+/* UART interrupt enable bit */
+#define RUART_BIT_ETOI   ((u32)0x00000001 << 5)
+#define RUART_BIT_EMDI   ((u32)0x00000001 << 4)
+#define RUART_BIT_EDSSI  ((u32)0x00000001 << 3)
+#define RUART_BIT_ELSI   ((u32)0x00000001 << 2)
+#define RUART_BIT_ETBEI  ((u32)0x00000001 << 1)
+#define RUART_BIT_ERBI   ((u32)0x00000001 << 0)
+
+/* UART line status bit */
+#define RUART_BIT_MODEM_INT        ((u32)0x00000001 << 11)
+#define RUART_BIT_MONITOR_DONE_INT ((u32)0x00000001 << 10)
+#define RUART_BIT_TIMEOUT_INT      ((u32)0x00000001 << 9)
+#define RUART_BIT_RXFIFO_INT       ((u32)0x00000001 << 8)
+#define RUART_BIT_RXFIFO_ERR       ((u32)0x00000001 << 7)
+#define RUART_BIT_TX_NOT_FULL      ((u32)0x00000001 << 6)
+#define RUART_BIT_TX_EMPTY         ((u32)0x00000001 << 5)
+#define RUART_BIT_BREAK_INT        ((u32)0x00000001 << 4)
+#define RUART_BIT_FRM_ERR          ((u32)0x00000001 << 3)
+#define RUART_BIT_PAR_ERR          ((u32)0x00000001 << 2)
+#define RUART_BIT_OVR_ERR          ((u32)0x00000001 << 1)
+#define RUART_BIT_DRDY             ((u32)0x00000001 << 0)
+
+#define UART_ALL_RX_ERR		(RUART_BIT_RXFIFO_ERR | \
+													RUART_BIT_BREAK_INT | \
+													RUART_BIT_FRM_ERR | \
+													RUART_BIT_PAR_ERR | \
+													RUART_BIT_OVR_ERR)
+
+/* UART interrupt clear bit */
+#define RUART_BIT_MDICF   ((u32)0x00000001 << 3)
+#define RUART_BIT_MICF    ((u32)0x00000001 << 2)
+#define RUART_BIT_TOICF   ((u32)0x00000001 << 1)
+#define RUART_BIT_RLSICF  ((u32)0x00000001 << 0)
+
+#define APBPeriph_UART3					(SYS_FUNC_EN1  << 30 | BIT_LSYS_UART1_FEN_GLB | BIT_LSYS_UART1_FEN_FUN)
+#define APBPeriph_UART3_CLOCK			(SYS_CLK_CTRL1  << 30 | BIT_LSYS_UART1_CKE)
+
+void UART_INT_Clear(UART_TypeDef *UARTx, u32 UART_IT);
+
 static inline void
 UART_SetTxFlag(u32 UartIdx, u32 Flag)
 {

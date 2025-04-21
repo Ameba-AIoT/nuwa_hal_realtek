@@ -7,28 +7,6 @@
 #ifndef _AMEBA_BOOT_H_
 #define _AMEBA_BOOT_H_
 
-#if defined ( __ICCARM__ )
-extern u8 *__image2_entry_func__;
-extern u8 *__image1_bss_start__;
-extern u8 *__image1_bss_end__;
-
-extern u8 *__sbss_start__;
-extern u8 *__sbss_end__;
-extern u8 *__bss_start__;
-extern u8 *__bss_end__;
-
-extern u8 *__cmd_table_start__;
-extern u8 *__cmd_table_end__;
-extern u8 *__psram_bss_start__;
-extern u8 *__psram_bss_end__;
-extern u8 *__ram_nocache_start__;
-extern u8 *__ram_nocache_end__;
-extern u8 *__image3_bss_start__;
-extern u8 *__image3_bss_end__;
-
-extern u8 *__ipc_table_start__;
-extern u8 *__ipc_table_end__;
-#else
 extern u8 __image1_validate_code__[];
 extern u8 __image1_bss_start__[];
 extern u8 __image1_bss_end__[];
@@ -51,7 +29,7 @@ extern u8 __ram_image2_text_end__[];
 
 extern u8 __ipc_table_start__[];
 extern u8 __ipc_table_end__[];
-#endif
+
 extern u8 __rom_bss_start__[];
 extern u8 __rom_bss_end__[];
 extern u8 __rom_bss_start_s__[];
@@ -89,6 +67,13 @@ extern u8 __psram_heap_buffer_size__[];
 extern u8 __psram_heap_extend_start__[];
 extern u8 __psram_heap_extend_size__[];
 
+#ifdef CONFIG_MP_SHRINK
+extern u8 __sram_floader_mp_start__[];
+extern u8 __sram_floader_mp_size__[];
+extern u8 __sram_bootloader_mp_start__[];
+extern u8 __sram_bootloader_mp_size__[];
+#endif
+
 /* sym for stdlib rom */
 extern u8 __rom_stdlib_bss_start__[];
 extern u8 __rom_stdlib_bss_end__[];
@@ -96,7 +81,6 @@ extern u8 __rom_stdlib_data_start__[];
 extern u8 __rom_stdlib_data_end__[];
 extern u8 __rom_stdlib_text_start__[];
 extern u8 __rom_stdlib_text_end__[];
-
 
 /* sym for trustzone config */
 extern u8 __km4_tz_nsc_start__[];
@@ -108,12 +92,14 @@ extern u8 __km4_psram_tz_nsc_start__[];
 extern u8 __km4_psram_tz_entry_start__[];
 extern u8 __km4_psram_tz_entry_end__[];
 extern u8 __km4_bd_psram_start__[];
+extern u8 __non_secure_psram_end__[]; /* if psram is 8MB, than write 0x60800000 will write 0x60000000 */
 
 extern u8 __git_ver_table_start__[];
 extern u8 __git_ver_table_end__[];
 
 /* mp used */
 extern u8 __km0_bd_ram_mp_start__[];
+extern u8 __km4_bd_ram_mp_start__[];
 extern u8 __km0_image2_entry_func_mp__[];
 
 enum _BOOT_TYPE_ {
@@ -140,7 +126,7 @@ typedef struct {
 
 	//export to stdlib rom
 	void (*loguart_putchar)(u8 c);
-	u8(*loguart_getchar)(BOOL PullMode);
+	u8(*loguart_getchar)(bool PullMode);
 	u32(*diagprintf)(const char *fmt, ...);
 } ROM_SECURE_CALL_NS_ENTRY;
 
@@ -273,11 +259,7 @@ typedef struct _DSLP_RETENTION_FUNC_TABLE_ {
 
 #if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
 #define NS_ENTRY __attribute__((cmse_nonsecure_entry))
-#ifdef __ICCARM__
-typedef __cmse_nonsecure_call void nsfunc(void);
-#else
 typedef void __attribute__((cmse_nonsecure_call)) nsfunc(void);
-#endif
 #endif
 
 typedef u8(*FuncPtr)(void);

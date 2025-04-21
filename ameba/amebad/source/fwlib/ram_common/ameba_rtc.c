@@ -299,6 +299,7 @@ void RTC_TimeStructInit(RTC_TimeTypeDef *RTC_TimeStruct)
 {
 	/* Time = 00h:00min:00sec */
 	RTC_TimeStruct->RTC_H12_PMAM = RTC_H12_AM;
+	RTC_TimeStruct->RTC_Year = RTC_BASE_YEAR;
 	RTC_TimeStruct->RTC_Hours = 0;
 	RTC_TimeStruct->RTC_Minutes = 0;
 	RTC_TimeStruct->RTC_Seconds = 0;
@@ -320,11 +321,13 @@ void RTC_TimeStructInit(RTC_TimeTypeDef *RTC_TimeStruct)
 u32 RTC_SetTime(u32 RTC_Format, RTC_TimeTypeDef *RTC_TimeStruct)
 {
 	RTC_TypeDef *RTC = ((RTC_TypeDef *) RTC_BASE);
+	RRAM_TypeDef *RRAM = ((RRAM_TypeDef *) RRAM_BASE);
 	u32 tmpreg = 0;
 	u32 status = 0;
 
 	/* Check the parameters */
 	assert_param(IS_RTC_FORMAT(RTC_Format));
+	assert_param(IS_RTC_YEAR_THRES(RTC_TimeStruct->RTC_Year));
 
 	if (RTC_Format == RTC_Format_BIN) {
 		if ((RTC->CR & RTC_CR_FMT) != RTC_HourFormat_24) {
@@ -389,6 +392,9 @@ u32 RTC_SetTime(u32 RTC_Format, RTC_TimeTypeDef *RTC_TimeStruct)
 	/* Enable the write protection for RTC registers */
 	RTC->WPR = 0xFF;
 
+	/* Set the RTC_YEARR register */
+	RRAM->RTC_YEAR = RTC_YEAR(RTC_TimeStruct->RTC_Year - RTC_BASE_YEAR); //starts from 1900
+
 	return status;
 }
 
@@ -405,6 +411,7 @@ u32 RTC_SetTime(u32 RTC_Format, RTC_TimeTypeDef *RTC_TimeStruct)
 void RTC_GetTime(u32 RTC_Format, RTC_TimeTypeDef *RTC_TimeStruct)
 {
 	RTC_TypeDef *RTC = ((RTC_TypeDef *) RTC_BASE);
+	RRAM_TypeDef *RRAM = ((RRAM_TypeDef *) RRAM_BASE);
 	u32 tmpreg = 0;
 
 	/* Check the parameters */
@@ -427,6 +434,8 @@ void RTC_GetTime(u32 RTC_Format, RTC_TimeTypeDef *RTC_TimeStruct)
 		RTC_TimeStruct->RTC_Minutes = (u8)RTC_Bcd2ToByte(RTC_TimeStruct->RTC_Minutes);
 		RTC_TimeStruct->RTC_Seconds = (u8)RTC_Bcd2ToByte(RTC_TimeStruct->RTC_Seconds);
 	}
+
+	RTC_TimeStruct->RTC_Year = (u8)RTC_GET_YEAR(RRAM->RTC_YEAR) + RTC_BASE_YEAR;
 }
 
 /**

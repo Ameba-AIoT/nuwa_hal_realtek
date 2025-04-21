@@ -5,7 +5,7 @@
  */
 
 #include "ameba_soc.h"
-static const char *TAG = "PSRAM";
+static const char *const TAG = "PSRAM";
 u8 APM_WR_INIT_LATENCY_SPEC[6] = {
 	APM_WR_INIT_LATENCY_3CLK,
 	APM_WR_INIT_LATENCY_4CLK,
@@ -577,7 +577,7 @@ void PSRAM_calwindow(int window_start, int window_end, PCAL_InitTypeDef *PCAL_In
   * @retval None
   * @note cache will be disable during calibration
   */
-BOOL PSRAM_calibration(u32 log_en)
+bool PSRAM_calibration(u32 log_en)
 {
 	PSPHY_TypeDef *psram_phy = PSRAMPHY_DEV;
 
@@ -596,7 +596,6 @@ BOOL PSRAM_calibration(u32 log_en)
 
 	int phase_cnt = -1;
 
-	DCache_Disable();
 	/*Disable HW calibration*/
 	psram_phy->PSPHY_CAL_CTRL &= (~PSPHY_BIT_CFG_CAL_EN);
 	for (phase = 0x0; phase <= 0x8; phase = (phase == 0 ? phase + 1 : phase * 2)) {
@@ -608,19 +607,13 @@ BOOL PSRAM_calibration(u32 log_en)
 		}
 		for (caltempN = 0; caltempN < 32; caltempN++) {
 			psram_phy->PSPHY_CAL_PAR = tempPHYPara | caltempN | PSPHY_PRE_CAL_PHASE(phase);
-			HAL_WRITE32((u32)__km4_bd_psram_start__, 0x0, tempdatawr[0]);
-			HAL_WRITE32((u32)__km4_bd_psram_start__, 0x50000, tempdatawr[1]);
-			HAL_WRITE32((u32)__km4_bd_psram_start__, 0x100000, tempdatawr[2]);
-			HAL_WRITE32((u32)__km4_bd_psram_start__, 0x150000, tempdatawr[3]);
-			HAL_WRITE32((u32)__km4_bd_psram_start__, 0x200000, tempdatawr[4]);
-			HAL_WRITE32((u32)__km4_bd_psram_start__, 0x250000, tempdatawr[5]);
-
-			tempdatard[0] = HAL_READ32((u32)__km4_bd_psram_start__, 0x0);
-			tempdatard[1] = HAL_READ32((u32)__km4_bd_psram_start__, 0x50000);
-			tempdatard[2] = HAL_READ32((u32)__km4_bd_psram_start__, 0x100000);
-			tempdatard[3] = HAL_READ32((u32)__km4_bd_psram_start__, 0x150000);
-			tempdatard[4] = HAL_READ32((u32)__km4_bd_psram_start__, 0x200000);
-			tempdatard[5] = HAL_READ32((u32)__km4_bd_psram_start__, 0x250000);
+			/*PG needs to be recalibrated when the temperature changes sharply.
+			To avoid accessing the secure address, the calibration address starts from __km4_bd_psram_start__.*/
+			for (int i = 0; i < 6; i += 1) {
+				HAL_WRITE32((u32)__km4_bd_psram_start__, i * 0x50000, tempdatawr[i]);
+				DCache_CleanInvalidate((u32)__km4_bd_psram_start__ + i * 0x50000, CACHE_LINE_SIZE);
+				tempdatard[i] = HAL_READ32((u32)__km4_bd_psram_start__, i * 0x50000);
+			}
 
 			if (_memcmp(tempdatard, PSRAM_CALIB_PATTERN, 24) == 0) {
 				if (log_en) {
@@ -663,10 +656,8 @@ BOOL PSRAM_calibration(u32 log_en)
 
 	RTK_LOGI(TAG, "CalNmin = %x CalNmax = %x WindowSize = %x phase: %x \n", window_start, window_end, window_size, phase_cnt);
 
-	DCache_Enable();
-
 	if ((window_size) < 9) {
-		return _FALSE;
+		return FALSE;
 	}
 	tempPHYPara &= (~0xfffff);
 	tempPHYPara |= PSPHY_CFG_CAL_JMAX((window_end - window_start) / 2 - 2) | \
@@ -679,7 +670,7 @@ BOOL PSRAM_calibration(u32 log_en)
 	/*start HW calibration*/
 	psram_phy->PSPHY_CAL_CTRL |= PSPHY_BIT_CFG_CAL_EN;
 
-	return _TRUE;
+	return TRUE;
 
 }
 

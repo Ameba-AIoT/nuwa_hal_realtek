@@ -325,8 +325,8 @@ _LONG_CALL_ u32 ADC_GetLastChan(void);
 _LONG_CALL_ void ADC_SetComp(u8 ADC_channel, u16 CompThresH, u16 CompThresL, u8 CompCtrl);
 _LONG_CALL_ void ADC_ResetCSwList(void);
 _LONG_CALL_ u32 ADC_Readable(void);
-_LONG_CALL_ u16 ADC_Read(void);
-_LONG_CALL_ void ADC_ReceiveBuf(u16 *pBuf, u32 len);
+_LONG_CALL_ u32 ADC_Read(void);
+_LONG_CALL_ void ADC_ReceiveBuf(u32 *pBuf, u32 len);
 _LONG_CALL_ void ADC_ClearFIFO(void);
 _LONG_CALL_ u32 ADC_GetStatus(void);
 _LONG_CALL_ void ADC_SWTrigCmd(u32 NewState);
@@ -338,6 +338,7 @@ _LONG_CALL_ void ADC_InitCalPara(ADC_CalParaTypeDef *CalPara, u8 IsVBatChan);
 _LONG_CALL_ s32 ADC_GetVoltage(u32 chan_data);
 _LONG_CALL_ s32 ADC_GetVBATVoltage(u32 vbat_data);
 _LONG_CALL_ u32 ADC_GetInterR(void);
+_LONG_CALL_ void ADC_SetChList(u8 *ChanIdBuf, u8 ChanLen);
 /**
   * @}
   */
@@ -667,6 +668,9 @@ _LONG_CALL_ u32 ADC_GetInterR(void);
 
 /* Other Definitions --------------------------------------------------------*/
 
+/* ZEPHYR PORTING */
+#define ADC_GET_DATA_GLOBAL(x)              ((u32)(((x >> 0) & 0x00000FFF)))
+#define ADC_CVLIST_LEN(x)                   (((u32)((x) & 0x0000000F) << 4))
 
 #endif /* _AMEBA_ADC_H_ */
 

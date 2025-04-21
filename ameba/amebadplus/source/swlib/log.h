@@ -36,34 +36,40 @@ extern rtk_log_tag_t rtk_log_tag_array[LOG_TAG_CACHE_ARRAY_SIZE];
         if ( COMPIL_LOG_LEVEL >= level ) rtk_log_write(level, tag, letter, format, ##__VA_ARGS__); \
     } while(0)
 
-#define RTK_LOG_ITEMS(level, tag, format, letter, ...) do {               \
-		UNUSED(tag);	\
-		UNUSED(letter);	\
-		if ( COMPIL_LOG_LEVEL >= level ) {	\
-			DiagPrintf_minimal(format, ##__VA_ARGS__); \
-		}	\
-	} while(0)
-
 #define RTK_LOGA( tag, format, ... ) RTK_LOG_ITEM(RTK_LOG_ALWAYS,  tag, format, 'A', ##__VA_ARGS__)
 #define RTK_LOGE( tag, format, ... ) RTK_LOG_ITEM(RTK_LOG_ERROR,   tag, format, 'E', ##__VA_ARGS__)
 #define RTK_LOGW( tag, format, ... ) RTK_LOG_ITEM(RTK_LOG_WARN,    tag, format, 'W', ##__VA_ARGS__)
 #define RTK_LOGI( tag, format, ... ) RTK_LOG_ITEM(RTK_LOG_INFO,    tag, format, 'I', ##__VA_ARGS__)
 #define RTK_LOGD( tag, format, ... ) RTK_LOG_ITEM(RTK_LOG_DEBUG,   tag, format, 'D', ##__VA_ARGS__)
-#define RTK_LOGS( tag, format, ... ) RTK_LOG_ITEMS(RTK_LOG_ALWAYS, tag, format, 'S', ##__VA_ARGS__)
-#define RTK_LOGS_LVL( tag, level, format, ... ) RTK_LOG_ITEMS(level, tag, format, 'S', ##__VA_ARGS__)
+
+//new RTK_LOGS
+#define RTK_LOG_ITEMS(level, tag, format, ...) do { 					  \
+        if (level==RTK_LOG_ALWAYS )         { rtk_log_write_nano(RTK_LOG_ALWAYS,   tag, 'A', format, ##__VA_ARGS__); } \
+        else if (level==RTK_LOG_ERROR )     { rtk_log_write_nano(RTK_LOG_ERROR,    tag, 'E', format, ##__VA_ARGS__); } \
+        else if (level==RTK_LOG_WARN )      { rtk_log_write_nano(RTK_LOG_WARN,     tag, 'W', format, ##__VA_ARGS__); } \
+        else if (level==RTK_LOG_INFO )      { rtk_log_write_nano(RTK_LOG_INFO,     tag, 'I', format, ##__VA_ARGS__); } \
+        else                                { rtk_log_write_nano(RTK_LOG_DEBUG,    tag, 'D', format, ##__VA_ARGS__); } \
+	}while(0)
+
+#define RTK_LOG_ITEMS_LEVEL(level, tag, format, ...) do {               \
+		if ( COMPIL_LOG_LEVEL >= level ) RTK_LOG_ITEMS(level, tag, format, ##__VA_ARGS__); \
+	} while(0)
+
+#define RTK_LOGS( tag, level, format, ... ) RTK_LOG_ITEMS_LEVEL(level, tag,  format, ##__VA_ARGS__)
 
 //5. LOG set/get API
 
-extern void rtk_log_array_clear(void);
-extern rtk_log_level_t rtk_log_level_get(const char *tag);
-extern int rtk_log_level_set(const char *tag, rtk_log_level_t level);
-extern int rtk_log_array_print(rtk_log_tag_t *rtk_log_tag_array);
-extern void rtk_log_write(rtk_log_level_t level, const char *tag, const char letter, const char *fmt, ...);
+void rtk_log_array_clear(void);
+rtk_log_level_t rtk_log_level_get(const char *tag);
+int rtk_log_level_set(const char *tag, rtk_log_level_t level);
+int rtk_log_array_print(rtk_log_tag_t *rtk_log_tag_array);
+void rtk_log_write(rtk_log_level_t level, const char *tag, const char letter, const char *fmt, ...);
+void rtk_log_write_nano(rtk_log_level_t level, const char *tag, const char letter, const char *fmt, ...);
 //6. Memory dump API
 #define DISPLAY_NUMBER 8
 #define BYTES_PER_LINE 16
-extern void rtk_log_memory_dump_word(uint32_t *src, uint32_t len);
-extern void rtk_log_memory_dump_byte(uint8_t *src, uint32_t len);
-extern void rtk_log_memory_dump2char(const char *src_buff, uint32_t buff_len);
+void rtk_log_memory_dump_word(uint32_t *src, uint32_t len);
+void rtk_log_memory_dump_byte(uint8_t *src, uint32_t len);
+void rtk_log_memory_dump2char(const char *src_buff, uint32_t buff_len);
 
 #endif

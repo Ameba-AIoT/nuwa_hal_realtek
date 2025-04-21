@@ -311,17 +311,20 @@ struct GDMA_CH_LLI {
 /** @defgroup GDMA_data_transfer_direction GDMA Data Transfer Direction
   * @{
   */
-#define TTFCMemToMem						((u32)0x00000000)
-#define TTFCMemToPeri						((u32)0x00000001)
-#define TTFCPeriToMem						((u32)0x00000002)
-#define TTFCPeriToPeri						((u32)0x00000003)
+#define TTFCMemToMem						    ((u32)0x00000000)
+#define TTFCMemToPeri						    ((u32)0x00000001)
+#define TTFCPeriToMem						    ((u32)0x00000002)
+#define TTFCPeriToPeri						  ((u32)0x00000003)
 #define TTFCPeriToMem_PerCtrl				((u32)0x00000004)
+#define TTFCPeriToPeri_SrcPerCtrl		((u32)0x00000005)
+#define TTFCMemToPeri_PerCtrl				((u32)0x00000006)
+#define TTFCPeriToPeri_DstPerCtrl	  ((u32)0x00000007)
+
 #define IS_GDMA_DIR(DIR) (((DIR) == TTFCMemToMem) || \
                           ((DIR) == TTFCMemToPeri) || \
                           ((DIR) == TTFCPeriToMem) ||\
                           ((DIR) == TTFCPeriToPeri) ||\
                           ((DIR) == TTFCPeriToMem_PerCtrl))
-
 /**
   * @}
   */
@@ -445,7 +448,7 @@ struct GDMA_CH_LLI {
   */
 _LONG_CALL_ void GDMA_StructInit(PGDMA_InitTypeDef GDMA_InitStruct);
 _LONG_CALL_ void GDMA_Init(u8 GDMA_Index, u8 GDMA_ChNum, PGDMA_InitTypeDef GDMA_InitStruct);
-_LONG_CALL_ void GDMA_SetLLP(u8 GDMA_Index, u8 GDMA_ChNum, u32 MultiBlockCount, struct GDMA_CH_LLI *pGdmaChLli);
+_LONG_CALL_ void GDMA_SetLLP(u8 GDMA_Index, u8 GDMA_ChNum, u32 MultiBlockCount, struct GDMA_CH_LLI *pGdmaChLli, u32 round);
 _LONG_CALL_ void GDMA_Cmd(u8 GDMA_Index, u8 GDMA_ChNum, u32 NewState);
 _LONG_CALL_ void GDMA_INTConfig(u8 GDMA_Index, u8 GDMA_ChNum, u32 GDMA_IT, u32 NewState);
 _LONG_CALL_ u32	 GDMA_ClearINTPendingBit(u8 GDMA_Index, u8 GDMA_ChNum, u32 GDMA_IT);
@@ -464,6 +467,10 @@ _LONG_CALL_ void GDMA_ChnlUnRegister(u8 GDMA_Index, u8 GDMA_ChNum);
 _LONG_CALL_ u8	 GDMA_ChnlAlloc(u32 GDMA_Index, IRQ_FUN IrqFun, u32 IrqData, u32 IrqPriority);
 _LONG_CALL_ void GDMA_ChnlFree(u8 GDMA_Index, u8 GDMA_ChNum);
 _LONG_CALL_ u8	 GDMA_GetIrqNum(u8 GDMA_Index, u8 GDMA_ChNum);
+_LONG_CALL_ void GDMA_SetChnlPriority(u8 GDMA_Index, u8 GDMA_ChNum, u32 ChnlPriority);
+_LONG_CALL_ void GDMA_Suspend(u8 GDMA_Index, u8 GDMA_ChNum);
+_LONG_CALL_ void GDMA_Resume(u8 GDMA_Index, u8 GDMA_ChNum);
+_LONG_CALL_ u8 GDMA_Abort(u8 GDMA_Index, u8 GDMA_ChNum);
 
 
 /**
@@ -509,8 +516,13 @@ _LONG_CALL_ u8	 GDMA_GetIrqNum(u8 GDMA_Index, u8 GDMA_ChNum);
  * @{
  *****************************************************************************/
 /********************  Bits definition for CFG register  *******************/
-#define BIT_CFGX_LO_RELOAD_SRC			((u32)(0x00000001 << 30))		/*Lower word Bit[30].Automatic Source Reload bit*/
-#define BIT_CFGX_LO_RELOAD_DST			((u32)(0x00000001 << 31))		/*Lower word Bit[31].Automatic Destination Reload bit*/
+#define BIT_CFGX_LO_RELOAD_DST			    ((u32)(0x00000001 << 31))		      /*Lower word Bit[31].Automatic Destination Reload bit*/
+#define BIT_CFGX_LO_RELOAD_SRC			    ((u32)(0x00000001 << 30))		      /*Lower word Bit[30].Automatic Source Reload bit*/
+#define BIT_CFGx_L_FIFO_EMPTY           ((u32)(0x00000001 << 9))          /*!< R 0x1  Indicates if there is data left in the channel FIFO. 1 = Channel FIFO empty 0 = Channel FIFO not empty*/
+#define BIT_CFGx_L_CH_SUSP			        ((u32)(0x00000001 << 8))		      /*!< Lower word Bit[8].Channel Suspend bit*/
+#define BIT_CFGx_L_DST_PCTL_OVER        ((u32)0x00000001 << 2)            /*!< R 0x1  DMA destination bus protocol finish, indicating the current write command has finished.*/
+#define BIT_CFGx_L_SRC_PCTL_OVER        ((u32)0x00000001 << 1)            /*!< R 0x1  DMA Source bus protocol finish, indicating the current read command has finished.*/
+#define BIT_CFGx_L_INACTIVE             ((u32)0x00000001 << 0)            /*!< R 0x1  Indicates if the channel is inactive. Can be used in conjunction with CFGx_L.CH_SUSP to cleanly disable a channel when destination is peripheral. For more information, refer to "Disabling a Channel Prior to Transfer Completion" . 1 = Channel Inactive for axi interface 0 = Channel not Inactive for axi interface*/
 
 #define BIT_CFGX_UP_SEC_DISABLE			((u32)(0x00000001 << 3))		/*Upper word Bit[10:7]. write 0 to enable secure transfer, default is 0 */
 #define BIT_CFGX_UP_SRC_PER				((u32)(0x0000000F << 7))		/*Upper word Bit[10:7].hardware handshaking interface for source peripheral*/

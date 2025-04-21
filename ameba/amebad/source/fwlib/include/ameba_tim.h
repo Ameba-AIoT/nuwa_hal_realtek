@@ -345,6 +345,7 @@ typedef struct {
   */
 #define TIM_OPMode_ETP_positive		((u32)0x00000000)
 #define TIM_OPMode_ETP_negative		((u32)0x00000100)
+#define TIM_OPMode_ETP_bothedge		((u32)0x00000200)
 #define IS_TIM_OPM_ETP_MODE(MODE) (((MODE) == TIM_OPMode_ETP_positive) || \
                                ((MODE) == TIM_OPMode_ETP_negative))
 
@@ -491,6 +492,19 @@ typedef struct {
   * @}
   */
 
+/** @defgroup TIM_Default_Level
+  * @note AmebaD is not support to set one pulse mode default level,
+  * 	    add this API is for compatible Zephyr.
+  * @{
+  */
+
+#define TIMPWM_DefaultLevel_High		((u32)0x00000000)
+#define TIMPWM_DefaultLevel_Low			((u32)0x00000001)
+#define IS_TIMPWM_DefaultLevel(LEVEL)	(((LEVEL) == TIMPWM_DefaultLevel_High) || ((LEVEL) == TIMPWM_DefaultLevel_Low))
+/**
+  * @}
+  */
+
 /**
   * @}
   */
@@ -525,12 +539,14 @@ _LONG_CALL_ void RTIM_Reset(RTIM_TypeDef *TIMx);
 _LONG_CALL_ void RTIM_CCStructInit(TIM_CCInitTypeDef *TIM_CCInitStruct);
 _LONG_CALL_ void RTIM_CCxInit(RTIM_TypeDef *TIMx, TIM_CCInitTypeDef *TIM_CCInitStruct, u16 TIM_Channel);
 _LONG_CALL_ void RTIM_CCRxMode(RTIM_TypeDef *TIMx, u16 TIM_Channel, u32 TIM_CCMode);
+_LONG_CALL_ u32 RTIM_CCRxModeGet(RTIM_TypeDef *TIMx, u16 TIM_Channel);
 _LONG_CALL_ void RTIM_CCRxSet(RTIM_TypeDef *TIMx, u32 Compare, u16 TIM_Channel);
 _LONG_CALL_ u32 RTIM_CCRxGet(RTIM_TypeDef *TIMx, u16 TIM_Channel);
 _LONG_CALL_ void RTIM_OCxPreloadConfig(RTIM_TypeDef *TIMx, u32 TIM_OCProtection, u16 TIM_Channel);
 _LONG_CALL_ void RTIM_CCxPolarityConfig(RTIM_TypeDef *TIMx, u32 TIM_OCPolarity, u16 TIM_Channel);
 _LONG_CALL_ void RTIM_CCxCmd(RTIM_TypeDef *TIMx, u16 TIM_Channel, u32 TIM_CCx);
 _LONG_CALL_ void RTIM_SetOnePulseOutputMode(RTIM_TypeDef *TIMx, u32 TIM_OPMode, u32 TrigerPolarity);
+_LONG_CALL_ void RTIM_SetOnePulseDefaultLevel(RTIM_TypeDef *TIMx, u16 TIM_Channel, u32 DefaultLevel);
 /**
   * @}
   */
@@ -659,7 +675,7 @@ _LONG_CALL_ u32 RTIM_GetINTStatus(RTIM_TypeDef *TIMx, u32 TIM_IT);
  * @defgroup TIM_CCMR
  * @{
  *****************************************************************************/
-#define  TIM_CCER_CCxE				((u32)0x01 << 24)		/*!<Capture/Compare x input/output enable */
+#define  TIM_BIT_CCxE				((u32)0x01 << 24)		/*!<Capture/Compare x input/output enable */
 #define  TIM_OCER_CCxPE				((u32)0x02 << 24)		/*!<Output Compare x Preload enable */
 #define  TIM_CCER_CCxP				((u32)0x04 << 24)		/*!<Capture/Compare x input/output Polarity */
 #define  TIM_CCER_CCxM				((u32)0x08 << 24)		/*!<CCx working mode input or output mode */
@@ -689,6 +705,7 @@ extern RTIM_TypeDef *TIMx_LP[6];
 extern u32 TIM_IT_CCx_LP[6];
 extern u32 TIM_IT_CCx[18];
 
+#define PWM_CHAN_MAX			    18
 #define TIMER_TICK_US		 			31
 #define TIMER_TICK_US_X4				(4*1000000/32000) //32k clock, 31.25us every timer_tick
 #endif //_AMEBA_TIMER_H_

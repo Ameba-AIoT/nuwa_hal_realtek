@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "basic_types.h"
 #include "ameba_soc.h"
 #include "os_wrapper.h"
 

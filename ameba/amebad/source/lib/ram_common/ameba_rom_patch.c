@@ -770,6 +770,36 @@ u32 GPIO_PortRead(u32 GPIO_Port, u32 GPIO_Mask)
 	return RegValue;
 }
 
+static GPIO_TypeDef *GPIO_PortAddrGet(u32 GPIO_Port)
+{
+	GPIO_TypeDef *GPIO = NULL;
+
+	GPIO = PORT_AB[GPIO_Port];
+
+	return GPIO;
+}
+
+u32 GPIO_INTStatusGet(u32 GPIO_Port)
+{
+	GPIO_TypeDef *GPIO = GPIO_PortAddrGet(GPIO_Port);
+
+	return GPIO->INT_STATUS;
+}
+
+void GPIO_INTStatusClearEdge(u32 GPIO_Port)
+{
+	GPIO_TypeDef *GPIO = NULL;
+	u32 IntStatus;
+
+	GPIO = GPIO_PortAddrGet(GPIO_Port);
+
+	IntStatus = GPIO->INT_STATUS;
+
+	/* Clear pending edge interrupt */
+	GPIO->PORTA_EOI = IntStatus;
+}
+
+
 void SYSCFG_CHIPType_Set(void)
 {
 #ifdef CONFIG_FPGA
@@ -896,54 +926,136 @@ u32 LOGUART_Writable(void)
 
 u32 LOGUART_GetStatus(UART_TypeDef *UARTLOG)
 {
-	u32 reg_iir = UART_IntStatus(UARTLOG);
-	u32 IntId = (reg_iir & RUART_IIR_INT_ID) >> 1;
-
-	if ((reg_iir & RUART_IIR_INT_PEND) != 0) {
-		// No pending IRQ
-		return 0;
-	}
-
-	return IntId;
+	return UART_LineStatusGet(UARTLOG);
 }
 
 void LOGUART_INTClear(UART_TypeDef *UARTLOG, u32 UART_IT)
 {
-	u32 reg_iir = UART_IntStatus(UARTLOG);
-	u32 IntId = (reg_iir & RUART_IIR_INT_ID) >> 1;
-
-	/* actually this function will clear each interupt id in each switch-case */
-	switch (IntId) {
-	case RUART_LP_RX_MONITOR_DONE:
-		UART_RxMonitorSatusGet(UARTLOG);
-		break;
-
-	case RUART_MODEM_STATUS:
-		UART_ModemStatusGet(UARTLOG);
-		break;
-
-	case RUART_RECEIVE_LINE_STATUS:
-		/* Note: error case occur only when any bit of LSR[3:1] is set */
-		UART_LineStatusGet(UARTLOG);
-		break;
-
-	case RUART_TX_FIFO_EMPTY:
-		/* Write TxFIFO (16Byte) Clear interrupt */
-		break;
-
-	case RUART_RECEIVER_DATA_AVAILABLE:
-	case RUART_TIME_OUT_INDICATION:
-		/* Read RxFIFO (64Byte) Clear interrupt */
-		RTK_LOGS(NOTAG, RTK_LOG_ERROR, "Rx int id: %d\n", IntId);
-		break;
-
-	default:
-		break;
-	}
-	RTK_LOGS(NOTAG, RTK_LOG_ERROR, "Want to Clear %d, but is %d\n", UART_IT, IntId);
+	UART_INT_Clear(UARTLOG, UART_IT);
 }
 
 void LOGUART_INTConfig(UART_TypeDef *UARTLOG, u32 UART_IT, u32 newState)
 {
 	UART_INTConfig(UARTLOG, UART_IT, newState);
+}
+
+/**
+ * @brief Get the Line status register value.
+ * @param UARTx UART device, where x can be 0~3.
+ * @return The Line status register value.
+ */
+u32 UART_LineStatusGet(UART_TypeDef *UARTx)
+{
+	volatile u8 reg_iir;
+	u8 IntId;
+	u32 IntStatus = 0;
+	u32 UartLSR = UARTx->LSR; // read only once
+
+	if (UartLSR & RUART_LINE_STATUS_REG_DR) {
+		IntStatus |= RUART_BIT_DRDY;
+	}
+
+	if (UartLSR & RUART_LINE_STATUS_REG_THRE) {
+		IntStatus |= RUART_BIT_TX_NOT_FULL;
+	}
+
+	reg_iir = UART_IntStatus(UARTx);
+	if ((reg_iir & RUART_IIR_INT_PEND) != 0) {
+		// No pending IRQ
+		return IntStatus;
+	}
+
+	IntId = (reg_iir & RUART_IIR_INT_ID) >> 1;
+
+	switch (IntId) {
+	case RUART_RECEIVE_LINE_STATUS:
+		IntStatus |= (UartLSR & RUART_LINE_STATUS_ERR);
+		break;
+	case RUART_RECEIVER_DATA_AVAILABLE:
+		IntStatus |= RUART_BIT_RXFIFO_INT;
+		break;
+	case RUART_TIME_OUT_INDICATION:
+		IntStatus |= RUART_BIT_TIMEOUT_INT;
+		break;
+	case RUART_TX_FIFO_EMPTY:
+		IntStatus |= RUART_BIT_TX_EMPTY;
+		break;
+	case RUART_MODEM_STATUS:
+		IntStatus |= RUART_BIT_MODEM_INT;
+		break;
+	case RUART_LP_RX_MONITOR_DONE:
+		IntStatus |= RUART_BIT_MONITOR_DONE_INT;
+		break;
+	default:
+		// RTK_LOGS(NOTAG, RTK_LOG_ERROR, "Unknown Interrupt \n");
+		break;
+	}
+
+	return IntStatus;
+}
+
+/**
+ * @brief Clear specified UARTx interrupt status.
+ * @param UARTx UART device, where x can be 0~3.
+ * @param UART_IT Specified UARTx interrupt sources to be clear.
+ * @return None
+ */
+void UART_INT_Clear(UART_TypeDef *UARTx, u32 UART_IT)
+{
+	switch (UART_IT) {
+	case RUART_BIT_MDICF:
+		(void)UART_RxMonitorSatusGet(UARTx);
+		break;
+
+	case RUART_BIT_MICF:
+		(void)UART_ModemStatusGet(UARTx);
+		break;
+
+	case RUART_BIT_RLSICF:
+		(void)UARTx->LSR;
+		break;
+
+	case RUART_BIT_TOICF:
+		(void)UARTx->RB_THR; // read RBR to clear interrupt
+	default:
+		// RTK_LOGS(NOTAG, RTK_LOG_ERROR, "Unknown Interrupt \n");
+		break;
+	}
+}
+
+/**
+  * @brief  Check whether the APB peripheral's clock has been enabled or not
+  * @param  APBPeriph_Clock_in: specifies the APB peripheral to check.
+  *      This parameter can be one of @ref APBPeriph_UART0_CLOCK, APBPeriph_ATIM_CLOCK and etc.
+  * @retval TRUE: The APB peripheral's clock has been enabled
+  * 		FALSE: The APB peripheral's clock has not been enabled
+  */
+u8 RCC_PeriphClockEnableChk(u32 APBPeriph_Clock_in)
+{
+	u8 ret;
+	u32 TempVal, CkeRegOffset;
+	u32 ClkRegIndx = (APBPeriph_Clock_in >> 30) & 0x03;
+	u32 APBPeriph_Clock = APBPeriph_Clock_in & (~(BIT(31) | BIT(30)));
+	assert_param((ClkRegIndx == 0x1) || (ClkRegIndx == 0x2) || (ClkRegIndx == 0x3));
+
+	switch (ClkRegIndx) {
+	case SYS_CLK_CTRL1:
+		CkeRegOffset = REG_HS_PERI_CLK_CTRL1;
+		break;
+	case SYS_CLK_CTRL2:
+		CkeRegOffset = REG_HS_PERI_CLK_CTRL2;
+		break;
+	case SYS_CLK_CTRL3:
+		CkeRegOffset = REG_HS_PERI_CLK_CTRL3;
+		break;
+	}
+
+	TempVal = HAL_READ32(SYSTEM_CTRL_BASE, CkeRegOffset);
+	if (TempVal & APBPeriph_Clock) {
+		ret = TRUE;
+	} else {
+		ret = FALSE;
+	}
+
+	return ret;
 }

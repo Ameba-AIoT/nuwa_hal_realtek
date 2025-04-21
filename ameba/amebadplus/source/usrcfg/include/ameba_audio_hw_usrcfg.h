@@ -102,11 +102,16 @@
 #define AUDIO_I2S_OUT_BCLK_PIN           _PA_23
 #define AUDIO_I2S_OUT_LRCLK_PIN          _PA_20
 #define AUDIO_I2S_OUT_DATA0_PIN          _PA_22
-#define AUDIO_I2S_OUT_DATA1_PIN          _PB_17
-#define AUDIO_I2S_OUT_DATA2_PIN          _PB_18
-#define AUDIO_I2S_OUT_DATA3_PIN          _PB_19
+#define AUDIO_I2S_OUT_DATA1_PIN          _PB_10
+#define AUDIO_I2S_OUT_DATA2_PIN          -1
+#define AUDIO_I2S_OUT_DATA3_PIN          -1
 
 #define AUDIO_I2S_OUT_MULTIIO_EN         1
+
+/*
+ *Aways output LRCLK, even if xrun happens.
+ */
+#define AUDIO_OUT_CONTINUOUS_LRCLK       1
 
 /*
  *0: using xtal 40M.
@@ -149,11 +154,11 @@
 /*
  *Define I2S in pins.
  */
-#define AUDIO_I2S_IN_MCLK_PIN           _PB_10
-#define AUDIO_I2S_IN_BCLK_PIN           _PA_23
-#define AUDIO_I2S_IN_LRCLK_PIN          _PA_20
+#define AUDIO_I2S_IN_MCLK_PIN           -1
+#define AUDIO_I2S_IN_BCLK_PIN           _PB_17
+#define AUDIO_I2S_IN_LRCLK_PIN          _PB_18
 #define AUDIO_I2S_IN_DATA0_PIN          _PA_21
-#define AUDIO_I2S_IN_DATA1_PIN          _PA_22
+#define AUDIO_I2S_IN_DATA1_PIN          _PB_19
 #define AUDIO_I2S_IN_DATA2_PIN          _PB_22
 #define AUDIO_I2S_IN_DATA3_PIN          _PB_3
 
@@ -178,10 +183,28 @@
  */
 #define AUDIO_I2S_IN_EXTRA_NEED_MCLK_OUT       0
 
-
+/*
+ *If AUDIO_I2S_IN_MULTIIO_EN equals 1, using MULTI-IO.
+ *If AUDIO_I2S_IN_MULTIIO_EN equals 0, using TDM.
+ */
 #define AUDIO_I2S_IN_MULTIIO_EN                1
 
+/*
+ *If AUDIO_I2S_IN_EXTRA_MULTIIO_EN equals 1, using MULTI-IO.
+ *If AUDIO_I2S_IN_EXTRA_MULTIIO_EN equals 0, using TDM.
+ */
 #define AUDIO_I2S_IN_EXTRA_MULTIIO_EN          1
+
+/*
+ *If audio has more than 8 channels, then need two sports.
+ *Take 12 channels for example:
+ *If AUDIO_I2S_CHANNELS_BISECT equals 1,
+ *I2S0 has 6 channels, I2S1 has 6 channels.
+ *If AUDIO_I2S_CHANNELS_BISECT equals 0,
+ *I2S0 has 8 channels, I2S1 has 12-8 channels.
+ *
+ */
+#define AUDIO_I2S_CHANNELS_BISECT              0
 
 /*
  *Define I2S in's data format

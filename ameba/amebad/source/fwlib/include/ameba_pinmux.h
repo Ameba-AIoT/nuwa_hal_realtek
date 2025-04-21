@@ -338,7 +338,13 @@ static inline void Pinmux_Swdoff(void)
 #define FLASH_S0_CS_GPIO		_PB_18
 #define FLASH_S1_CS_GPIO		_PB_16
 
-
+/* TODO: remain zephyr TODO */
+#define PAD_SleepPullCtrl(PinName, PullType)  (void)0
+#define PAD_SlewRateCtrl(PinName, NewState)   (void)0
+#define PAD_DRV_ABILITITY_LOW                 PAD_DRV_STRENGTH_0
+/* Control digital path input or not */
+#define PAD_InputCtrl(PinName, NewState)      PAD_CMD(PinName, NewState)
+#define PAD_SchmitCtrl(PinName, NewState)     (void)0
 
 #endif   //_HAL_8721D_PINMUX_
 /******************* (C) COPYRIGHT 2016 Realtek Semiconductor *****END OF FILE****/

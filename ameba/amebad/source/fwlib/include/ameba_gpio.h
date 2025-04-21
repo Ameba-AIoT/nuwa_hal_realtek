@@ -242,6 +242,8 @@ _LONG_CALL_ void GPIO_Init(GPIO_InitTypeDef  *GPIO_InitStruct);
 _LONG_CALL_ u32 GPIO_INTHandler(IN void *pData);
 _LONG_CALL_ void GPIO_Direction(u32 GPIO_Pin, u32 data_direction);
 _LONG_CALL_ u32 GPIO_PortRead(u32 GPIO_Port, u32 GPIO_Mask);
+_LONG_CALL_ u32 GPIO_INTStatusGet(u32 GPIO_Port);
+_LONG_CALL_ void GPIO_INTStatusClearEdge(u32 GPIO_Port);
 _LONG_CALL_ void GPIO_PortWrite(u32 GPIO_Port, u32 GPIO_Mask, u32 Port_State);
 _LONG_CALL_ void GPIO_PortDirection(u32 GPIO_Port, u32 GPIO_Mask, u32 data_direction);
 /**

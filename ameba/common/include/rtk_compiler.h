@@ -1,6 +1,8 @@
 #ifndef __RTK_COMPILER_H__
 #define __RTK_COMPILER_H__
 
+#include <zephyr/toolchain.h>
+
 #define Compile_Assert(exp, str) extern char __ct_[(exp) ? 1 : -1]
 
 #define ALIGNMTO(_bound)    __attribute__ ((aligned (_bound)))

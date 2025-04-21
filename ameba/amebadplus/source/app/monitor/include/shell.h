@@ -13,13 +13,13 @@
 #ifdef CONFIG_MP_INCLUDED
 #define SHELL_TASK_FUNC_STACK_SIZE (1024 * 4)
 #elif (defined (CONFIG_AS_INIC_AP) || defined(CONFIG_SINGLE_CORE_WIFI))
-#define SHELL_TASK_FUNC_STACK_SIZE (1252 + 128 + CONTEXT_SAVE_SIZE + 1024)
+#define SHELL_TASK_FUNC_STACK_SIZE (1252 + 128 + CONTEXT_SAVE_SIZE + 1536)
 #else
-#define SHELL_TASK_FUNC_STACK_SIZE (480 + 128 + CONTEXT_SAVE_SIZE)	/* KM0 cost stack: max_size < 300 bytes, test by monitor cmd */
+#define SHELL_TASK_FUNC_STACK_SIZE (632 + 128 + CONTEXT_SAVE_SIZE)	/* KM0 cost stack: max_size < 300 bytes, test by monitor cmd */
 #endif
 
 #ifdef CONFIG_LONGER_CMD
-#define UART_LOG_CMD_BUFLEN     4096
+#define UART_LOG_CMD_BUFLEN     2000
 #define MAX_ARGV                32
 #else
 //UART_LOG_CMD_BUFLEN: only 126 bytes could be used for keeping input
@@ -77,7 +77,7 @@ typedef struct {
 #define SHELL_CMDCHK_CONT  1
 #define SHELL_CMDCHK_DONE  2
 
-#define _ConsolePrint  DiagPrintf_minimal
+#define _ConsolePrint  DiagPrintfNano
 
 #define AMEBA_CONSOLE_PREFIX	"#"
 #define CONSOLE_AMEBA(...)     do {\

@@ -122,6 +122,8 @@ typedef struct {
   * @brief  RTC Time structure definition
   */
 typedef struct {
+	u16 RTC_Year;	/*!< Year in binary format 16bits 1900~2155. */
+
 	u16 RTC_Days;	/*!< Day in binary format 9bits 0~0x1FF */
 
 	u8 RTC_Hours;    /*!< Specifies the RTC Time Hour.
@@ -296,6 +298,18 @@ typedef struct {
                                ((OUTPUT) == RTC_Output_Alarm) || \
                                ((OUTPUT) == RTC_Output_clkspre) || \
                                ((OUTPUT) == RTC_Output_clkapre))
+/**
+  * @}
+  */
+
+/** @defgroup RTC_Year_Definitions
+  * @{
+  */
+#define RTC_BASE_YEAR		      ((u16)1900)
+#define RTC_YEAR(x)         (((u32)((x) & 0x000000FF) << 0))
+#define RTC_GET_YEAR(x)     ((u32)(((x >> 0) & 0x000000FF)))
+#define IS_RTC_YEAR_THRES(YEAR)		((YEAR >= RTC_BASE_YEAR) && \
+									((YEAR - RTC_BASE_YEAR) <= 0xFF))
 /**
   * @}
   */

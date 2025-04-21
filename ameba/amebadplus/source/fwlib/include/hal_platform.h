@@ -11,10 +11,10 @@
 #define ROMVERSION_SUB		0 /* ROM sub version */
 #define ROMINFORMATION		(ROMVERSION)
 
-#define HAL_READ32(base, addr)				rtk_le32_to_cpu(*((volatile u32*)(base + addr)))
-#define HAL_WRITE32(base, addr, value32)		((*((volatile u32*)(base + addr))) = rtk_cpu_to_le32(value32))
-#define HAL_READ16(base, addr)				rtk_le16_to_cpu(*((volatile u16*)(base + addr)))
-#define HAL_WRITE16(base, addr, value)		((*((volatile u16*)(base + addr))) = rtk_cpu_to_le16(value))
+#define HAL_READ32(base, addr)				((u32)(*((volatile u32*)(base + addr))))
+#define HAL_WRITE32(base, addr, value32)	((*((volatile u32*)(base + addr))) = ((u32)(value32)))
+#define HAL_READ16(base, addr)				((u16)(*((volatile u16*)(base + addr))))
+#define HAL_WRITE16(base, addr, value)		((*((volatile u16*)(base + addr))) = ((u16)(value)))
 #define HAL_READ8(base, addr)				(*((volatile u8*)(base + addr)))
 #define HAL_WRITE8(base, addr, value)		((*((volatile u8*)(base + addr))) = value)
 
@@ -370,6 +370,10 @@
 #define PMC_BASE                 0x41008300
 #define DATA_FLASH_BASE          0x60000000
 
+#define TZ_IDAU_SEC_OFFSET       0x10000000
+#define KBYTES(x)                ((x) << 10)
+#define MBYTES(x)                ((x) << 20)
+
 /**************************************************************************//**
  * @defgroup AmebaD_Peripheral_Declaration  AmebaD HS/LP Peripheral Declarations
  * @{
@@ -385,6 +389,8 @@
 
 #define LOGUART_DEV			((LOGUART_TypeDef		*) UARTLOG_REG_BASE)
 #define LOGUART_DEV_S		((LOGUART_TypeDef		*) UARTLOG_REG_BASE_S)
+
+#define SDIO_WIFI			((SDIO_TypeDef			*) SDIO_REG_BASE) /* sdio device */
 
 #define SPI0_DEV			((SPI_TypeDef			*) SPI0_REG_BASE)		/*hp spi0 */
 #define SPI1_DEV			((SPI_TypeDef			*) SPI1_REG_BASE)		/*hp spi1 */
@@ -507,15 +513,22 @@
 #define LS_SRAM_ADDR_START			LP_SRAM_BASE
 #define LS_SRAM_ADDR_END			(LP_SRAM_BASE + 0x00020000)
 
+/*BT share mem with system*/
+#define SHARE_MEM_BT_E0_ADDRESS       			0x20080000
+#define SHARE_MEM_BT_E1_ADDRESS       			0x20090000
+/*WiFi share mem with system*/
+#define SHARE_MEM_WIFI_TXPKTBUF_ADDRESS			0x200C0000
+#define SHARE_MEM_WIFI_RXPKTBUF_ADDRESS			0x200C6000
+
 /* margin 512 for lite and 1024 for CA32 */
-#if defined(RSICV_CORE_KR4)
+#if defined(CONFIG_RSICV_CORE_KR4)
 #define CONTEXT_SAVE_SIZE	320	/* portCONTEXT_SIZE:66*4 = 288 roundup to 64B aligned */
-#elif defined(ARM_CORE_CA32)
+#elif defined(CONFIG_ARM_CORE_CA32)
 #define CONTEXT_SAVE_SIZE	(320 + 1024) /* 15*4 + 32*8: general reg and floating reg */
-#elif defined(ARM_CORE_CM4)
+#elif defined(CONFIG_ARM_CORE_CM4)
 #define CONTEXT_SAVE_SIZE	192 /* 15*4 + 16*8: s16~s31 if use float */
-#elif defined(ARM_CORE_CM0)
-#define CONTEXT_SAVE_SIZE	64	/* not support hw float, 15*4 */
+#elif defined(CONFIG_ARM_CORE_CM0)
+#define CONTEXT_SAVE_SIZE	128	/* not support hw float, 15*4 */
 #endif
 
 

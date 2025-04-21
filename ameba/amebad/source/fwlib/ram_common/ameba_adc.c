@@ -444,9 +444,9 @@ u32 ADC_Readable(void)
   * @param  None
   * @retval  The conversion data.
   */
-u16 ADC_Read(void)
+u32 ADC_Read(void)
 {
-	u16 value = (u16)(ADC->ADC_DATA_GLOBAL & (BIT_MASK_DAT_GLOBAL | BIT_MASK_DAT_CHID));
+	u32 value = ADC->ADC_DATA_GLOBAL & (BIT_MASK_DAT_GLOBAL | BIT_MASK_DAT_CHID);
 
 	return value;
 }
@@ -457,9 +457,11 @@ u16 ADC_Read(void)
   * @param  len: the number of sample data to be read
   * @retval  None.
   */
-void ADC_ReceiveBuf(u16 *pBuf, u32 len)
+void ADC_ReceiveBuf(u32 *pBuf, u32 len)
 {
 	u32 i = 0;
+
+	ADC_ClearFIFO();
 
 	ADC_AutoCSwCmd(ENABLE);
 
@@ -843,6 +845,51 @@ u32 ADC_GetInterR(void)
 	EFUSE_PMAP_READ8(0, INTER_R_ADDR, &r_offset, L25EOUTVOLTAGE);
 
 	return ((u32)r_offset + 425);
+}
+
+/**
+ * @brief Set list length and channel ID of ADC channel switch list.
+ * @param ChanIdBuf Pointer to ADC channel ID buffer, which contains value of @ref ADC_Chn_Selection as following:
+ * 		@arg ADC_CH0
+ * 		@arg ADC_CH1
+ * 		@arg ADC_CH2
+ * 		@arg ADC_CH3
+ * 		@arg ADC_CH4
+ * 		@arg ADC_CH5
+ * 		@arg ADC_CH6
+ * 		@arg ADC_CH7
+ * 		@arg ADC_CH8
+ * 		@arg ADC_CH9
+ * 		@arg ADC_CH10
+ * @param ChanLen ADC channel list length, which can be 1 ~ 16.
+ * @return None
+ */
+void ADC_SetChList(u8 *ChanIdBuf, u8 ChanLen)
+{
+	ADC_TypeDef *adc = ADC;
+	u32 value, value1;
+	u8 idx;
+	u8 *pid = ChanIdBuf;
+
+	assert_param(ChanLen >= 1 && ChanLen <= 16);
+
+	/* Set channel switch list length */
+	value = adc->ADC_CONF;
+	value &= ~BIT_MASK_CVLIST_LEN;
+	value |= ADC_CVLIST_LEN(ChanLen - 1);
+	adc->ADC_CONF = value;
+
+	value = 0;
+	value1 = 0;
+	for (idx = 0; idx < ChanLen; idx++) {
+		if (idx < 8) {
+			value |= *pid++ << BIT_SHIFT_CHSW0(idx);
+		} else {
+			value1 |= *pid++ << BIT_SHIFT_CHSW1(idx);
+		}
+	}
+	adc->ADC_CHSW_LIST[0] = value;
+	adc->ADC_CHSW_LIST[1] = value1;
 }
 
 /******************* (C) COPYRIGHT 2016 Realtek Semiconductor *****END OF FILE****/

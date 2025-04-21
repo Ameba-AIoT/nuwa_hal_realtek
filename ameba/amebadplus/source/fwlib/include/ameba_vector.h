@@ -57,9 +57,9 @@ extern _LONG_CALL_ uint32_t irq_get_priority(IRQn_Type irqn);
 extern _LONG_CALL_ void irq_set_pending(IRQn_Type irqn);
 extern _LONG_CALL_ uint32_t irq_get_pending(IRQn_Type irqn);
 extern _LONG_CALL_ void irq_clear_pending(IRQn_Type irqn);
-extern _LONG_CALL_ BOOL irq_register(IRQ_FUN IrqFun, IRQn_Type IrqNum, u32 Data, u32 Priority);
-extern _LONG_CALL_ BOOL irq_unregister(IRQn_Type IrqNum);
-extern _LONG_CALL_ BOOL FaultPatch_register(Fault_Patch PatchFun);
+extern _LONG_CALL_ bool irq_register(IRQ_FUN IrqFun, IRQn_Type IrqNum, u32 Data, u32 Priority);
+extern _LONG_CALL_ bool irq_unregister(IRQn_Type IrqNum);
+extern _LONG_CALL_ bool FaultPatch_register(Fault_Patch PatchFun);
 
 #define InterruptRegister			irq_register
 #define InterruptUnRegister			irq_unregister
@@ -79,7 +79,7 @@ extern IRQ_FUN UserIrqFunTable[];
 extern u32 UserIrqDataTable[];
 extern HAL_VECTOR_FUN  NewVectorTable[];
 
-#if defined (ARM_CORE_CM4)
+#if defined (CONFIG_ARM_CORE_CM4)
 #define MAX_VECTOR_TABLE_NUM			(80+16)
 #define MAX_PERIPHERAL_IRQ_NUM			80
 #define MAX_IRQ_PRIORITY_VALUE			7

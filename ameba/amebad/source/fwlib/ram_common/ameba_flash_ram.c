@@ -30,7 +30,6 @@ u32 xTaskIncrementTick(void);
   * @param ChanNum: this specify the IPC channel number.
   * @retval none
   */
-IMAGE2_RAM_TEXT_SECTION
 void FLASH_Write_IPC_Int(void *Data, u32 IrqStatus, u32 ChanNum)
 {
 	/* To avoid gcc warnings */
@@ -40,17 +39,15 @@ void FLASH_Write_IPC_Int(void *Data, u32 IrqStatus, u32 ChanNum)
 
 	/*disable all interrupts first if primask is clear, or the CPU can't sleep*/
 	if (__get_PRIMASK() == 0) {
-		asm volatile("cpsid i" : : : "memory");
-		//asm volatile ("cpsid f" : : : "memory");
+		__disable_irq();
 
-		asm volatile("wfe");
-		asm volatile("wfe");
+		__WFE();
+		__WFE();
 
-		asm volatile("cpsie i" : : : "memory");
-		//asm volatile ("cpsie f" : : : "memory");
+		__enable_irq();
 	} else {
-		asm volatile("wfe");
-		asm volatile("wfe");
+		__WFE();
+		__WFE();
 	}
 }
 
@@ -60,21 +57,20 @@ void FLASH_Write_IPC_Int(void *Data, u32 IrqStatus, u32 ChanNum)
   *		- all interrupt include systick will be stopped.
   * @retval none
   */
-IMAGE2_RAM_TEXT_SECTION
 void FLASH_Write_Lock(void)
 {
 	u32 cpu_id = IPC_CPUID();
 	u32 lp_sleep_state;
 	IPC_MSG_STRUCT ipc_msg_temp;
 
-	asm volatile("cpsid i" : : : "memory");
+	__disable_irq();
 	cpu_systick = SysTick->CTRL;	//disable systick exception
 	SysTick->CTRL = 0;
 
 	//u32 hp_sleep_state;
 	/*IPC request to let the other CPU sleep*/
 	if (cpu_id == KM4_CPU_ID) {
-		ipc_send_message(NULL, IPC_INT_CHAN_FLASHPG_REQ, &ipc_msg_temp);
+		ipc_send_message(0, IPC_INT_CHAN_FLASHPG_REQ, &ipc_msg_temp);
 		while (1) {
 			lp_sleep_state = HAL_READ32(SYSTEM_CTRL_BASE_LP, REG_LP_KM0_CTRL); 	/*get KM0 sleep status*/
 			if (lp_sleep_state & BIT_KM0_SLEEPSYS) {
@@ -86,7 +82,7 @@ void FLASH_Write_Lock(void)
 		u32 hp_sleep_state;
 		IPC_MSG_STRUCT ipc_msg_temp;
 		if (km4_status_on()) {
-			ipc_send_message(NULL, IPC_INT_CHAN_FLASHPG_REQ, &ipc_msg_temp);
+			ipc_send_message(0, IPC_INT_CHAN_FLASHPG_REQ, &ipc_msg_temp);
 			while (1) {
 				hp_sleep_state = HAL_READ32(SYSTEM_CTRL_BASE_HP, REG_HS_PLATFORM_PARA);	/*get KM4 sleep status*/
 				if (hp_sleep_state & BIT_KM4_SLEEP_STATUS) {
@@ -105,7 +101,6 @@ void FLASH_Write_Lock(void)
   *		- all interrupt will be restored.
   * @retval none
   */
-IMAGE2_RAM_TEXT_SECTION
 void FLASH_Write_Unlock(void)
 {
 	u32 cpu_id = IPC_CPUID();
@@ -115,12 +110,12 @@ void FLASH_Write_Unlock(void)
 	if (rtos_sched_get_state() != RTOS_SCHED_NOT_STARTED) {
 		u32 duration = SYSTIMER_GetPassTime(lock_ticker);
 		for (u32 i = 0; i < duration; i++) {
-			xTaskIncrementTick();
+			// xTaskIncrementTick();
 		}
 	}
 
 	/*send an event using "sev" instruction to let the other CPU wake up*/
-	asm volatile("sev");
+	__SEV();
 	if (cpu_id == KM4_CPU_ID) {
 		while (1) {
 			lp_sleep_state = HAL_READ32(SYSTEM_CTRL_BASE_LP, REG_LP_KM0_CTRL);	/*get KM0 sleep status*/
@@ -143,7 +138,7 @@ void FLASH_Write_Unlock(void)
 	}
 
 	SysTick->CTRL = cpu_systick;//restore systick exception
-	asm volatile("cpsie i" : : : "memory");
+	__enable_irq();
 }
 
 /**
@@ -155,7 +150,6 @@ void FLASH_Write_Unlock(void)
 *		Only work in OneBitMode.
 * @retval none
 */
-IMAGE2_RAM_TEXT_SECTION
 void FLASH_RxCmdXIP(u8 cmd, u32 read_len, u8 *read_data)
 {
 	FLASH_Write_Lock();
@@ -173,7 +167,6 @@ void FLASH_RxCmdXIP(u8 cmd, u32 read_len, u8 *read_data)
   * @param    Status: pointer to byte array to be sent
   * @retval     none
   */
-IMAGE2_RAM_TEXT_SECTION
 void FLASH_SetStatusXIP(u8 Cmd, u32 Len, u8 *Status)
 {
 	FLASH_Write_Lock();
@@ -189,7 +182,6 @@ void FLASH_SetStatusXIP(u8 Cmd, u32 Len, u8 *Status)
   * @param    NewState: ENABLE/DISABLE
   * @retval none
   */
-IMAGE2_RAM_TEXT_SECTION
 void FLASH_SetStatusBitsXIP(u32 SetBits, u32 NewState)
 {
 	FLASH_Write_Lock();
@@ -210,7 +202,6 @@ void FLASH_SetStatusBitsXIP(u32 SetBits, u32 NewState)
   *		- for compatibility with amebaz, which has 16-byte TX FIFO is 16 byte and max len is 16-cmdlen = 12 byte
   * @retval none
   */
-IMAGE2_RAM_TEXT_SECTION
 void FLASH_TxData12BXIP(u32 StartAddr, u8 DataPhaseLen, u8 *pData)
 {
 	FLASH_Write_Lock();
@@ -231,7 +222,6 @@ void FLASH_TxData12BXIP(u32 StartAddr, u8 DataPhaseLen, u8 *pData)
   * 		the address in will be erased.
   * @retval none
   */
-IMAGE2_RAM_TEXT_SECTION
 void FLASH_EraseXIP(u32 EraseType, u32 Address)
 {
 	FLASH_Write_Lock();
@@ -307,7 +297,6 @@ void FLASH_EraseXIP(u32 EraseType, u32 Address)
   *		- should use FLASH_SW_CS_Control to protect flash write
   * @retval none
   */
-IMAGE2_RAM_TEXT_SECTION
 void FLASH_TxData256BXIP(u32 StartAddr, u32 DataPhaseLen, u8 *pData)
 {
 	FLASH_Write_Lock();
@@ -327,7 +316,6 @@ void FLASH_TxData256BXIP(u32 StartAddr, u32 DataPhaseLen, u8 *pData)
   * @retval   status: Success:1 or Failure: Others.
   * @note auto mode is ok, because we have flash cache
   */
-IMAGE2_RAM_TEXT_SECTION
 int  FLASH_ReadStream(u32 address, u32 len, u8 *data)
 {
 	assert_param(data != NULL);
@@ -399,7 +387,6 @@ int  FLASH_ReadStream(u32 address, u32 len, u8 *data)
   * @param  data: Pointer to a byte array that is to be written.
   * @retval   status: Success:1 or Failure: Others.
   */
-IMAGE2_RAM_TEXT_SECTION
 int  FLASH_WriteStream(u32 address, u32 len, u8 *data)
 {
 	// Check address: 4byte aligned & page(256bytes) aligned
@@ -491,7 +478,6 @@ exit:
   * @param  Protection:  if disable interrupt when switch clock:
   * @retval   None
   */
-IMAGE2_RAM_TEXT_SECTION
 void FLASH_ClockSwitch(u32 Source, u32 Protection)
 {
 	/* To avoid gcc warnings */
@@ -503,8 +489,7 @@ void FLASH_ClockSwitch(u32 Source, u32 Protection)
 	u32 timeout = 20;
 
 	if (Protection) {
-		asm volatile("cpsid i" : : : "memory");
-		//asm volatile ("cpsid f" : : : "memory");
+		__disable_irq();
 		SysTick->CTRL &= ~SysTick_CTRL_ENABLE_Msk;
 	}
 
@@ -572,13 +557,11 @@ void FLASH_ClockSwitch(u32 Source, u32 Protection)
 
 	if (Protection) {
 		SysTick->CTRL |= SysTick_CTRL_ENABLE_Msk;
-		asm volatile("cpsie i" : : : "memory");
-		//asm volatile ("cpsie f" : : : "memory");
+		__enable_irq();
 	}
 #endif
 }
 
-IMAGE2_RAM_TEXT_SECTION
 void FLASH_Invalidate_Auto_Write(void)
 {
 	/* Auto write related bits in valid command register are all set to 0,

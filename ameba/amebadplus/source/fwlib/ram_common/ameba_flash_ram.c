@@ -7,7 +7,7 @@
 #include "ameba_soc.h"
 #include "os_wrapper.h"
 
-static const char *TAG = "FLASH";
+static const char *const TAG = "FLASH";
 uint32_t PrevIrqStatus;
 /** @addtogroup Ameba_Periph_Driver
   * @{
@@ -32,7 +32,7 @@ uint32_t PrevIrqStatus;
 #define WRITE_SYNC_LOCK    1
 #define WRITE_SYNC_UNLOCK  2
 
-#ifdef ARM_CORE_CM0
+#ifdef CONFIG_ARM_CORE_CM0
 static u32 Start_Timer_Cnt = 0;
 static u32 Start_Systick_Cnt = 0;
 
@@ -96,7 +96,7 @@ const IPC_INIT_TABLE ipc_flashpg_table[] = {
 	}
 };
 #else
-/* ARM_CORE_CM4 */
+/* CONFIG_ARM_CORE_CM4 */
 ALIGNMTO(CACHE_LINE_SIZE) static u8 Flash_Sync_Flag[CACHE_LINE_SIZE];
 
 static void Flash_Write_Lock_IPC(u8 sync_type)
@@ -131,10 +131,10 @@ void FLASH_Write_Lock(void)
 {
 	rtos_sched_suspend();
 
-	while (IPC_SEMTake(IPC_SEM_FLASH, 1000) != _TRUE) {
-		RTK_LOGS(TAG, "FLASH_Write_Lock get hw sema fail\n");
+	while (IPC_SEMTake(IPC_SEM_FLASH, 1000) != TRUE) {
+		RTK_LOGS(TAG, RTK_LOG_ERROR, "FLASH_Write_Lock get hw sema fail\n");
 	}
-#ifdef ARM_CORE_CM4
+#ifdef CONFIG_ARM_CORE_CM4
 	/* Sent IPC to KM0 */
 	Flash_Write_Lock_IPC(WRITE_SYNC_LOCK);
 #endif
@@ -150,7 +150,7 @@ void FLASH_Write_Lock(void)
   */
 void FLASH_Write_Unlock(void)
 {
-#ifdef ARM_CORE_CM4
+#ifdef CONFIG_ARM_CORE_CM4
 	/* Sent IPC to KM0 */
 	Flash_Write_Lock_IPC(WRITE_SYNC_UNLOCK);
 #endif
@@ -208,27 +208,6 @@ void FLASH_SetStatusBitsXIP(u32 SetBits, u32 NewState)
 	FLASH_Write_Lock();
 
 	FLASH_SetStatusBits(SetBits, NewState);
-
-	FLASH_Write_Unlock();
-}
-
-/**
-  * @brief  This function is used to write data to flash in OneBitMode and User Mode, and lock CPU when write.
-  * @param  StartAddr: Start address in flash from which SPIC writes.
-  * @param  DataPhaseLen: the number of bytes that SPIC sends in Data Phase.
-  * @param  pData: pointer to a byte array that is to be sent.
-  * @note
-  *		- page program(256B) time typical is 0.7ms: BaudRate=2.9Mbps, so one bit mode is enough.
-  *		- page program(12B) time typical is 20+2.5*11= 47.5us BaudRate = 2.02M bps, so program 12B once is enough.
-  *		- for compatibility with amebaz, which has 16-byte TX FIFO is 16 byte and max len is 16-cmdlen = 12 byte
-  * @retval none
-  */
-void FLASH_TxDataXIP(u32 StartAddr, u32 DataPhaseLen, u8 *pData)
-{
-	FLASH_Write_Lock();
-
-	FLASH_TxData(StartAddr, DataPhaseLen, pData);
-	DCache_Invalidate(SPI_FLASH_BASE + StartAddr, DataPhaseLen);
 
 	FLASH_Write_Unlock();
 }
@@ -303,6 +282,16 @@ int  FLASH_WriteStream(u32 address, u32 len, u8 *pbuf)
 	u32 addr_end = (page_cnt == 1) ? (address + len) : (page_begin + 0x100);
 	u32 size = addr_end - addr_begin;
 
+	if (len == 0) {
+		RTK_LOGW(NOTAG, "function %s, data length is invalid (0) \r\n", __func__);
+		goto exit;
+	}
+
+	if (IS_FLASH_ADDR((u32)pbuf)) {
+		RTK_LOGE(NOTAG, "function %s, source address(%08x) can not be flash address\r\n", __func__, pbuf);
+		assert_param(0);
+	}
+
 	FLASH_Write_Lock();
 	while (page_cnt) {
 		FLASH_TxData(addr_begin, size, pbuf);
@@ -315,8 +304,11 @@ int  FLASH_WriteStream(u32 address, u32 len, u8 *pbuf)
 	}
 
 	DCache_Invalidate(SPI_FLASH_BASE + address, len);
+	/* Clean MMU cache */
+	RSIP_MMU_Cache_Clean();
 	FLASH_Write_Unlock();
 
+exit:
 	return 1;
 }
 /**

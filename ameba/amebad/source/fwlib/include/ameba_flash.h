@@ -383,7 +383,8 @@ _LONG_CALL_ u32 FLASH_CalibrationPhase(u8 phase_int, u8 phase_sel);
 _LONG_CALL_ u32 FLASH_Calibration500MPSCmd(u32 NewStatus);
 _LONG_CALL_ u32 FLASH_CalibrationInit(u8 CalibrationEnd);
 _LONG_CALL_ void FLASH_ClockSwitch(u32 Source, u32 Protection);
-_LONG_CALL_ int  FLASH_WriteStream(u32 address, u32 len, u8 *data);
+_LONG_CALL_ int FLASH_WriteStream(u32 address, u32 len, u8 *data);
+_LONG_CALL_ int FLASH_ReadStream(u32 address, u32 len, u8 *data);
 
 /**
   * @}

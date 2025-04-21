@@ -391,6 +391,29 @@ void RTIM_CCRxMode(RTIM_TypeDef *TIMx, u16 TIM_Channel, u32 TIM_CCMode)
 }
 
 /**
+  * @brief  Get the TIMx Channel 0-17 CCmode.
+  * @param  TIMx: where x can be 5, to select the TIM peripheral.
+  * @param  TIM_Channel: the channel need to be get mode,
+  *		which can be one of the following parameters @ref TIM_Channel_definitions.
+  * @note
+  *		- TIM4/TIMM04 only has 1 channel: TIM_Channel_0
+  *		- TIMM05 has 6 channels:  TIM_Channel_0-5.
+  *		- TIM5 has 18 channels:  TIM_Channel_0-17.
+  * @retval
+  *   	@arg TIM_CCMode_PWM
+  *		@arg TIM_CCMode_Inputcapture
+  */
+u32 RTIM_CCRxModeGet(RTIM_TypeDef *TIMx, u16 TIM_Channel)
+{
+	/* Check the parameters */
+	assert_param(IS_TIM_CCM_TIM(TIMx));
+	assert_param(IS_TIM_CHANNEL(TIM_Channel));
+
+	/* Get the Capture Compare x Register value */
+	return (TIMx->CCMRx[TIM_Channel] & TIM_CCMode_Inputcapture);
+}
+
+/**
   * @brief  Sets the TIMx Capture Compare X register value
   * @param  TIMx: where x can be 5, to select the TIM peripheral.
   * @param  Compare: the value specifies pulsewidth, which is in the 0x00~0xFFFF range.
@@ -541,7 +564,7 @@ void RTIM_CCxCmd(RTIM_TypeDef *TIMx, u16 TIM_Channel, u32 TIM_CCx)
 	assert_param(IS_TIM_CHANNEL(TIM_Channel));
 	assert_param(IS_TIM_CCX(TIM_CCx));
 
-	tmpccmr &= ~TIM_CCER_CCxE;
+	tmpccmr &= ~TIM_BIT_CCxE;
 	tmpccmr |= TIM_CCx;
 
 	/* Set or reset the CCxE Bit */
@@ -565,6 +588,9 @@ void RTIM_CCxCmd(RTIM_TypeDef *TIMx, u16 TIM_Channel, u32 TIM_CCx)
   */
 void RTIM_SetOnePulseOutputMode(RTIM_TypeDef *TIMx, u32 TIM_OPMode, u32 TrigerPolarity)
 {
+	if (TrigerPolarity == TIM_OPMode_ETP_bothedge) {
+		RTK_LOGE(NOTAG, "AmebaD one pulse mode not support to bothedge trigger!!!\n");
+	}
 	/* Check the parameters */
 	assert_param(IS_TIM_ONE_PULSE_TIM(TIMx));
 	assert_param(IS_TIM_OPM_MODE(TIM_OPMode));
@@ -577,4 +603,27 @@ void RTIM_SetOnePulseOutputMode(RTIM_TypeDef *TIMx, u32 TIM_OPMode, u32 TrigerPo
 	TIMx->CR |= TIM_OPMode | TrigerPolarity;
 }
 
+/**
+  * @brief  Set the TIMx's default level in one pulse mode.
+  * @note Takes effect only in PWM output mode's One-Pulse-Mode
+  * @param  TIMx: where x can only be 8.
+  * @param  TIM_Channel: the channel to be set,
+  *		which can be one of the following parameters @ref TIM_Channel_definitions.
+  * @param  DefaultLevel: specifies the OPM Mode Default Level.
+  *          This parameter can be one of the following values:
+  *            @arg TIMPWM_DefaultLevel_High
+  *            @arg TIMPWM_DefaultLevel_Low
+  * @note
+  * 	AmebaD is not support to set one pulse mode default level,
+  * 	add this API is for compatible Zephyr.
+  * @retval None
+  */
+void RTIM_SetOnePulseDefaultLevel(RTIM_TypeDef *TIMx, u16 TIM_Channel, u32 DefaultLevel)
+{
+	UNUSED(TIMx);
+	UNUSED(TIM_Channel);
+	UNUSED(DefaultLevel);
+
+	RTK_LOGE(NOTAG, "AmebaD is not support to set one pulse mode default level!!!\n");
+}
 /******************* (C) COPYRIGHT 2016 Realtek Semiconductor *****END OF FILE****/

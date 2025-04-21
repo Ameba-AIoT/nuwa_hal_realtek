@@ -114,10 +114,15 @@ typedef struct {
   * @{
   */
 _LONG_CALL_ void WDG_Scalar(u32 Period, u32 *pCountProcess, u32 *pDivFacProcess);
-_LONG_CALL_ void WDG_Init(WDG_InitTypeDef *WDG_InitStruct);
+_LONG_CALL_ void WDG_Init(WDG_TypeDef *WDG, WDG_InitTypeDef *WDG_InitStruct);
 _LONG_CALL_ void WDG_IrqInit(void *handler, u32 Id);
-_LONG_CALL_ void WDG_Cmd(u32 NewState);
+_LONG_CALL_ void WDG_INTConfig(WDG_TypeDef *WDG, u32 WDG_IT, u32 NewState);
+_LONG_CALL_ void WDG_ClearINT(WDG_TypeDef *WDG, u32 INTrBit);
+_LONG_CALL_ void WDG_Reset(void);
+_LONG_CALL_ void WDG_Cmd(WDG_TypeDef *WDG, u32 NewState);
+_LONG_CALL_ void WDG_Enable(WDG_TypeDef *WDG);
 _LONG_CALL_ void WDG_Refresh(WDG_TypeDef *WDG);
+_LONG_CALL_ void WDG_StructMemValueSet(WDG_InitTypeDef *WDG_InitStruct, u32 window, u32 timeout, u32 eicnt);
 /**
   * @}
   */
@@ -137,6 +142,8 @@ _LONG_CALL_ void WDG_Refresh(WDG_TypeDef *WDG);
 #define WDG_BIT_CLEAR			((u32)0x00000001 << 24)
 #define WDG_BIT_RST_MODE		((u32)0x00000001 << 30)
 #define WDG_BIT_ISR_CLEAR		((u32)0x00000001 << 31)
+#define WDG_BIT_EIC      0x0  /* This marco is unused, defined for compatibility with Zephyr.*/
+#define WDG_BIT_EIE      0x0  /* This marco is unused, defined for compatibility with Zephyr.*/
 /** @} */
 /** @} */
 
