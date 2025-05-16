@@ -76,22 +76,43 @@ int rtos_task_create(rtos_task_t *pp_handle, const char *p_name, void (*p_routin
 
 	k_thread_create(p_thread, p_stack, stack_size_in_byte,
 					(k_thread_entry_t) p_routine, p_param, NULL, NULL,
-					switch_priority, 0, K_NO_WAIT);
+					switch_priority, 0, K_FOREVER);
 	k_thread_name_set(p_thread, p_name);
 
+	p_thread->custom_data = p_thread;
+
 	*pp_handle = p_thread;
+	k_thread_start(p_thread);
 	return SUCCESS;
+}
+
+void thread_abort_hook(struct k_thread *p_free)
+{
+	k_tid_t p_curr = k_thread_custom_data_get();
+
+	if (p_curr == p_free) {
+		k_free((void *)p_curr->stack_info.start);
+		k_free(p_curr);
+	}
 }
 
 int rtos_task_delete(rtos_task_t p_handle)
 {
-	if (p_handle) {
-		k_thread_abort(p_handle);
-	} else {
-		k_thread_abort(k_current_get());
-	}
+	k_tid_t p_free = (k_tid_t)p_handle;
+	k_tid_t p_curr = k_current_get();
 
-	/* TODO: How to free stack? */
+	if ((p_free == NULL) || (p_curr == p_free)) {
+		//TODO: wait wifi use dynamic task create
+		// k_thread_custom_data_set((void *)p_curr);
+
+		k_thread_abort(p_curr);
+		CODE_UNREACHABLE;
+	} else {
+		k_thread_abort(p_free);
+
+		k_free((void *)p_free->stack_info.start);
+		k_free(p_free);
+	}
 
 	return SUCCESS;
 }

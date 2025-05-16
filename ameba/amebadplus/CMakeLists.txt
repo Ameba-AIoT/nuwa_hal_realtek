@@ -1,6 +1,13 @@
+zephyr_compile_options(-mcmse)
 zephyr_link_libraries(${CMAKE_CURRENT_SOURCE_DIR}/lib/lib_chipinfo.a)
 
-zephyr_compile_options(-mcmse)
+zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib_wifi_whc_ap.a)
+zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib_wifi_api.a)
+zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib_rtw_event.a)
+zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib_wpa_lite.a)
+zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib_wifi_com_sec.a)
+zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib_coex_api.a)
+zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib_coex.a)
 
 zephyr_include_directories(include)
 zephyr_include_directories(source/cmsis)
@@ -33,5 +40,6 @@ zephyr_library_sources_ifdef(CONFIG_I2S_AMEBA source/fwlib/ram_common/ameba_spor
 zephyr_library_sources_ifdef(CONFIG_COUNTER_TMR_AMEBA source/fwlib/ram_common/ameba_tim.c)
 zephyr_library_sources_ifdef(CONFIG_UART_AMEBA source/fwlib/ram_common/ameba_uart.c)
 zephyr_library_sources_ifdef(CONFIG_UDC_AMEBA source/fwlib/ram_common/ameba_usb.c)
-zephyr_library_sources(source/fwlib/ram_common/ameba_ipc_api.c)
-zephyr_library_sources(source/fwlib/ram_common/ameba_ipc_ram.c)
+zephyr_library_sources_ifdef(CONFIG_WIFI_AMEBA source/fwlib/ram_common/ameba_ipc_api.c)
+zephyr_library_sources_ifdef(CONFIG_WIFI_AMEBA source/fwlib/ram_common/ameba_ipc_ram.c)
+zephyr_library_sources_ifdef(CONFIG_WIFI_AMEBA source/misc/ameba_pmu.c)

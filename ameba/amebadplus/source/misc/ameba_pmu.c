@@ -16,7 +16,10 @@ static uint32_t deepwakelock     = DEFAULT_DEEP_WAKELOCK;
 
 uint32_t system_can_yield = 1; /* default is can */
 
-#ifdef ARM_CORE_CM4
+static uint32_t timer_min_sleep_time = 0;
+static uint32_t timer_max_sleep_time = 0;
+
+#ifdef CONFIG_ARM_CORE_CM4
 #define PMC_TIMER_DEV PMCTIMER_DEV0
 #define PMC_TIMER_IRQ PMC_TIMER0_IRQ
 #define PMC_TIMER_INT_PRIO INT_PRI6
@@ -129,7 +132,7 @@ void aontimer_int(u32 Data)
 
 void aontimer_test()
 {
-#if defined (ARM_CORE_CM4)
+#if defined (CONFIG_ARM_CORE_CM4)
 	RCC_PeriphClockCmd(APBPeriph_ATIM, APBPeriph_ATIM_CLOCK, ENABLE);
 	SOCPS_AONTimer(2000);
 	SOCPS_AONTimerINT_EN(ENABLE);
@@ -153,7 +156,7 @@ int pmu_ready_to_sleep(void)
 	PMCTIMER_TpyeDef *PMC_TIMER = PMC_TIMER_DEV;
 
 	/* check timeout */
-	if ((PMCTimer_Valid_Check(PMC_TIMER, PMC_SLEEP_TIMER) == _FALSE) || (PMCTimerCnt_Get(PMC_TIMER, PMC_SLEEP_TIMER) > 0)) {
+	if ((PMCTimer_Valid_Check(PMC_TIMER, PMC_SLEEP_TIMER) == FALSE) || (PMCTimerCnt_Get(PMC_TIMER, PMC_SLEEP_TIMER) > 0)) {
 		return FALSE;
 	}
 
@@ -170,7 +173,7 @@ int pmu_check_wakelock_timeout(void)
 	PMCTIMER_TpyeDef *PMC_TIMER = PMC_TIMER_DEV;
 
 	/* check timeout */
-	if ((PMCTimer_Valid_Check(PMC_TIMER, PMC_SLEEP_TIMER) == _FALSE) || (PMCTimerCnt_Get(PMC_TIMER, PMC_SLEEP_TIMER) > 0)) {
+	if ((PMCTimer_Valid_Check(PMC_TIMER, PMC_SLEEP_TIMER) == FALSE) || (PMCTimerCnt_Get(PMC_TIMER, PMC_SLEEP_TIMER) > 0)) {
 		return FALSE;
 	} else {
 		return TRUE;
@@ -190,7 +193,7 @@ int pmu_ready_to_dsleep(void)
 	PMCTIMER_TpyeDef *PMC_TIMER = PMC_TIMER_DEV;
 
 	/* check timeout */
-	if ((PMCTimer_Valid_Check(PMC_TIMER, PMC_DSLP_TIMER) == _FALSE) || (PMCTimerCnt_Get(PMC_TIMER, PMC_DSLP_TIMER) > 0)) {
+	if ((PMCTimer_Valid_Check(PMC_TIMER, PMC_DSLP_TIMER) == FALSE) || (PMCTimerCnt_Get(PMC_TIMER, PMC_DSLP_TIMER) > 0)) {
 		return FALSE;
 	}
 
@@ -215,6 +218,11 @@ void pmu_pre_sleep_processing(uint32_t *tick_before_sleep)
 		sleep_param.sleep_time = 0;// do not wake on system schedule tick
 		sleep_param.dlps_enable = ENABLE;
 	} else {
+		if (timer_max_sleep_time > timer_min_sleep_time) {
+			max_sleep_time = _rand() % (timer_max_sleep_time - timer_min_sleep_time + 1) + timer_min_sleep_time;
+		} else if (timer_min_sleep_time != 0) {
+			max_sleep_time = timer_min_sleep_time;
+		}
 		sleep_param.sleep_time = max_sleep_time;//*expected_idle_time;
 		max_sleep_time = 0;
 		sleep_param.dlps_enable = DISABLE;
@@ -274,16 +282,22 @@ void pmu_set_max_sleep_time(uint32_t timer_ms)
 	max_sleep_time = timer_ms;
 }
 
+void pmu_set_sleep_time_range(uint32_t min_time, uint32_t max_time)
+{
+	timer_min_sleep_time = min_time;
+	timer_max_sleep_time = max_time;
+}
+
 u32 pmc_wakeuptimer_int_hdl(UNUSED_WARN_DIS void *Data)
 {
 	UNUSED(Data);
 	PMCTimer_INTClear(PMC_TIMER_DEV, PMC_WAKEUP_TIMER);
-	return _TRUE;
+	return TRUE;
 }
 
 void pmu_init_wakeup_timer(void)
 {
-	InterruptRegister(pmc_wakeuptimer_int_hdl, PMC_TIMER_IRQ, NULL, PMC_TIMER_INT_PRIO);
+	InterruptRegister(pmc_wakeuptimer_int_hdl, PMC_TIMER_IRQ, (u32)NULL, PMC_TIMER_INT_PRIO);
 	InterruptEn(PMC_TIMER_IRQ, PMC_TIMER_INT_PRIO);
 	PMCTimer_INTConfig(PMC_TIMER_DEV, PMC_WAKEUP_TIMER, ENABLE);
 }

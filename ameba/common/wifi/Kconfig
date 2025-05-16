@@ -39,4 +39,11 @@ config REALTEK_AMEBA_WIFI_FASTCONN
 	help
 	  This option enable Fast connect or not
 
+config HEAP_MEM_POOL_SIZE
+	default 65536
+
+# amebad need this
+config SYSTEM_WORKQUEUE_STACK_SIZE
+	default 2048
+
 endif # REALTEK_AMEBA_ZEPHYR_WIFI
