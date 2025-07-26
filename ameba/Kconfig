@@ -1,6 +1,8 @@
 # Copyright (c) 2024 Realtek Semiconductor Corp.
 # SPDX-License-Identifier: Apache-2.0
 
+if SOC_FAMILY_REALTEK_AMEBA
+
 config REALTEK_AMEBA_HAL_LIB
 	bool "RealTek Ameba HAL library"
 	# used in os_wrapper_task.c
@@ -8,6 +10,10 @@ config REALTEK_AMEBA_HAL_LIB
 	select THREAD_CUSTOM_DATA
 	help
 	  This option enables the Realtek Ameba HAL library.
+
+config ARM_CORE_CM4
+	bool
+	default y if SOC_AMEBAD || SOC_AMEBADPLUS
 
 orsource "common/usb/Kconfig"
 rsource "common/wifi/Kconfig"
@@ -17,3 +23,7 @@ config SOC_AMEBAD
 
 config SOC_AMEBADPLUS
 	select AS_INIC_AP if WLAN
+
+rsource "common/rtk_coex/Kconfig"
+
+endif # SOC_FAMILY_REALTEK_AMEBA

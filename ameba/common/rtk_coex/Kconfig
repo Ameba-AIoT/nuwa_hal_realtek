@@ -1,0 +1,19 @@
+# Copyright (c) 2024 Realtek Semiconductor Corp.
+# SPDX-License-Identifier: Apache-2.0
+
+if REALTEK_AMEBA_ZEPHYR_WIFI
+
+config BT_COEXIST
+	bool "Enable CoExist"
+	# AP core, Follow different scenario
+	# default y if AS_INIC_AP && !SINGLE_CORE_WIFI
+	default n
+
+	select COEXIST_HOST if AS_INIC_AP && !SINGLE_CORE_WIFI
+
+config COEXIST_HOST
+	bool            
+config COEXIST_DEV
+	bool
+
+endif # REALTEK_AMEBA_ZEPHYR_WIFI

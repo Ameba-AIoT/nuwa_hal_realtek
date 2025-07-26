@@ -1033,7 +1033,7 @@ void UART_INT_Clear(UART_TypeDef *UARTx, u32 UART_IT)
 u8 RCC_PeriphClockEnableChk(u32 APBPeriph_Clock_in)
 {
 	u8 ret;
-	u32 TempVal, CkeRegOffset;
+	u32 TempVal, CkeRegOffset = 0;
 	u32 ClkRegIndx = (APBPeriph_Clock_in >> 30) & 0x03;
 	u32 APBPeriph_Clock = APBPeriph_Clock_in & (~(BIT(31) | BIT(30)));
 	assert_param((ClkRegIndx == 0x1) || (ClkRegIndx == 0x2) || (ClkRegIndx == 0x3));

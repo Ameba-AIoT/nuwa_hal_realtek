@@ -7,7 +7,6 @@ zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${CMAKE_CURRENT_SOURCE_DIR}/lib/li
 zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib_wpa_lite.a)
 zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib_wifi_com_sec.a)
 zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib_coex_api.a)
-zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib_coex.a)
 
 zephyr_include_directories(include)
 zephyr_include_directories(source/cmsis)

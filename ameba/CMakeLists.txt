@@ -5,5 +5,5 @@ zephyr_library()
 
 add_subdirectory(common)
 
-add_subdirectory_ifdef(CONFIG_SOC_SERIES_AMEBAD amebad)
-add_subdirectory_ifdef(CONFIG_SOC_SERIES_AMEBADPLUS amebadplus)
+add_subdirectory_ifdef(CONFIG_SOC_AMEBAD amebad)
+add_subdirectory_ifdef(CONFIG_SOC_AMEBADPLUS amebadplus)
