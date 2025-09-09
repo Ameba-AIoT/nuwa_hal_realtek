@@ -7,3 +7,4 @@ add_subdirectory(common)
 
 add_subdirectory_ifdef(CONFIG_SOC_AMEBAD amebad)
 add_subdirectory_ifdef(CONFIG_SOC_AMEBADPLUS amebadplus)
+add_subdirectory_ifdef(CONFIG_SOC_AMEBAPRO2 amebapro2)
