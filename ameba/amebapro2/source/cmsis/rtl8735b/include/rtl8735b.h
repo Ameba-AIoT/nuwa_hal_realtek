@@ -7104,7 +7104,7 @@ typedef struct {                                /*!< (@ 0x4000A400) RTC Structur
 #define SPORT_S                     ((SPORT_TypeDef*)             SPORT_S_BASE)
 #define SGPIO                       ((SGPIO_TypeDef*)             SGPIO_BASE)
 #define SGPIO_S                     ((SGPIO_TypeDef*)             SGPIO_S_BASE)
-#define ETHERNET                    ((ETHERNET_TypeDef*)          ETHERNET_BASE)
+#define HAL_ETHERNET                ((ETHERNET_TypeDef*)          ETHERNET_BASE)
 #define ETHERNET_S                  ((ETHERNET_TypeDef*)          ETHERNET_S_BASE)
 #define SDHOST                      ((SDHOST_TypeDef*)            SDHOST_BASE)
 #define SDHOST_S                    ((SDHOST_TypeDef*)            SDHOST_S_BASE)

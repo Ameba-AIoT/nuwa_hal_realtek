@@ -44,6 +44,11 @@
 
 #if CONFIG_GPIO_EN
 
+extern void hal_rtl_aon_gpio_comm_init_patch(phal_aon_gpio_comm_adapter_t paon_gpio_comm_adp);
+extern void hal_rtl_pon_gpio_comm_init_patch(phal_pon_gpio_comm_adapter_t ppon_gpio_comm_adp);
+extern hal_status_t hal_rtl_gpio_debounce_enable_patch(phal_gpio_adapter_t pgpio_adapter, uint32_t debounce_us);
+extern hal_status_t hal_rtl_gpio_irq_debounce_enable_patch(phal_gpio_irq_adapter_t pgpio_irq_adapter, uint32_t debounce_us);
+
 #if defined(CONFIG_BUILD_SECURE) && (CONFIG_BUILD_SECURE != 0)
 typedef void __attribute__((cmse_nonsecure_call)) ns_func(uint32_t, gpio_int_trig_type_t);
 #endif
@@ -154,7 +159,7 @@ hal_status_t hal_aon_gpio_port_init(phal_gpio_port_adapter_t pgpio_port_adapter,
 	// Note: No need to check parameters - has been checked in hal_gpio_port_init()
 	io_pin_t pin_list[MAX_PIN_IN_PORT + 1];
 	hal_status_t ret;
-	gpio_pin_t pin;
+	hal_gpio_pin_t pin;
 	uint32_t i;
 	uint32_t j;
 
@@ -970,7 +975,7 @@ hal_status_t hal_gpio_port_init(phal_gpio_port_adapter_t pgpio_port_adapter, uin
 {
 	io_pin_t pin_list[MAX_PIN_IN_PORT + 1];
 	hal_status_t ret;
-	gpio_pin_t pin;
+	hal_gpio_pin_t pin;
 	uint32_t i;
 	uint32_t j;
 
@@ -1142,7 +1147,7 @@ hal_status_t hal_gpio_port_init(phal_gpio_port_adapter_t pgpio_port_adapter, uin
 void hal_gpio_port_deinit(phal_gpio_port_adapter_t pgpio_port_adapter)
 {
 	io_pin_t pin_list[MAX_PIN_IN_PORT + 1];
-	gpio_pin_t pin;
+	hal_gpio_pin_t pin;
 	uint32_t i;
 	uint32_t j;
 	uint32_t mask = 0;

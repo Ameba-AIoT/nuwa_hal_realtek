@@ -47,6 +47,19 @@ hal_trng_sec_adapter_t hal_trng_sec_adtr;
 
 extern const hal_trng_sec_func_stubs_t hal_trng_sec_stubs;
 
+extern uint8_t hal_sys_get_rom_ver(void);
+extern hal_status_t hal_rtl_trng_sec_init_patch(hal_trng_sec_adapter_t *ptrng_adp);
+extern hal_status_t hal_rtl_trng_sec_deinit_patch(hal_trng_sec_adapter_t *ptrng_adp);
+extern hal_status_t hal_rtl_trng_sec_set_clk_patch(hal_trng_sec_adapter_t *ptrng_adp, uint8_t sel_val);
+extern hal_status_t hal_rtl_trng_sec_swrst_en_patch(hal_trng_sec_adapter_t *ptrng_adp);
+extern uint32_t hal_rtl_trng_sec_get_rand_patch(hal_trng_sec_adapter_t *ptrng_adp);
+extern hal_status_t hal_rtl_trng_sec_set_normal_ctrl_patch(hal_trng_sec_adapter_t *ptrng_adp, uint8_t rng_mode, uint8_t rbc_sel, uint8_t hspeed_sel);
+extern hal_status_t hal_rtl_trng_sec_set_lfsr_ctrl_patch(hal_trng_sec_adapter_t *ptrng_adp, uint8_t lfsr_mod, uint32_t poly_lsb, uint32_t poly_msb);
+extern hal_status_t hal_rtl_trng_sec_set_selft_ctrl_patch(hal_trng_sec_adapter_t *ptrng_adp, uint8_t selft_en, uint8_t cmp_rep_mode, uint8_t cmp_adpt_mode,
+		uint8_t adpt1_window_sel, uint8_t adpt2_window_sel);
+extern hal_status_t hal_rtl_trng_sec_load_default_setting_patch(hal_trng_sec_adapter_t *ptrng_adp, uint8_t selft_en);
+extern void hal_delay_us(uint32_t time_us);
+
 hal_status_t hal_trng_sec_init(void)
 {
 	hal_status_t ret = HAL_OK;

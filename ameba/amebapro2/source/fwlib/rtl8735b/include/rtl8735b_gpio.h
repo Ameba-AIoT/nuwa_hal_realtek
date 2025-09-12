@@ -136,7 +136,7 @@ typedef struct gpio_pin_s {
 			uint8_t port: 3;            ///< bit:  7.. 5 the port index
 		} pin_name_b;
 	};
-} gpio_pin_t, *pgpio_pin_t;
+} hal_gpio_pin_t, *pgpio_pin_t;
 
 /**
   \brief  Defines the data type of GPIO port. The GPIO port data type is from the

@@ -21,6 +21,11 @@ zephyr_include_directories(
 zephyr_library_sources(
 	source/fwlib/rtl8735b/source/ram/hal_timer.c
 	source/fwlib/rtl8735b/source/ram_s/hal_wdt.c
+	source/fwlib/rtl8735b/source/ram/hal_gdma.c
+	source/fwlib/rtl8735b/source/ram/hal_gpio.c
 )
 
 zephyr_library_sources_ifdef(CONFIG_UART_AMEBAPRO2_LOGUART source/fwlib/rtl8735b/source/ram/hal_uart.c)
+zephyr_library_sources_ifdef(CONFIG_SPI_AMEBAPRO2 source/fwlib/rtl8735b/source/ram/hal_ssi.c)
+zephyr_library_sources_ifdef(CONFIG_SPI_AMEBAPRO2 source/fwlib/rtl8735b/source/ram/rtl8735b_ssi.c)
+zephyr_library_sources_ifdef(CONFIG_ENTROPY_AMEBAPRO2_TRNG source/fwlib/rtl8735b/source/ram_s/hal_trng_sec.c)
