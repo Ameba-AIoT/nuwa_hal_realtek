@@ -250,7 +250,7 @@ __STATIC_INLINE uint32_t hal_adc_read_fifo_w_sts(hal_adc_adapter_t *phal_adc_ada
 	// Weide unsure - commenting out first
 
 	uint32_t global_data_tmp;
-	uint32_t global_data_post_cali;
+	uint32_t global_data_post_cali = 0;
 	global_data_tmp = (phal_adc_adapter->init_dat.reg_base)->ADC_DAT_GLOBAL;
 
 	if (phal_adc_adapter->use_cali) {

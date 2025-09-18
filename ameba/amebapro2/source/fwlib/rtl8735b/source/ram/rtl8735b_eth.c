@@ -928,7 +928,7 @@ u16 hal_rtl_eth_rd_phy_reg(hal_eth_adapter_t *peth_adapter, u16 page, u16 reg_ad
 
 	if (page > 0) {
 		// Switch to the specified page by register 31
-		HAL_WRITE32(ETHERNET_BASE, 0x5C, (1 << 31) | (phy_id << 26) | (0x1F << 16) | page);
+		HAL_WRITE32(ETHERNET_BASE, 0x5C, (1U << 31) | (phy_id << 26) | (0x1F << 16) | page);
 		hal_delay_us(70);  // wait for command complete
 		while (HAL_READ32(ETHERNET_BASE, 0x5C) & (BIT31 | BIT25)) {
 			hal_delay_us(1);
@@ -941,7 +941,7 @@ u16 hal_rtl_eth_rd_phy_reg(hal_eth_adapter_t *peth_adapter, u16 page, u16 reg_ad
 	}
 
 	i = 0;
-	HAL_WRITE32(ETHERNET_BASE, 0x5C, (0 << 31) | (phy_id << 26) | (reg_addr << 16));
+	HAL_WRITE32(ETHERNET_BASE, 0x5C, (0U << 31) | (phy_id << 26) | (reg_addr << 16));
 	hal_delay_us(70);  // wait for command complete
 	while ((HAL_READ32(ETHERNET_BASE, 0x5C) & BIT25) || ((HAL_READ32(ETHERNET_BASE, 0x5C) & BIT31) == 0)) {
 		hal_delay_us(1);
@@ -956,7 +956,7 @@ u16 hal_rtl_eth_rd_phy_reg(hal_eth_adapter_t *peth_adapter, u16 page, u16 reg_ad
 	if (page > 0) {
 		// Switch to page 0
 		i = 0;
-		HAL_WRITE32(ETHERNET_BASE, 0x5C, (1 << 31) | (phy_id << 26) | (0x1F << 16));
+		HAL_WRITE32(ETHERNET_BASE, 0x5C, (1U << 31) | (phy_id << 26) | (0x1F << 16));
 		hal_delay_us(70);  // wait for command complete
 		while (HAL_READ32(ETHERNET_BASE, 0x5C) & (BIT31 | BIT25)) {
 			hal_delay_us(1);
@@ -996,7 +996,7 @@ u32 hal_rtl_eth_wr_phy_reg(hal_eth_adapter_t *peth_adapter, u16 page, u16 reg_ad
 
 	if (page > 0) {
 		// Switch to the specified page by register 31
-		HAL_WRITE32(ETHERNET_BASE, 0x5C, (1 << 31) | (phy_id << 26) | (0x1F << 16) | page);
+		HAL_WRITE32(ETHERNET_BASE, 0x5C, (1U << 31) | (phy_id << 26) | (0x1F << 16) | page);
 		hal_delay_us(70);  // wait for command complete
 		while (HAL_READ32(ETHERNET_BASE, 0x5C) & (BIT31 | BIT25)) {
 			hal_delay_us(1);
@@ -1009,7 +1009,7 @@ u32 hal_rtl_eth_wr_phy_reg(hal_eth_adapter_t *peth_adapter, u16 page, u16 reg_ad
 	}
 
 	i = 0;
-	HAL_WRITE32(ETHERNET_BASE, 0x5C, (1 << 31) | (phy_id << 26) | (reg_addr << 16) | data);
+	HAL_WRITE32(ETHERNET_BASE, 0x5C, (1U << 31) | (phy_id << 26) | (reg_addr << 16) | data);
 	hal_delay_us(70);  // wait for command complete
 	while (HAL_READ32(ETHERNET_BASE, 0x5C) & (BIT31 | BIT25)) {
 		hal_delay_us(1);
@@ -1023,7 +1023,7 @@ u32 hal_rtl_eth_wr_phy_reg(hal_eth_adapter_t *peth_adapter, u16 page, u16 reg_ad
 	if (page > 0) {
 		// Switch to page 0
 		i = 0;
-		HAL_WRITE32(ETHERNET_BASE, 0x5C, (1 << 31) | (phy_id << 26) | (0x1F << 16));
+		HAL_WRITE32(ETHERNET_BASE, 0x5C, (1U << 31) | (phy_id << 26) | (0x1F << 16));
 		hal_delay_us(70);  // wait for command complete
 		while (HAL_READ32(ETHERNET_BASE, 0x5C) & (BIT31 | BIT25)) {
 			hal_delay_us(1);

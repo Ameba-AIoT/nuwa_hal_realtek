@@ -4923,10 +4923,6 @@ int hal_crypto_mix_mode_init(IN const u32 cipher_type, IN const u32 auth_type,
 		return _ERRNO_CRYPTO_ENGINE_NOT_INIT; // not init yet
 	}
 
-	if (pcrypto_adapter->isInit != _TRUE) {
-		return _ERRNO_CRYPTO_ENGINE_NOT_INIT; // not init yet
-	}
-
 	if (cipher_key == NULL) {
 		return _ERRNO_CRYPTO_NULL_POINTER;
 	}

@@ -202,8 +202,7 @@ void hal_pwm_pause(hal_pwm_adapter_t *ppwm_adp, BOOL pause_ctrl)
 {
 	PWM_TypeDef *PWM_OBJ = (PWM_TypeDef *)(ppwm_adp->base_addr);
 
-	BOOL PAUSE;
-	if (PAUSE) {
+	if (pause_ctrl) {
 		PWM_OBJ->PWM_TIMING_CTRL = PWM_OBJ->PWM_TIMING_CTRL | (PWM_SHIFT_PAUSE);
 	} else {
 		PWM_OBJ->PWM_TIMING_CTRL = PWM_OBJ->PWM_TIMING_CTRL & ~(PWM_SHIFT_PAUSE);

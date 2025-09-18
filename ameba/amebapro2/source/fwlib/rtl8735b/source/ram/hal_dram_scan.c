@@ -299,7 +299,7 @@ uint8_t dram_walking_of_1(uint32_t dram_start, uint32_t dram_size, uint32_t area
 	//dbg_printf("\r\n=======start dram_walking_of_1 test=======\r\n");
 	for (idx = 0; idx < 32; idx++) {
 		/*generate pattern*/
-		walk_pattern = (1 << idx);
+		walk_pattern = (1U << idx);
 
 		/*write pattern*/
 		start = (uint32_t *)(dram_start + (idx * dram_size) % (area_size));
@@ -344,7 +344,7 @@ uint8_t dram_walking_of_0(uint32_t dram_start, uint32_t dram_size, uint32_t area
 	//dbg_printf("\r\n=======start dram_walking_of_0 test=======\r\n");
 	for (idx = 0; idx < 32; idx++) {
 		/*generate pattern*/
-		walk_pattern = ~(1 << idx);
+		walk_pattern = ~(1U << idx);
 
 		/*write pattern*/
 		start = (uint32_t *)(dram_start + (idx * dram_size) % (area_size));

@@ -475,6 +475,6 @@ void hal_isp_verify_path_config_buf(void);
 void hal_isp_verify_path_trigger(u32 delay_ms);
 int hal_isp_is_verify_path_last_trigger(void);
 int hal_isp_tuning_iq_nlsc(struct verify_ctrl_config v_cfg);
-void hal_isp_set_zoom_filter_coeff(u8* buff);
+void hal_isp_set_zoom_filter_coeff(u8 *buff);
 
 #endif /* HAL_RTL8735B_LIB_SOURCE_RAM_VIDEO_ISP_HAL_ISP_H_ */

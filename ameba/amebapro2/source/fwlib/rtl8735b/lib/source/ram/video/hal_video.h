@@ -491,7 +491,7 @@ int hal_video_get_no_video_time(void);
 u32 hal_video_get_video_timer_cur_time(void);
 int hal_video_config_isp_calibration(int iq_cali_flag);
 int hal_video_set_isp_stream_fps(int ch, uint32_t fps);
-int hal_video_isp_zoom_filter_coef_init(int ch, u8* buf);
+int hal_video_isp_zoom_filter_coef_init(int ch, u8 *buf);
 
 extern hal_video_adapter_t vv_adapter;
 
@@ -835,7 +835,7 @@ static __inline__ int hal_video_fcs_en(int ch, int en)
 	return OK;
 }
 
-static __inline__ int hal_video_isp_axi_buf_init(int ch, u32* buf)
+static __inline__ int hal_video_isp_axi_buf_init(int ch, u32 *buf)
 {
 	hal_video_adapter_t *v_adp = &vv_adapter;
 	commandLine_s *cml;

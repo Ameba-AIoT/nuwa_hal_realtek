@@ -472,7 +472,7 @@ typedef struct sd_csd_v1 {
 	u32 taac            : 8;
 	u32 rsvd5           : 6;
 	u32 csd_structure   : 2;
-} __ALIGNED(4) sd_csd_v1_t;
+} __attribute__((aligned(4))) sd_csd_v1_t;
 
 STATIC_ASSERT(sizeof(sd_csd_v1_t) == SD_CSD_LEN, sd_csd_v1_sz);
 
@@ -510,7 +510,7 @@ typedef struct sd_csd_v2 {
 	u32 taac            : 8;
 	u32 rsvd6           : 6;
 	u32 csd_structure   : 2;
-} __ALIGNED(4) sd_csd_v2_t;
+} __attribute__((aligned(4))) sd_csd_v2_t;
 
 STATIC_ASSERT(sizeof(sd_csd_v2_t) == SD_CSD_LEN, sd_csd_v2_sz);
 
