@@ -46,6 +46,8 @@ extern hal_i2c_func_stubs_t __rom_stubs_hal_i2c;     // symbol from linker scrip
 extern hal_i2c_func_stubs_t __rom_stubs_hal_i2c;     // symbol from linker script
 #endif
 
+extern hal_status_t hal_rtl_i2c_deinit_patch(hal_i2c_adapter_t *phal_i2c_adapter);
+
 gdma_ch_lli_t i2c_tx_gdma_ch_lli[I2C_GDMA_MAX_BLOCK] __ALIGNED(32);
 gdma_ch_lli_t i2c_rx_gdma_ch_lli[I2C_GDMA_MAX_BLOCK] __ALIGNED(32);
 
@@ -63,7 +65,7 @@ gdma_ch_lli_t i2c_rx_gdma_ch_lli[I2C_GDMA_MAX_BLOCK] __ALIGNED(32);
  */
 hal_status_t hal_i2c_pin_register(hal_i2c_adapter_t *phal_i2c_adapter)
 {
-	hal_status_t ret;
+	hal_status_t ret = HAL_OK;
 
 	hal_sys_peripheral_en(I2C0_SYS + phal_i2c_adapter->init_dat.index, 1);
 
@@ -87,7 +89,7 @@ hal_status_t hal_i2c_pin_register(hal_i2c_adapter_t *phal_i2c_adapter)
  */
 hal_status_t hal_i2c_pin_unregister(hal_i2c_adapter_t *phal_i2c_adapter)
 {
-	hal_status_t ret;
+	hal_status_t ret = HAL_OK;
 
 	hal_sys_peripheral_en(I2C0_SYS + phal_i2c_adapter->init_dat.index, 0);
 

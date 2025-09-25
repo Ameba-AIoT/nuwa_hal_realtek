@@ -62,7 +62,7 @@ extern "C" {
 #define VOE_STATUS_EN   1
 #define VOE_STATUS_OK   2
 #define VOE_STATUS_NOK  3
-
+#include "os_wrapper.h"
 //#define __TTFF_VOE__
 
 /**

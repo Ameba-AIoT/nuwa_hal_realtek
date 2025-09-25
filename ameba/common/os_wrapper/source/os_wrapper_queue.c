@@ -29,7 +29,7 @@ int rtos_queue_create(rtos_queue_t *pp_handle, uint32_t msg_num, uint32_t msg_si
 #endif
 
 	status = k_msgq_alloc_init(p_queue, msg_size, msg_num);
-	if (status == 0) {
+	if (status != 0) {
 		k_free(p_queue);
 		return FAIL;
 	}
@@ -41,7 +41,6 @@ int rtos_queue_create(rtos_queue_t *pp_handle, uint32_t msg_num, uint32_t msg_si
 int rtos_queue_delete(rtos_queue_t p_handle)
 {
 	int status;
-	struct k_msgq *p_queue = (struct k_msgq *)p_handle;
 
 	if (p_handle == NULL) {
 		return FAIL;
@@ -49,7 +48,7 @@ int rtos_queue_delete(rtos_queue_t p_handle)
 
 	status = k_msgq_cleanup(p_handle);
 	if (status != 0) {
-		RTK_LOGS(NOTAG, RTK_LOG_ERROR, "%s <<< The queue is not empty, but the queue has been deleted. >>>\n", __FUNCTION__);
+		LOG_ERR("%s <<< The queue is not empty, but the queue has been deleted. >>>\n", __FUNCTION__);
 		k_free(p_handle);
 		return FAIL;
 	}
@@ -69,9 +68,6 @@ uint32_t rtos_queue_message_waiting(rtos_queue_t p_handle)
 
 int rtos_queue_send(rtos_queue_t p_handle, void *p_msg, uint32_t wait_ms)
 {
-	BaseType_t ret;
-	BaseType_t task_woken = pdFALSE;
-
 	if (p_handle == NULL) {
 		return FAIL;
 	}

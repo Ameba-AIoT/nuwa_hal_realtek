@@ -74,7 +74,7 @@ extern "C"
 #define MODE_EXT				5					// external input,  for channel
 
 //#define MV_CUINFO_EN
-
+#include "os_wrapper.h"
 /**
  * @addtogroup hal_enc Encoder
  * @ingroup 8735b_hal
@@ -293,11 +293,12 @@ typedef struct {
 	hal_video_roi_s			*enc_roi[MAX_CHANNEL];					// roi map table
 
 	enc2out_t 				*enc2out;
-	volatile QueueHandle_t	md_queue;
-	volatile QueueHandle_t  out_queue;
 
-	xTaskHandle				tid_out;
-	xTaskHandle				tid_md;
+	rtos_queue_t			md_queue;
+	rtos_queue_t			out_queue;
+
+	rtos_task_t					tid_out;
+	rtos_task_t					tid_md;
 
 	int						out_queue_full_cnt;
 	int						video_show_info;

@@ -56,7 +56,10 @@
 #define IS_HEVC(a)  (a==VCENC_VIDEO_CODEC_HEVC)
 #define IS_H264(a)  (a==VCENC_VIDEO_CODEC_H264)
 
-#define MAX(a, b) ((a) > (b) ?  (a) : (b))
+
+#ifndef MAX
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#endif
 #define CLIP3(x, y, z)  ((z) < (x) ? (x) : ((z) > (y) ? (y) : (z)))
 
 
