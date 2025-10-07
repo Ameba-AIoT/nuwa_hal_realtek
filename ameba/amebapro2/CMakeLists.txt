@@ -37,3 +37,4 @@ zephyr_library_sources_ifdef(CONFIG_SPI_AMEBAPRO2 source/fwlib/rtl8735b/source/r
 zephyr_library_sources_ifdef(CONFIG_ENTROPY_AMEBAPRO2_TRNG source/fwlib/rtl8735b/source/ram_s/hal_trng_sec.c)
 zephyr_library_sources_ifdef(CONFIG_SOC_FLASH_AMEBAPRO2 source/fwlib/rtl8735b/source/ram/hal_spic.c)
 zephyr_library_sources_ifdef(CONFIG_SOC_FLASH_AMEBAPRO2 source/fwlib/rtl8735b/source/ram/hal_flash.c)
+zephyr_library_sources_ifdef(CONFIG_SDMMC_AMEBAPRO2 source/fwlib/rtl8735b/source/ram/hal_sdhost.c)
