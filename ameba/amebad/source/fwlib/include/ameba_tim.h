@@ -494,7 +494,7 @@ typedef struct {
 
 /** @defgroup TIM_Default_Level
   * @note AmebaD is not support to set one pulse mode default level,
-  * 	    add this API is for compatible Zephyr.
+  * 	    add this Marco is for compatible Zephyr.
   * @{
   */
 
@@ -675,7 +675,7 @@ _LONG_CALL_ u32 RTIM_GetINTStatus(RTIM_TypeDef *TIMx, u32 TIM_IT);
  * @defgroup TIM_CCMR
  * @{
  *****************************************************************************/
-#define  TIM_BIT_CCxE				((u32)0x01 << 24)		/*!<Capture/Compare x input/output enable */
+#define  TIM_BIT_CCxE					((u32)0x01 << 24)		/*!<Capture/Compare x input/output enable */
 #define  TIM_OCER_CCxPE				((u32)0x02 << 24)		/*!<Output Compare x Preload enable */
 #define  TIM_CCER_CCxP				((u32)0x04 << 24)		/*!<Capture/Compare x input/output Polarity */
 #define  TIM_CCER_CCxM				((u32)0x08 << 24)		/*!<CCx working mode input or output mode */
@@ -708,6 +708,11 @@ extern u32 TIM_IT_CCx[18];
 #define PWM_CHAN_MAX			    18
 #define TIMER_TICK_US		 			31
 #define TIMER_TICK_US_X4				(4*1000000/32000) //32k clock, 31.25us every timer_tick
+
+/* Compatibility with zephyr */
+#define UPS_SrcConfig(x, y)    ((void)0)
+#define UPS_DstConfig(x, y)    ((void)0)
+
 #endif //_AMEBA_TIMER_H_
 
 /******************* (C) COPYRIGHT 2016 Realtek Semiconductor *****END OF FILE****/

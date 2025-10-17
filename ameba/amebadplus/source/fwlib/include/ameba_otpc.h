@@ -319,9 +319,6 @@ typedef struct {
 /** @} */
 /** @} */
 
-#define OTPC_PHY_ROM_PATCH_ZONE					((u32)0x00000001 << 2)
-#define ROM_PATCH_LENGTH							0x200
-
 //Please add your defination here
 enum OTP_OPMode {
 	OTP_USER_MODE = 0,
@@ -364,28 +361,21 @@ enum OTP_OPMode {
 
 #define OTP_GET_LTYP3_OFFSET(x)						((u32)(((x >> 0) & 0x0FFFFFFF)))
 
-#define OTP_REGPATCH_BASE							0x4100C000
-#define OTP_REGPATCH_END							(OTP_REGPATCH_BASE + 0x5FF)
-#define OTP_IS_REGPATCH(x)							((x >= OTP_REGPATCH_BASE) && (x < OTP_REGPATCH_END))
-
-#define OTP_PADPATCH_BASE							0x4100C800
-#define OTP_PADPATCH_END							(OTP_PADPATCH_BASE+0x1FF)
-#define OTP_IS_PADPATCH(x)							((x >= OTP_PADPATCH_BASE) && (x < OTP_PADPATCH_END))
-
-#define OTP_SUPPERPATCH_BASE						0x40000000
-#define OTP_SUPPERPATCH_END							0x50000000
-#define OTP_IS_SUPPERPATCH(x)						((x >= OTP_SUPPERPATCH_BASE) && (x < OTP_SUPPERPATCH_END))
-
 #define OTP_RTKPATCH_BASE							0x500
 #define OTP_RTKPATCH_END							0x6FC
 
 #define OTP_LPGPKT_SIZE 							16
 
+#define OTP_CRC0_BASE								0x370
+#define OTP_CRC1_BASE								0x374
+#define OTP_CRC2_BASE								0x378
+#define OTP_CRC3_BASE								0x37C
 
 _LONG_CALL_ int OTP_LogicalMap_Read(u8 *pbuf, u32 addr, u32 len);
 _LONG_CALL_ int OTP_LogicalMap_Write(u32 addr, u32 cnts, u8 *data);
 _LONG_CALL_ u32 otp_logical_remain(void);
 _LONG_CALL_ u32 OTPGetCRC(void);
+_LONG_CALL_ int OTPSetCRC(void);
 _LONG_CALL_ int OTP_Read8(u32 Addr, u8 *Data);
 _LONG_CALL_ int OTP_Write8(u32 Addr, u8 Data);
 _LONG_CALL_ int OTP_Read32(u32 Addr, u32 *Data);

@@ -125,7 +125,7 @@ void aontimer_int(u32 Data)
 	(void)Data;
 
 	DBG_8195A("aontimer handler 1: %lx\n", SOCPS_AONWakeReason());
-	SOCPS_AONTimerClearINT();
+	AONTimer_ClearINT();
 	DBG_8195A("aontimer handler 2: %lx\n", SOCPS_AONWakeReason());
 	RCC_PeriphClockCmd(APBPeriph_ATIM, APBPeriph_ATIM_CLOCK, DISABLE);
 }
@@ -134,8 +134,8 @@ void aontimer_test()
 {
 #if defined (CONFIG_ARM_CORE_CM4)
 	RCC_PeriphClockCmd(APBPeriph_ATIM, APBPeriph_ATIM_CLOCK, ENABLE);
-	SOCPS_AONTimer(2000);
-	SOCPS_AONTimerINT_EN(ENABLE);
+	AONTimer_Setting(2000);
+	AONTimer_INT(ENABLE);
 	InterruptRegister(aontimer_int, AON_TIM_IRQ, NULL, 3);
 	InterruptEn(AON_TIM_IRQ, 3);
 	SOCPS_SetAPWakeEvent(WAKE_SRC_AON_TIM, ENABLE);
@@ -215,16 +215,10 @@ int pmu_ready_to_dsleep(void)
 void pmu_pre_sleep_processing(uint32_t *tick_before_sleep)
 {
 	if (pmu_ready_to_dsleep()) {
-		sleep_param.sleep_time = 0;// do not wake on system schedule tick
+		sleep_param.sleep_time = pmu_get_sleep_time();// do not wake on system schedule tick
 		sleep_param.dlps_enable = ENABLE;
 	} else {
-		if (timer_max_sleep_time > timer_min_sleep_time) {
-			max_sleep_time = _rand() % (timer_max_sleep_time - timer_min_sleep_time + 1) + timer_min_sleep_time;
-		} else if (timer_min_sleep_time != 0) {
-			max_sleep_time = timer_min_sleep_time;
-		}
-		sleep_param.sleep_time = max_sleep_time;//*expected_idle_time;
-		max_sleep_time = 0;
+		sleep_param.sleep_time = pmu_get_sleep_time();//*expected_idle_time;
 		sleep_param.dlps_enable = DISABLE;
 	}
 
@@ -281,7 +275,16 @@ void pmu_set_max_sleep_time(uint32_t timer_ms)
 {
 	max_sleep_time = timer_ms;
 }
-
+uint32_t pmu_get_sleep_time(void)
+{
+	u32 time = 0;
+	if (timer_max_sleep_time > timer_min_sleep_time) {
+		time = _rand() % (timer_max_sleep_time - timer_min_sleep_time + 1) + timer_min_sleep_time;
+	} else if (timer_min_sleep_time != 0) {
+		time = timer_min_sleep_time;
+	}
+	return time;
+}
 void pmu_set_sleep_time_range(uint32_t min_time, uint32_t max_time)
 {
 	timer_min_sleep_time = min_time;
@@ -297,7 +300,7 @@ u32 pmc_wakeuptimer_int_hdl(UNUSED_WARN_DIS void *Data)
 
 void pmu_init_wakeup_timer(void)
 {
-	InterruptRegister(pmc_wakeuptimer_int_hdl, PMC_TIMER_IRQ, (u32)NULL, PMC_TIMER_INT_PRIO);
+	InterruptRegister(pmc_wakeuptimer_int_hdl, PMC_TIMER_IRQ, (uint32_t)NULL, PMC_TIMER_INT_PRIO);
 	InterruptEn(PMC_TIMER_IRQ, PMC_TIMER_INT_PRIO);
 	PMCTimer_INTConfig(PMC_TIMER_DEV, PMC_WAKEUP_TIMER, ENABLE);
 }

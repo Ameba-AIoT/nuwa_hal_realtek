@@ -5,6 +5,7 @@ if SOC_FAMILY_REALTEK_AMEBA
 
 config REALTEK_AMEBA_HAL_LIB
 	bool "RealTek Ameba HAL library"
+	default y
 	# used in os_wrapper_task.c
 	select THREAD_ABORT_HOOK
 	select THREAD_CUSTOM_DATA
@@ -13,15 +14,20 @@ config REALTEK_AMEBA_HAL_LIB
 
 config ARM_CORE_CM4
 	bool
-	default y if SOC_AMEBAD || SOC_AMEBADPLUS
+	default y if SOC_SERIES_AMEBAD || SOC_SERIES_AMEBADPLUS || SOC_SERIES_AMEBAG2
+
+config ARM_CORE_CM4_KM4TZ
+	bool
+	default y if SOC_SERIES_AMEBAG2
 
 orsource "common/usb/Kconfig"
 rsource "common/wifi/Kconfig"
+rsource "common/bluetooth/Kconfig"
 
-config SOC_AMEBAD
+config SOC_SERIES_AMEBAD
 	select SINGLE_CORE_WIFI if WLAN
 
-config SOC_AMEBADPLUS
+config SOC_SERIES_AMEBADPLUS
 	select AS_INIC_AP if WLAN
 
 rsource "common/rtk_coex/Kconfig"

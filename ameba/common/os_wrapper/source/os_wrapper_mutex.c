@@ -13,23 +13,23 @@ LOG_MODULE_REGISTER(os_if_mutex);
 int rtos_mutex_create(rtos_mutex_t *pp_handle)
 {
 	if (pp_handle == NULL) {
-		return FAIL;
+		return RTK_FAIL;
 	}
 
 #if (CONFIG_HEAP_MEM_POOL_SIZE > 0)
 	*pp_handle = k_malloc(sizeof(struct k_mutex));
 	if (*pp_handle == NULL) {
-		return FAIL;
+		return RTK_FAIL;
 	}
 #else
 	LOG_ERR("%s <<< k_malloc not support. >>>\n", __FUNCTION__);
-	return FAIL;
+	return RTK_FAIL;
 #endif
 
 	if (0 == k_mutex_init(*pp_handle)) {
-		return SUCCESS;
+		return RTK_SUCCESS;
 	} else {
-		return FAIL;
+		return RTK_FAIL;
 	}
 }
 
@@ -42,17 +42,17 @@ int rtos_mutex_create(rtos_mutex_t *pp_handle)
 int rtos_mutex_delete(rtos_mutex_t p_handle)
 {
 	if (p_handle == NULL) {
-		return FAIL;
+		return RTK_FAIL;
 	}
 
 	if (0 == k_mutex_unlock(p_handle)) {
 		LOG_ERR("%s <<< The mutex has not been released, but the mutex has been deleted. >>>\n", __FUNCTION__);
 		k_free(p_handle);
-		return FAIL;
+		return RTK_FAIL;
 	}
 
 	k_free(p_handle);
-	return SUCCESS;
+	return RTK_SUCCESS;
 }
 
 /**
@@ -75,9 +75,9 @@ int rtos_mutex_take(rtos_mutex_t p_handle, uint32_t wait_ms)
 
 	status = k_mutex_lock(p_handle, wait_ticks);
 	if (status == 0) {
-		return SUCCESS;
+		return RTK_SUCCESS;
 	} else {
-		return FAIL;
+		return RTK_FAIL;
 	}
 }
 
@@ -94,9 +94,9 @@ int rtos_mutex_give(rtos_mutex_t p_handle)
 
 	status = k_mutex_unlock(p_handle);
 	if (status == 0) {
-		return SUCCESS;
+		return RTK_SUCCESS;
 	} else {
-		return FAIL;
+		return RTK_FAIL;
 	}
 }
 
@@ -114,14 +114,14 @@ int rtos_mutex_recursive_create(rtos_mutex_t *pp_handle)
 {
 	ARG_UNUSED(pp_handle);
 	LOG_ERR("%s Not Support\n", __FUNCTION__);
-	return FAIL;
+	return RTK_FAIL;
 }
 
 int rtos_mutex_recursive_delete(rtos_mutex_t p_handle)
 {
 	ARG_UNUSED(p_handle);
 	LOG_ERR("%s Not Support\n", __FUNCTION__);
-	return FAIL;
+	return RTK_FAIL;
 }
 
 int rtos_mutex_recursive_take(rtos_mutex_t p_handle, uint32_t wait_ms)
@@ -129,26 +129,26 @@ int rtos_mutex_recursive_take(rtos_mutex_t p_handle, uint32_t wait_ms)
 	ARG_UNUSED(p_handle);
 	ARG_UNUSED(wait_ms);
 	LOG_ERR("%s Not Support\n", __FUNCTION__);
-	return FAIL;
+	return RTK_FAIL;
 }
 
 int rtos_mutex_recursive_give(rtos_mutex_t p_handle)
 {
 	ARG_UNUSED(p_handle);
 	LOG_ERR("%s Not Support\n", __FUNCTION__);
-	return FAIL;
+	return RTK_FAIL;
 }
 
 int rtos_mutex_recursive_create_static(rtos_mutex_t *pp_handle)
 {
 	ARG_UNUSED(pp_handle);
 	LOG_ERR("%s Not Support\n", __FUNCTION__);
-	return FAIL;
+	return RTK_FAIL;
 }
 
 int rtos_mutex_recursive_delete_static(rtos_mutex_t p_handle)
 {
 	ARG_UNUSED(p_handle);
 	LOG_ERR("%s Not Support\n", __FUNCTION__);
-	return FAIL;
+	return RTK_FAIL;
 }

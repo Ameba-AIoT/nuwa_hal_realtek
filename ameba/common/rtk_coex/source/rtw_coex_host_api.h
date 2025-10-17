@@ -62,6 +62,8 @@ enum coex_subtype_h2c_com {
 	COEX_H2C_COM_VENDOR_INFO_SET,
 	COEX_H2C_COM_WL_SLOT_SET,
 	COEX_H2C_COM_STATE_GET,
+	COEX_H2C_COM_SET_COEX_ENABLE,
+	COEX_H2C_COM_GET_IS_ENABLED,
 	/* end */
 	COEX_H2C_COM_INVALID = ((1 << SUBTYPE_BITS) - 1),
 };
@@ -85,10 +87,9 @@ enum coex_subtype_h2c_bt {
 enum coex_subtype_h2c_ext {
 	/* common info */
 	COEX_H2C_EXT_UNDEF = 0,
-	COEX_H2C_EXT_INIT,
+	COEX_H2C_EXT_GET_READY,
 	COEX_H2C_EXT_WL_PERFORMANCE_REQUEST,
 	/* info for WPAN*/
-	COEX_H2C_EXT_WPAN_STATE,
 	COEX_H2C_EXT_WPAN_CHANNEL,
 	/* info for BT*/
 	COEX_H2C_EXT_BT_PROFILE,
@@ -125,6 +126,7 @@ enum coex_subtype_c2h_bt {
  */
 enum coex_subtype_c2h_ext {
 	COEX_C2H_EXT_UNDEF = 0,
+	COEX_C2H_EXT_GET_INITPARAMS,
 	/* end */
 	COEX_C2H_EXT_INVALID = ((1 << SUBTYPE_BITS) - 1),
 };
@@ -139,6 +141,25 @@ enum coex_subtype_c2h_wpan {
 //////////////////////////////////////////////////////////
 ///////// for COMMON Variables
 //////////////////////////////////////////////////////////
+/**
+ * @brief  The enumeration lists vendor id.
+ */
+enum rtk_coex_custom_vendor_id {
+	RTK_COEX_CUSTOM_VID_UNDEF = 0,
+	/* Add from here*/
+	RTK_COEX_CUSTOM_VID_CLINTWOOD,			/* 1 */
+	RTK_COEX_CUSTOM_VID_MAX = 0xFF
+};
+/**
+ * @brief  The enumeration lists product id.
+ */
+enum rtk_coex_custom_product_id {
+	RTK_COEX_CUSTOM_PID_UNDEF = 0,
+	/* Add from here*/
+	RTK_COEX_CUSTOM_PID_GAMEPAD,			/* 1 */
+	RTK_COEX_CUSTOM_PID_MAX = 0xFF
+};
+
 /**
  * @struct   rtk_coex_vendor_info
  * @brief    vendor info.
@@ -183,8 +204,11 @@ enum bt_rfk_type {
 	BT_RX_DCK       = 0,
 	BT_LOK          = 1,
 	BT_LOK_RES      = 2,
-	BT_DAC_DCK     = 3,
-	BT_ADC_DCK     = 4,
+	BT_DAC_DCK      = 3,
+	BT_ADC_DCK      = 4,
+	BT_DCK          = 5,
+	BT_IQK          = 6,
+	BT_FLATK        = 7,
 };
 /**
  * @struct   bt_rfk_param
@@ -254,12 +278,29 @@ enum PTA_INDEX {
 	EXT_PTA2 = 1,
 	EXT_PTA_INVALID,
 };
+/**
+ * @brief   The enumeration lists pinmux port index.
+ */
+enum PORT_e {
+	PAD_PORT_A = 0,
+	PAD_PORT_B = 1,
+	PAD_PORT_C = 2,
+};
+/**
+ * @struct   port_pin_t
+ * @brief    pinmux port define.
+ */
+struct port_pin_t {
+	u8 port;
+	u8 pin;
+};
 
 /**
  * @struct   extchip_para_t
  * @brief    pta related parameter structure for extchip.
  */
 struct extchip_para_t {
+	u8 valid;
 	u8 pri_det_time;	///< T1 us
 	u8 trx_det_time;	///< T2 us
 	u8 pri_mode: 1;		///< 1: static Priority; 0: directional Priority
@@ -268,9 +309,9 @@ struct extchip_para_t {
 	u8 pta_index: 1;	///< 1: extbt; 0: extwpan
 	u8 rsvd : 4;		///< rsvd
 	enum EXT_PROTOCOL active_protocol;	///< -> enum EXT_PROTOCOL
-	u8 pta_pad_req;		///< pinmux pad define
-	u8 pta_pad_pri;		///< pinmux pad define
-	u8 pta_pad_gnt;		///< pinmux pad define
+	struct port_pin_t port_req;			///< pinmux pad define, port(PORT_A,PORT_B,PORT_C,...) + pin(0...31)
+	struct port_pin_t port_pri;			///< pinmux pad define, port(PORT_A,PORT_B,PORT_C,...) + pin(0...31)
+	struct port_pin_t port_gnt;			///< pinmux pad define, port(PORT_A,PORT_B,PORT_C,...) + pin(0...31)
 };
 
 //////////////////////////////////////////////////////////
@@ -290,13 +331,26 @@ struct extchip_para_t {
 ///////// for COMMON Function Declare
 //////////////////////////////////////////////////////////
 /**
- * @brief      Vendor info set.
- * @param[in]  p_vendor_info  A pointer to struct rtk_coex_vendor_info.
- * @param[in]  length 		size of struct rtk_coex_vendor_info.
+ * @brief      set coex enable or disable.
+ * @param[in]  enable coex enable status
  * @return
  *             - None.
  */
-void rtk_coex_com_vendor_info_set(void *p_vendor_info, u8 length);
+void rtk_coex_com_coex_set_enable(bool enable);
+/**
+ * @brief      get if coex is enabled.
+ * @return
+ *             - true: coex enabled, false: coex disabled.
+ */
+bool rtk_coex_com_coex_is_enabled(void);
+/**
+ * @brief      Vendor info set.
+ * @param[in]  vendor_id
+ * @param[in]  product_id
+ * @return
+ *             - None.
+ */
+void rtk_coex_com_vendor_info_set(u8 vendor_id, u8 product_id);
 /**
  * @brief      wlan slot duration set.
  * @param[in]  wl_slot  wlan slot duration, unit: percent, value: [0-100].
@@ -352,19 +406,11 @@ void rtk_coex_btc_set_pta(u8 type, u8 role, u8 process);
 ///////// for EXT Function Declare
 //////////////////////////////////////////////////////////
 /**
- * @brief      ext chip init notification.
- * @param[in]  p_extchip_para	A pointer to struct extchip_para_t.
+ * @brief     is extc ready.
  * @return
- *             - None.
+ *            - true: ready, false: not ready.
  */
-void rtk_coex_extc_ntfy_init(struct extchip_para_t *p_extchip_para);
-/**
- * @brief     ext wpan state notification.
- * @param[in] state  wpan status state, refer to enum EXT_STATE.
- * @return
- *            - None.
- */
-void rtk_coex_extc_ntfy_wpan_state(u8 state);
+bool rtk_coex_extc_is_ready(void);
 /**
  * @brief     ext wpan channel notification.
  * @param[in] channel  802.15.4 channel number [11-26].

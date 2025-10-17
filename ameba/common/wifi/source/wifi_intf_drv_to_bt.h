@@ -21,7 +21,6 @@
 #ifdef	__cplusplus
 extern "C" {
 #endif
-#include <rtw_autoconf.h>
 
 enum pta_host_role {
 	PTA_HOST_WIFI			= 0,

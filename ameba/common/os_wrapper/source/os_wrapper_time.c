@@ -36,3 +36,9 @@ uint64_t rtos_time_get_current_system_time_ns(void)
 {
 	return k_ticks_to_ns_floor64(sys_clock_tick_get());
 }
+
+uint32_t rtos_time_get_current_pended_time_ms(void)
+{
+	/* rtos_sched_suspend does not affect the value of rtos_time_get_current_system_time_ms */
+	return 0;
+}

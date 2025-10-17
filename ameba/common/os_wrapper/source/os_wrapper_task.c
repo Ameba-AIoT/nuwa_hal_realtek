@@ -13,30 +13,30 @@ extern struct k_thread *z_swap_next_thread(void);
 int rtos_sched_start(void)
 {
 	LOG_WRN("%s Not Support\n", __FUNCTION__);
-	return SUCCESS;
+	return RTK_SUCCESS;
 }
 
 int rtos_sched_stop(void)
 {
 	LOG_ERR("%s Not Support\n", __FUNCTION__);
-	return SUCCESS;
+	return RTK_SUCCESS;
 }
 
 int rtos_sched_suspend(void)
 {
 	k_sched_lock();
-	return SUCCESS;
+	return RTK_SUCCESS;
 }
 
 int rtos_sched_resume(void)
 {
 	k_sched_unlock();
-	return SUCCESS;
+	return RTK_SUCCESS;
 }
 
 int rtos_sched_get_state(void)
 {
-	int status = FAIL;
+	int status = RTK_FAIL;
 	if (z_swap_next_thread() == NULL) {
 		status = RTOS_SCHED_NOT_STARTED;
 	} else if (_current->base.sched_locked != 0U) {
@@ -59,7 +59,7 @@ int rtos_task_create(rtos_task_t *pp_handle, const char *p_name, void (*p_routin
 #if (CONFIG_HEAP_MEM_POOL_SIZE > 0)
 	p_thread = k_malloc(sizeof(struct k_thread));
 	if (p_thread == NULL) {
-		return FAIL;
+		return RTK_FAIL;
 	}
 
 	/* use k_malloc to avoid k_thread_stack_alloc is empty */
@@ -67,11 +67,11 @@ int rtos_task_create(rtos_task_t *pp_handle, const char *p_name, void (*p_routin
 	if (p_stack == NULL) {
 		k_free(p_thread);
 		LOG_ERR("Alloc stack fail for %s\n", p_name);
-		return FAIL;
+		return RTK_FAIL;
 	}
 #else
 	LOG_ERR("%s <<< k_malloc not support. >>>\n", __FUNCTION__);
-	return FAIL;
+	return RTK_FAIL;
 #endif
 
 	k_thread_create(p_thread, p_stack, stack_size_in_byte,
@@ -81,9 +81,12 @@ int rtos_task_create(rtos_task_t *pp_handle, const char *p_name, void (*p_routin
 
 	p_thread->custom_data = p_thread;
 
-	*pp_handle = p_thread;
+	if (pp_handle) {
+		*pp_handle = p_thread;
+	}
+
 	k_thread_start(p_thread);
-	return SUCCESS;
+	return RTK_SUCCESS;
 }
 
 void thread_abort_hook(struct k_thread *p_free)
@@ -114,25 +117,25 @@ int rtos_task_delete(rtos_task_t p_handle)
 		k_free(p_free);
 	}
 
-	return SUCCESS;
+	return RTK_SUCCESS;
 }
 
 int rtos_task_suspend(rtos_task_t p_handle)
 {
 	k_thread_suspend((k_tid_t)p_handle);
-	return SUCCESS;
+	return RTK_SUCCESS;
 }
 
 int rtos_task_resume(rtos_task_t p_handle)
 {
 	k_thread_resume((k_tid_t)p_handle);
-	return SUCCESS;
+	return RTK_SUCCESS;
 }
 
 int rtos_task_yield(void)
 {
 	k_yield();
-	return SUCCESS;
+	return RTK_SUCCESS;
 }
 
 rtos_task_t rtos_task_handle_get(void)
@@ -145,7 +148,7 @@ int rtos_task_priority_set(rtos_task_t p_handle, uint16_t priority)
 	int switch_priority = RTOS_TASK_MAX_PRIORITIES - priority;
 	k_thread_priority_set(p_handle, switch_priority);
 
-	return SUCCESS;
+	return RTK_SUCCESS;
 }
 
 uint32_t rtos_task_priority_get(rtos_task_t p_handle)

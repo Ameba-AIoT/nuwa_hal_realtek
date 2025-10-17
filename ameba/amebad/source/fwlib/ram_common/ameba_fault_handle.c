@@ -9,11 +9,12 @@ static const char *const TAG = "FAULT";
 void HANDLER_SecureFault(void)
 {
 	__ASM volatile(
-		"MRS 		R0, MSP					\n\t"
-		"MRS 		R1, PSP					\n\t"
+		"MRS 		R0, MSP_NS				\n\t"
+		"MRS 		R1, PSP_NS				\n\t"
 		"MOV 		R2, LR					\n\t"
+		"MRS 		R3, MSP_NS				\n\t"
+		"STMDB 		R3!, {R4-R11}			\n\t" //Note: [MSPLIM_NS, MSP_NS] may overflow, MSP_NS is not update.
 		"MOV 		R3, #4					\n\t"
-		"PUSH 		{R4-R11}				\n\t"
 		"B			Fault_Handler		    \n\t"
 	);
 }
@@ -112,7 +113,7 @@ void Fault_Handler(uint32_t mstack[], uint32_t pstack[], uint32_t lr_value, uint
 	}
 
 	regs[REG_EXCR] = lr_value;
-	/* MSP stack
+	/* put r4-r11 to mstack before
 	High addr -> |  xxx  | <--- &extra_regs[0] is mstack;
 	  ^          |  R11  | <--- extra_regs[-1]
 	  |	         |  R10  |
@@ -130,11 +131,6 @@ void Fault_Handler(uint32_t mstack[], uint32_t pstack[], uint32_t lr_value, uint
 		regs[i] = cstack[i - REG_R0];
 	}
 
-	if (lr_value & EXC_RETURN_FTYPE) {
-		cstack += 8;/*Skip R0-R3, R12, LR, PC, xSPSR.*/
-	} else {
-		cstack += 26;/*Skip R0-R3, R12, LR, PC, xSPSR, S0-S15, FPSCR, Reserved Reg.*/
-	}
 	crash_dump((uint32_t *)cstack[REG_EPC], cstack, regs);
 
 	if (fault_id == SECUREFAULT_ID) {
@@ -225,7 +221,7 @@ void Fault_Handler(uint32_t mstack[], uint32_t pstack[], uint32_t lr_value, uint
 		regs[i] = cstack[i - REG_R0];
 	}
 
-	crash_dump((uint32_t *)cstack[REG_EPC], cstack + 8, regs);/*Skip R0-R3, R12, LR, PC, xSPSR.*/
+	crash_dump((uint32_t *)cstack[REG_EPC], cstack, regs);
 
 	RTK_LOGA(TAG, "MSP     = %p\r\n", mstack);
 	RTK_LOGA(TAG, "PSP     = %p\r\n", pstack);

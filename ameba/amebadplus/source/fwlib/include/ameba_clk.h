@@ -142,10 +142,14 @@
 #define PLL_300M		((u32)300000000)	/*This is minimum value*/
 #define PLL_330M		((u32)330000000)
 #define PLL_331M		((u32)331000000)	/*Combined with 100 ohms of driving strength, RF has the smallest impact.*/
+#define PLL_334M		((u32)334000000)
 #define PLL_384M		((u32)384000000)	/* generate 48M for USB In Xmoderm */
+#define PLL_392M		((u32)392000000)
 #define PLL_400M		((u32)400000000)
 #define PLL_480M		((u32)480000000)
+#define PLL_512M		((u32)512000000)
 #define PLL_520M		((u32)520000000)
+#define PLL_524M		((u32)524000000)
 #define PLL_587P0592M	((u32)587059200)
 #define PLL_589P824M	((u32)589824000)	/* generate 98.304M for I2S */
 #define PLL_600M		((u32)600000000)
@@ -161,9 +165,9 @@
 #define CLKDIV(x)				(x)
 #define CLKDIV_ROUND_UP(X, Y)	( ( ( X ) + ( Y ) - 1 ) / ( Y ) )
 
-#define KM4_0P9V_CLK_LIMIT		(260 * MHZ_TICK_CNT)
+#define KM4_0P9V_CLK_LIMIT		(262 * MHZ_TICK_CNT)
 #define KM4_1P0V_CLK_LIMIT		(345 * MHZ_TICK_CNT)
-#define KM0_0P9V_CLK_LIMIT		(104 * MHZ_TICK_CNT)
+#define KM0_0P9V_CLK_LIMIT		(105 * MHZ_TICK_CNT)
 #define KM0_1P0V_CLK_LIMIT		(115 * MHZ_TICK_CNT)
 
 #define PSRAMC_CLK_LIMIT		(400 * MHZ_TICK_CNT)
@@ -215,9 +219,10 @@ _LONG_CALL_ void PLL_I2S0_CLK_Auto(u32 status, u32 clk);
 _LONG_CALL_ void PLL_I2S1_CLK_Auto(u32 status, u32 clk);
 _LONG_CALL_ void PLL_I2S0_CLK(u32 status, u32 clk);
 _LONG_CALL_ void PLL_I2S1_CLK(u32 status, u32 clk);
+_LONG_CALL_ void PLL_I2S_CLK_DIV(u32 index, u32 status, u32 clk);
 _LONG_CALL_ u32 PLL_I2S_CLKGet(void);
-_LONG_CALL_ float PLL_I2S_98P304M_ClkTune(float ppm, u32 action);
-_LONG_CALL_ float PLL_I2S_45P1584M_ClkTune(float ppm, u32 action);
+_LONG_CALL_ float PLL_I2S_98P304M_ClkTune(u32 pll_sel, float ppm, u32 action);
+_LONG_CALL_ float PLL_I2S_45P158M_ClkTune(u32 pll_sel, float ppm, u32 action);
 _LONG_CALL_ void PLL_NP(u32 NewState);
 _LONG_CALL_ void PLL_AP(u32 Option, u32 NewState);
 _LONG_CALL_ void PLL_AP_ClkTune(u32 Option);

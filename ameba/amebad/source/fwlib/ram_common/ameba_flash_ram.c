@@ -478,6 +478,7 @@ exit:
   * @param  Protection:  if disable interrupt when switch clock:
   * @retval   None
   */
+IMAGE2_RAM_TEXT_SECTION
 void FLASH_ClockSwitch(u32 Source, u32 Protection)
 {
 	/* To avoid gcc warnings */
@@ -562,6 +563,7 @@ void FLASH_ClockSwitch(u32 Source, u32 Protection)
 #endif
 }
 
+IMAGE2_RAM_TEXT_SECTION
 void FLASH_Invalidate_Auto_Write(void)
 {
 	/* Auto write related bits in valid command register are all set to 0,

@@ -100,6 +100,9 @@ _LONG_CALL_ void UPS_TimOfInCmd(u32 NewState);
 _LONG_CALL_ void UPS_ReverseCmd(u32 NewState);
 _LONG_CALL_ void UPS_SetDbcCnt(u16 Dbc_Cnt);
 
+/* Compatibility with zephyr */
+#define UPS_SrcConfig(x, y)    ((void)0)
+#define UPS_DstConfig(x, y)    ((void)0)
 
 
 /* MANUAL_GEN_END */

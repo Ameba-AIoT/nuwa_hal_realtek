@@ -188,54 +188,44 @@
 /** @defgroup PINMUX_Function_definitions
   * @{
   */
-#define PINMUX_FUNCTION_GPIO				(0)
-#define PINMUX_FUNCTION_UART				(1)
-
-#define PINMUX_FUNCTION_UART_RTSCTS		(2)
-#define PINMUX_FUNCTION_LOGUART			(2)
-
-#define PINMUX_FUNCTION_SPIM				(3)
-#define PINMUX_FUNCTION_SPIS				(3)
-
-#define PINMUX_FUNCTION_RTC				(4)
-#define PINMUX_FUNCTION_TIMINPUT			(4)
-#define PINMUX_FUNCTION_EXT32K			(28)
-#define PINMUX_FUNCTION_RTCOUT			(28)
-#define PINMUX_FUNCTION_TIMINPUT_HS		(22)
-
-#define PINMUX_FUNCTION_IR					(5)
-#define PINMUX_FUNCTION_SPIF				(6)
-#define PINMUX_FUNCTION_I2C				(7)
-
-#define PINMUX_FUNCTION_SDIOD				(8)
-#define PINMUX_FUNCTION_SDIOH				(8)
-
-#define PINMUX_FUNCTION_PWM				(9)
-#define PINMUX_FUNCTION_PWM_HS			(9)
-#define PINMUX_FUNCTION_PWM_LP			(10)
-#define PINMUX_FUNCTION_SWD				(11)
-
-#define PINMUX_FUNCTION_I2S				(12)
-#define PINMUX_FUNCTION_DMIC				(12)
-
-#define PINMUX_FUNCTION_KEYSCAN_ROW		(29)
-#define PINMUX_FUNCTION_KEYSCAN_COL		(30)
-#define PINMUX_FUNCTION_LCD				(13)
-#define PINMUX_FUNCTION_USB				(14)
-#define PINMUX_FUNCTION_QDEC				(15)
-#define PINMUX_FUNCTION_SGPIO				(16)
-#define PINMUX_FUNCTION_RFE				(18)
-#define PINMUX_FUNCTION_BTCOEX			(19)
-
-#define PINMUX_FUNCTION_WIFIFW			(20)
-#define PINMUX_FUNCTION_EXT_PCM			(20)
-#define PINMUX_FUNCTION_EXT_BT			(20)
-#define PINMUX_FUNCTION_BB_PIN			(21)
-#define PINMUX_FUNCTION_SIC				(22)
-#define PINMUX_FUNCTION_WAKEUP			(31)
-#define PINMUX_FUNCTION_DBGPORT			(23)
-#define PINMUX_FUNCTION_BBDBG				(25)
-
+#define PINMUX_FUNCTION_GPIO               0
+#define PINMUX_FUNCTION_UART               1
+#define PINMUX_FUNCTION_UART_RTSCTS        2
+#define PINMUX_FUNCTION_LOGUART            2
+#define PINMUX_FUNCTION_SPIM               3
+#define PINMUX_FUNCTION_SPIS               3
+#define PINMUX_FUNCTION_RTC                4
+#define PINMUX_FUNCTION_TIMINPUT           4
+#define PINMUX_FUNCTION_IR                 5
+#define PINMUX_FUNCTION_SPIF               6
+#define PINMUX_FUNCTION_I2C                7
+#define PINMUX_FUNCTION_SDIOD              8
+#define PINMUX_FUNCTION_SDIOH              8
+#define PINMUX_FUNCTION_PWM                9
+#define PINMUX_FUNCTION_PWM_HS             9
+#define PINMUX_FUNCTION_PWM_LP             10
+#define PINMUX_FUNCTION_SWD                11
+#define PINMUX_FUNCTION_I2S                12
+#define PINMUX_FUNCTION_DMIC               12
+#define PINMUX_FUNCTION_LCD                13
+#define PINMUX_FUNCTION_USB                14
+#define PINMUX_FUNCTION_QDEC               15
+#define PINMUX_FUNCTION_SGPIO              16
+#define PINMUX_FUNCTION_RFE                18
+#define PINMUX_FUNCTION_BTCOEX             19
+#define PINMUX_FUNCTION_WIFIFW             20
+#define PINMUX_FUNCTION_EXT_PCM            20
+#define PINMUX_FUNCTION_EXT_BT             20
+#define PINMUX_FUNCTION_BB_PIN             21
+#define PINMUX_FUNCTION_SIC                22
+#define PINMUX_FUNCTION_TIMINPUT_HS        22
+#define PINMUX_FUNCTION_DBGPORT            23
+#define PINMUX_FUNCTION_BBDBG              25
+#define PINMUX_FUNCTION_EXT32K             28
+#define PINMUX_FUNCTION_RTCOUT             28
+#define PINMUX_FUNCTION_KEYSCAN_ROW        29
+#define PINMUX_FUNCTION_KEYSCAN_COL        30
+#define PINMUX_FUNCTION_WAKEUP             31
 /**
   * @}
   */
@@ -345,6 +335,7 @@ static inline void Pinmux_Swdoff(void)
 /* Control digital path input or not */
 #define PAD_InputCtrl(PinName, NewState)      PAD_CMD(PinName, NewState)
 #define PAD_SchmitCtrl(PinName, NewState)     (void)0
+
 
 #endif   //_HAL_8721D_PINMUX_
 /******************* (C) COPYRIGHT 2016 Realtek Semiconductor *****END OF FILE****/

@@ -49,10 +49,15 @@ _LONG_CALL_ void LOGUART_INT_AP2NP(void);
 _LONG_CALL_ u8 LOGUART_Writable(void);
 _LONG_CALL_ void LOGUART_WaitBusy(void);
 _LONG_CALL_ void LOGUART_WaitTxComplete(void);
+_LONG_CALL_ void LOGUART_PutChar_RAM(u8 c);
 _LONG_CALL_ int OTP_LogicalMap_CHK(void);
 _LONG_CALL_ int TRNG_get_random_bytes(void *dst, u32 size);
 _LONG_CALL_ int TRNG_get_random_bytes_f_rng(void *p_rng, unsigned char *output, size_t output_size);
-
+char *__real_strncpy(char *dst0, const char *src0, int count);
+char *__real_strcpy(char *s1, const char *s2);
+long __real_strtol(const char *nptr, char **endptr, int base);
+_LONG_CALL_ void FLASH_RxBasic(u8 cmd, u32 Address, u32 read_len, u8 *read_data);
+_LONG_CALL_ void FLASH_TxBasic(u8 cmd, u32 Address, u32 DataLen, u8 *TransmitData);
 /** @} */
 
 #endif /* _AMEBA_ROM_PATCH_H_ */

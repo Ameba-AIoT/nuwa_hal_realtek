@@ -13,4 +13,5 @@
   */
 void System_Reset(void)
 {
+	WDG_Reset();
 }

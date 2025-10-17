@@ -20,6 +20,7 @@
 /** @defgroup SDIO_Exported_Types SDIO Exported Types
   * @{
   */
+
 /**
   * @brief	 SDIO Init structure definition
   */
@@ -34,9 +35,6 @@ typedef struct {
 	u32 RXBD_RING_SIZE; 	/*!< Specifies RXBD ring size, This parameter must be set to a value in the 0-0xFFFF range. */
 	u32 RXBD_FREE_TH;		/*!< the threshold of free RX BD count to trigger interrupt */
 } SDIO_InitTypeDef;
-/**
-  * @}
-  */
 
 /**
   * @brief SDIO Register Declaration

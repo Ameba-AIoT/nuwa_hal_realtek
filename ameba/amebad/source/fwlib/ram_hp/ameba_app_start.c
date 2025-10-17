@@ -47,8 +47,17 @@ u32 app_mpu_nocache_init(void)
 	mpu_region_config mpu_cfg;
 	u32 mpu_entry = 0;
 
+	/* ROM Code inside CPU does not enter Cache, Set to RO for NULL ptr access error */
 	mpu_entry = mpu_entry_alloc();
+	mpu_cfg.region_base = 0x1010A000;
+	mpu_cfg.region_size = 0x101D4000 - 0x1010A000;
+	mpu_cfg.xn = MPU_EXEC_ALLOW;
+	mpu_cfg.ap = MPU_UN_PRIV_RO;
+	mpu_cfg.sh = MPU_NON_SHAREABLE;
+	mpu_cfg.attr_idx = MPU_MEM_ATTR_IDX_NC;
+	mpu_region_cfg(mpu_entry, &mpu_cfg);
 
+	mpu_entry = mpu_entry_alloc();
 	mpu_cfg.region_base = (uint32_t)__ram_nocache_start__;
 	mpu_cfg.region_size = __ram_nocache_end__ - __ram_nocache_start__;
 	mpu_cfg.xn = MPU_EXEC_ALLOW;
@@ -58,16 +67,6 @@ u32 app_mpu_nocache_init(void)
 	if (mpu_cfg.region_size >= 32) {
 		mpu_region_cfg(mpu_entry, &mpu_cfg);
 	}
-
-	/* close 216K irom_ns + 80K drom_ns cache */
-	mpu_entry = mpu_entry_alloc();
-	mpu_cfg.region_base = 0x1010A000;
-	mpu_cfg.region_size = 0x101D4000 - 0x1010A000;
-	mpu_cfg.xn = MPU_EXEC_ALLOW;
-	mpu_cfg.ap = MPU_UN_PRIV_RW;
-	mpu_cfg.sh = MPU_NON_SHAREABLE;
-	mpu_cfg.attr_idx = MPU_MEM_ATTR_IDX_NC;
-	mpu_region_cfg(mpu_entry, &mpu_cfg);
 
 	/* set 1KB retention ram no-cache */
 	mpu_entry = mpu_entry_alloc();

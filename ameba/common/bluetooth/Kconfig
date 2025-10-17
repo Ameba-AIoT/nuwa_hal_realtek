@@ -1,0 +1,57 @@
+# Copyright (c) 2024 Realtek Semiconductor Corp.
+# SPDX-License-Identifier: Apache-2.0
+
+config REALTEK_AMEBA_ZEPHYR_BT
+	bool "RealTek Ameba Zephyr BT"
+	default n
+	select ZEPHYR_MBEDTLS_MODULE
+	select SHARED_INTERRUPTS
+	help
+	  This option enables the Realtek Ameba BT.
+
+if REALTEK_AMEBA_ZEPHYR_BT
+
+config BT
+	bool "Enable BT"
+	default y
+
+config BT_SMP
+	bool 
+	default y
+
+config BT_SHELL
+	bool 
+	default y
+
+config BT_PERIPHERAL
+	bool "Enable BT Peripheral"
+	default n
+
+config BT_CENTRAL
+	bool "Enable BT Central"
+	default n
+
+if BT_CENTRAL
+	config BT_GATT_CLIENT
+		bool 
+		default y
+endif
+
+config BT_PRIVACY
+	bool "Enable BT Privacy"
+	default n
+
+config BT_EXT_ADV
+	bool "Enable BT Extended Advertising"
+	default n
+
+if BT_EXT_ADV
+	config BT_EXT_ADV_MAX_ADV_SET
+		int "Max Advertising Sets"
+		default 2
+endif
+
+config COMMON_LIBC_MALLOC_ARENA_SIZE
+	default 8192
+
+endif # REALTEK_AMEBA_ZEPHYR_BT

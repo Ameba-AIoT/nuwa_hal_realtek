@@ -1,18 +1,23 @@
-#zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/${CONFIG_SOC}/lib/lib_wifi_single_core.a)
-#zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/${CONFIG_SOC}/lib/lib_wifi_api_km4.a)
-#zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/${CONFIG_SOC}/lib/lib_wpa_lite.a)
-#zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/${CONFIG_SOC}/lib/lib_wifi_com_sec.a)
-#zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/${CONFIG_SOC}/lib/lib_coex_api.a)
-#zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/${CONFIG_SOC}/lib/lib_coex.a)
+# Copyright (c) 2024 Realtek Semiconductor Corp.
+# SPDX-License-Identifier: Apache-2.0
 
-set(WIFI_DRV_PATH "${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/${CONFIG_SOC}/lib/lib_wifi_single_core.a")
-set(WIFI_WPA_PATH "${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/${CONFIG_SOC}/lib/lib_wpa_lite.a")
-set(WIFI_SEC_PATH "${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/${CONFIG_SOC}/lib/lib_wifi_com_sec.a")
-set(WIFI_API_PATH "${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/${CONFIG_SOC}/lib/lib_wifi_api.a")
+if (CONFIG_BT_COEXIST)
+	set(LIB_PATH ${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/${CONFIG_SOC_SERIES}/lib/coex)
+else()
+	set(LIB_PATH ${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/${CONFIG_SOC_SERIES}/lib)
+endif()
 
-add_library(wifi_libs INTERFACE)
-target_link_libraries(wifi_libs INTERFACE ${WIFI_DRV_PATH} ${WIFI_API_PATH} ${WIFI_WPA_PATH} ${WIFI_SEC_PATH})
-target_link_libraries(app PRIVATE wifi_libs)
+zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA
+	-Wl,--start-group
+	${LIB_PATH}/lib_wifi_rtk_app.a
+	${LIB_PATH}/lib_wifi_single_core.a
+	-Wl,--end-group
+)
+zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${LIB_PATH}/lib_wifi_api.a)
+zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${LIB_PATH}/lib_rtw_event.a)
+zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${LIB_PATH}/lib_wpa_lite.a)
+zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${LIB_PATH}/lib_wifi_com_sec.a)
+zephyr_link_libraries_ifdef(CONFIG_BT_COEXIST ${LIB_PATH}/lib_coex.a)
 
 zephyr_compile_options(-mcmse)
 
@@ -27,14 +32,13 @@ zephyr_include_directories(source/app/monitor/include)
 
 # used by common
 zephyr_library_sources(source/fwlib/ram_hp/ameba_system.c)
-zephyr_library_sources(source/usrcfg/ameba_ipccfg.c)
 zephyr_library_sources(source/fwlib/ram_common/ameba_ipc_api.c)
 zephyr_library_sources(source/fwlib/ram_common/ameba_arch.c)
 zephyr_library_sources(source/swlib/log.c)
-zephyr_library_sources(source/lib/ram_common/ameba_rom_patch.c)
+zephyr_library_sources(source/lib/chipinfo/ameba_rom_patch.c)
 
 # used by driver, need use zephyr_library_sources_ifdef
-zephyr_library_sources_ifdef(CONFIG_ENTROPY_AMEBA_TRNG source/fwlib/ram_common/ameba_rand2.c)
+zephyr_library_sources_ifdef(CONFIG_ENTROPY_AMEBA_TRNG source/lib/chipinfo/ameba_rand2.c)
 zephyr_library_sources_ifdef(CONFIG_ADC_AMEBA source/fwlib/ram_common/ameba_adc.c)
 zephyr_library_sources_ifdef(CONFIG_SOC_FLASH_AMEBA source/fwlib/ram_common/ameba_flash_ram.c)
 zephyr_library_sources_ifdef(CONFIG_DMA_AMEBA source/fwlib/ram_common/ameba_gdma_ram.c)

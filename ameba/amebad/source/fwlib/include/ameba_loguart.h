@@ -79,7 +79,6 @@ _LONG_CALL_ void LOGUART_INTConfig(UART_TypeDef *UARTLOG, u32 UART_IT, u32 newSt
 #define DiagPutChar		LOGUART_PutChar
 #define DiagGetChar		LOGUART_GetChar
 
-#ifdef __ZEPHYR__
 /* UART line status bit */
 #define LOGUART_BIT_TIMEOUT_INT       RUART_BIT_TIMEOUT_INT
 #define LOGUART_BIT_TP1F_EMPTY        RUART_BIT_TX_EMPTY
@@ -97,6 +96,7 @@ _LONG_CALL_ void LOGUART_INTConfig(UART_TypeDef *UARTLOG, u32 UART_IT, u32 newSt
 
 #define LOGUART_DEV			((UART_TypeDef		*) UART2_DEV)
 
+#ifdef __ZEPHYR__
 #define LOGUART_RxCmd(UARTLOG, NewState) (void)0;
 #define LOGUART_INT_NP2AP() (void)0;
 #endif

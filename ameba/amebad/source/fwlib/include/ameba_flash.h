@@ -383,9 +383,8 @@ _LONG_CALL_ u32 FLASH_CalibrationPhase(u8 phase_int, u8 phase_sel);
 _LONG_CALL_ u32 FLASH_Calibration500MPSCmd(u32 NewStatus);
 _LONG_CALL_ u32 FLASH_CalibrationInit(u8 CalibrationEnd);
 _LONG_CALL_ void FLASH_ClockSwitch(u32 Source, u32 Protection);
-_LONG_CALL_ int FLASH_WriteStream(u32 address, u32 len, u8 *data);
 _LONG_CALL_ int FLASH_ReadStream(u32 address, u32 len, u8 *data);
-
+_LONG_CALL_ int  FLASH_WriteStream(u32 address, u32 len, u8 *data);
 /**
   * @}
   */
@@ -576,6 +575,10 @@ void FLASH_Invalidate_Auto_Write(void);
 
 #define DUAL_PRM_CYCLE_NUM		4
 #define QUAD_PRM_CYCLE_NUM		2
+
+
+#define PAGE_SIZE_4K	0x1000
+#define PAGE_SIZE_2K	0x800
 /** @} */
 
 /**

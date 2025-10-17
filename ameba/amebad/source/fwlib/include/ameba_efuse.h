@@ -165,6 +165,13 @@ _LONG_CALL_ extern u32 EFUSEWrite8(u32 CtrlSetting, u32 Addr, u8 Data, u8 L25Out
 _LONG_CALL_ extern int EFUSE_LogicalMap_Read(u8 *pbuf);
 /* please use EFUSE_LMAP_WRITE, dont use this API direclty, or chip will be damaged */
 _LONG_CALL_ extern int EFUSE_LogicalMap_Write(u32 addr, u32 cnts, u8 *data);
+
+int OTP_LogicalMap_Read(u8 *pbuf, u32 addr, u32 len);
+int OTP_LogicalMap_Write(u32 addr, u32 cnts, u8 *data);
+int OTPSetCRC(void);
+int OTP_Read8(u32 Addr, u8 *Data);
+int OTP_Write8(u32 Addr, u8 Data);
+
 /**
   * @}
   */
@@ -230,7 +237,7 @@ __STATIC_INLINE int EFUSE_LMAP_WRITE(u32 addr, u32 cnts, u8 *data)
 		RTK_LOGS(NOTAG, RTK_LOG_ERROR, "Please Switch to 3.3V to PG EFUSE !!!!!");
 		//while (1);
 
-		return FAIL;
+		return RTK_FAIL;
 	} else {
 		return EFUSE_LogicalMap_Write(addr, cnts, data);
 	}

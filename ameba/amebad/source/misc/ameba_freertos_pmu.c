@@ -5,11 +5,10 @@
 */
 
 #include "ameba_soc.h"
-#include "basic_types.h"
 #include "os_wrapper.h"
 #include "os_wrapper_specific.h"
 
-// static const char *const TAG = "PMU";
+static const char *const TAG = "PMU";
 uint32_t missing_tick = 0;
 
 static uint32_t wakelock     = DEFAULT_WAKELOCK;
@@ -33,6 +32,11 @@ static u8 roaming_awake_delay = 0;			// tickless awake delay
 u8 roaming_awake_rssi_range = 0;			// tickless awake |rssi| change range
 u8 roaming_normal_rssi_range = 0;
 rtos_sema_t roaming_sema = NULL;	// start roaming semaphore
+
+static uint32_t timer_min_sleep_time = 0;
+static uint32_t timer_max_sleep_time = 0;
+/* ++++++++ FreeRTOS macro implementation ++++++++ */
+void vTaskCompTick(const uint32_t xTicksToComp);
 
 /* psm dd hook info */
 PSM_DD_HOOK_INFO gPsmDdHookInfo[PMU_MAX];
@@ -104,10 +108,12 @@ uint32_t pmu_set_sysactive_time(uint32_t timeout)
 	}
 	sysactive_timeout_temp = 0;
 
-	TimeOut = RTOS_CONVERT_MS_TO_TICKS(rtos_time_get_current_system_time_ms()) + timeout;
+	if (timeout != 0) {
+		TimeOut = RTOS_CONVERT_MS_TO_TICKS(rtos_time_get_current_system_time_ms()) + timeout + RTOS_CONVERT_MS_TO_TICKS(rtos_time_get_current_pended_time_ms());
 
-	if (freertos_systick_check(TimeOut, sleepwakelock_timeout)) {
-		sleepwakelock_timeout = TimeOut;
+		if (freertos_systick_check(TimeOut, sleepwakelock_timeout)) {
+			sleepwakelock_timeout = TimeOut;
+		}
 	}
 	return 0;
 }
@@ -203,6 +209,25 @@ int freertos_ready_to_dsleep(void)
 	}
 }
 
+void aontimer_test(void)
+{
+#if defined (CONFIG_ARM_CORE_CM4)
+	// 1.Enable BIT_LP_WEVT_HS_MSK status ON of sleep_wevent_config in sleepcfg.c
+	// 2.Enable BIT_LP_WEVT_AON_STS status ON of  hs_wakeevent_config in sleepcfg.c
+	// 3.Enable BIT_AON_WAKE_TIM0_STS status ON of  hs_wakeevent_config in sleepcfg.c
+	// 4.Enable BIT_LSYS_PST_SLEP_EACK status ON of km0_pwrmgt_config in sleepcfg_lib.c*/
+	SOCPS_AONTimer(1000);
+	SOCPS_SetWakeEvent_HP(BIT_LP_WEVT_AON_MSK, ENABLE);
+	SOCPS_SetWakeEventAON(BIT_AON_WAKE_TIM0_MSK, ENABLE);
+	SOCPS_AONTimerCmd(ENABLE);
+#else
+	SOCPS_AONTimer(1000);
+	SOCPS_SetWakeEvent(BIT_LP_WEVT_AON_MSK, ENABLE);
+	SOCPS_SetWakeEventAON(BIT_AON_WAKE_TIM0_MSK, ENABLE);
+	SOCPS_AONTimerCmd(ENABLE);
+#endif
+}
+
 /*
  *  It is called when freertos is going to sleep.
  *  At this moment, all sleep conditons are satisfied. All freertos' sleep pre-processing are done.
@@ -213,7 +238,74 @@ int freertos_ready_to_dsleep(void)
 #if defined (CONFIG_ARM_CORE_CM4)
 void freertos_pre_sleep_processing(unsigned int *expected_idle_time)
 {
-	UNUSED(expected_idle_time);
+	uint32_t tick_before_sleep;
+	uint32_t tick_passed;
+	uint32_t tick_after_sleep;
+	volatile uint32_t ms_passed = 0;
+	uint32_t ms_before_sleep = SYSTIMER_GetPassTime(0);
+	uint32_t wakeup_time_ms = 0;
+
+	if (freertos_ready_to_dsleep()) {
+		sleep_param.sleep_time = pmu_get_sleep_time();// do not wake on system schedule tick
+		sleep_param.dlps_enable = ENABLE;
+	} else {
+		sleep_param.sleep_time = pmu_get_sleep_time();//*expected_idle_time;
+		sleep_param.dlps_enable = DISABLE;
+	}
+	sleep_param.sleep_type = sleep_type;
+
+	*expected_idle_time = 0;
+
+	/*  Store gtimer timestamp before sleep */
+	tick_before_sleep = SYSTIMER_TickGet();
+	sysactive_timeout_flag = 1;
+
+	IPCM0_DEV->IPCx_USR[IPC_INT_CHAN_SHELL_SWITCH] = 0x00000000;
+
+	// BKUP_Set(BKUP_REG0, BIT_KM4_WAKE_DELAY);
+
+	/* for test */
+#if 0
+	aontimer_test();
+#endif
+
+	if (sleep_type == SLEEP_PG) {
+		SOCPS_SleepPG();
+	} else {
+		SOCPS_SleepCG();
+	}
+	//BKUP_Clear(BKUP_REG0, BIT_KM4_WAKE_DELAY);
+
+	/*  update kernel tick by calculating passed tick from gtimer */
+	/*  get current gtimer timestamp */
+	tick_after_sleep = SYSTIMER_TickGet();
+
+	/*  calculated passed time */
+	if (tick_after_sleep > tick_before_sleep) {
+		tick_passed = tick_after_sleep - tick_before_sleep;
+	} else {
+		/*  overflow */
+		tick_passed = (0xffffffff - tick_before_sleep) + tick_after_sleep;
+	}
+
+	tick_passed += missing_tick;
+	missing_tick = tick_passed & 0x1F;
+
+	/* timer clock is 32768, 0x20 is 1ms */
+	ms_passed = ((tick_passed & 0xFFFF8000) / 32768) * 1000 + ((tick_passed & 0x7FFF) * 1000) / 32768;
+	//ms_passed = (((tick_passed & 0xFFFFFFE0) * 1000)/32768); /* overflow when time over 0x418937, about 130s */
+	/* update xTickCount and mark to trigger task list update in xTaskResumeAll */
+	vTaskCompTick(ms_passed);
+
+	wakeup_time_ms = SYSTIMER_GetPassTime(0);
+
+	/* update sleepwakelock_timeout if sysactive_timeout_temp not 0 */
+	sysactive_timeout_flag = 0;
+	pmu_set_sysactive_time(0);
+
+	if (tickless_debug) {
+		RTK_LOGI(TAG, "m4 sleeped:[%d] ms\n", wakeup_time_ms - ms_before_sleep);
+	}
 }
 
 #else
@@ -282,19 +374,17 @@ void freertos_pre_sleep_processing(unsigned int *expected_idle_time)
 	/* timer clock is 32768, 0x20 is 1ms */
 	ms_passed = ((tick_passed & 0xFFFF8000) / 32768) * 1000 + ((tick_passed & 0x7FFF) * 1000) / 32768;
 	//ms_passed = (((tick_passed & 0xFFFFFFE0) * 1000)/32768);/* overflow when time over 0x418937, about 130s */
-	vTaskStepTick(ms_passed); /*  update kernel tick */
+	/* update xTickCount and mark to trigger task list update in xTaskResumeAll */
+	vTaskCompTick(ms_passed);
 
 	wakeup_time_ms = HAL_READ32(SYSTEM_CTRL_BASE_LP, REG_AON_TSF_CNT_LOW);
 
-	if (ps_config.km0_tickles_debug) {
-		RTK_LOGI(TAG, "m0 os sleeped:[%d->%d:%d] us\n", ms_before_sleep & 0x7FFFFFFF,
-				 wakeup_time_ms & 0x7FFFFFFF, wakeup_time_ms - ms_before_sleep);
-	}
+	RTK_LOGD(TAG, "m0 os sleeped:[%d->%d:%d] us\n", ms_before_sleep & 0x7FFFFFFF,
+			 wakeup_time_ms & 0x7FFFFFFF, wakeup_time_ms - ms_before_sleep);
 
+	/* update sleepwakelock_timeout if sysactive_timeout_temp not 0 */
 	sysactive_timeout_flag = 0;
-
-	sleepwakelock_timeout = RTOS_CONVERT_MS_TO_TICKS(rtos_time_get_current_system_time_ms()) + (sysactive_timeout_temp > 2 ? sysactive_timeout_temp : 2);
-	sysactive_timeout_temp = 0;
+	pmu_set_sysactive_time(0);
 
 	SOCPS_SWRLDO_Suspend(DISABLE);
 	//__asm volatile( "cpsie i" );
@@ -344,6 +434,21 @@ void pmu_set_max_sleep_time(uint32_t timer_ms)
 uint32_t pmu_get_max_sleep_time(void)
 {
 	return max_sleep_time;
+}
+uint32_t pmu_get_sleep_time(void)
+{
+	u32 time = 0;
+	if (timer_max_sleep_time > timer_min_sleep_time) {
+		time = _rand() % (timer_max_sleep_time - timer_min_sleep_time + 1) + timer_min_sleep_time;
+	} else if (timer_min_sleep_time != 0) {
+		time = timer_min_sleep_time;
+	}
+	return time;
+}
+void pmu_set_sleep_time_range(uint32_t min_time, uint32_t max_time)
+{
+	timer_min_sleep_time = min_time;
+	timer_max_sleep_time = max_time;
 }
 
 void pmu_set_dsleep_active_time(uint32_t TimeOutMs)

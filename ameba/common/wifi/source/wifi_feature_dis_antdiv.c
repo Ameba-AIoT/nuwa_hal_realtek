@@ -64,12 +64,6 @@ void rtw_wnm_dbg_cmd(uint8_t *buf, int32_t buf_len, int32_t flags, void *userdat
 }
 
 #else
-// uint32_t pmu_set_sysactive_time(uint32_t timeout)
-// {
-// 	(void)timeout;
-// 	return 0;
-// }
-
 void rtw_wnm_dbg_cmd(uint8_t *buf, int32_t buf_len, int32_t flags, void *userdata)
 {
 	UNUSED(buf);
@@ -77,5 +71,32 @@ void rtw_wnm_dbg_cmd(uint8_t *buf, int32_t buf_len, int32_t flags, void *userdat
 	UNUSED(flags);
 	UNUSED(userdata);
 }
-
 #endif
+void eap_disconnected_hdl(void)
+{
+}
+
+int get_eap_phase(void)
+{
+	return 0;
+}
+
+void eap_eapol_start_hdl(uint8_t *evt_info)
+{
+	UNUSED(evt_info);
+}
+
+void eap_eapol_recvd_hdl(uint8_t *buf, int32_t buf_len)
+{
+	UNUSED(buf);
+	UNUSED(buf_len);
+}
+
+int rtk_diag_event_add(uint8_t evt_level, uint16_t evt_type, const uint8_t *evt_info, uint16_t evt_len)
+{
+	UNUSED(evt_level);
+	UNUSED(evt_type);
+	UNUSED(evt_info);
+	UNUSED(evt_len);
+	return 0;
+}

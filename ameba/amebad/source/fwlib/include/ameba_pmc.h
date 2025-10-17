@@ -161,7 +161,6 @@
 typedef struct {
 	u32 km0_config_wifi_enable;
 	u32 km0_enable_key_touch;
-	u32 km0_tickles_debug; /* open km0 tickles log, it will encrease power consumption */
 	u32 km0_osc2m_close; /* just uart and normal ADC(2M/12=166K) use it, captouch ADC use 131K */
 	u32 km0_pg_enable;
 	u32 km0_rtc_calibration;

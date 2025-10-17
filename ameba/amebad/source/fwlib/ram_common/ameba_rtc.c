@@ -1075,4 +1075,12 @@ u32 RTC_32KAutoCalibConfig(u32 Cal_Period, u32 Unit_Sel)
 	return status;
 }
 
+/**
+  * @brief  This function is meaningless, only for compatibility with Zephyr.
+  */
+void RTC_Enable(u8 NewState)
+{
+	UNUSED(NewState);
+}
+
 /******************* (C) COPYRIGHT 2016 Realtek Semiconductor *****END OF FILE****/

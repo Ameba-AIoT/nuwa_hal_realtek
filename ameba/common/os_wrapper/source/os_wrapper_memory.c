@@ -9,6 +9,11 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(os_if_memory);
 
+#if (K_HEAP_MEM_POOL_SIZE > 0)
+#define _SYSTEM_HEAP (&_system_heap)
+extern struct sys_heap _system_heap;
+#endif
+
 void rtos_mem_init(void)
 {
 	LOG_ERR("%s Not Support\n", __FUNCTION__);

@@ -154,6 +154,7 @@ _LONG_CALL_ u32 BOOT_Reason(void);
 #define BIT_SYS_RESET_HAPPEN				BIT(0)	/*!<  km0 system reset */
 
 #define BIT_MASK_BOOT_REASON				((u32)0x0000001F)
+#define BKUP_MASK_UARTBURN_BOOT     0
 /** @} */
 /** @} */
 

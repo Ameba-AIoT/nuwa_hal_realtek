@@ -228,6 +228,21 @@ void PLL_I2S1_CLK(u32 status, u32 clk)
 }
 
 /**
+  * @brief  I2S0/1 CPU PLL CLOCK choose when system clock is an integer multiple of I2S PLL
+  * @param  index: 0/1
+  * @param  status: ENABLE/DISABLE
+  * @param  clk: CLK_98P304M/CLK_45P1584M
+  */
+void PLL_I2S_CLK_DIV(u32 index, u32 status, u32 clk)
+{
+	if (index == 0) {
+		PLL_I2S0_CLK(status, clk);
+	} else {
+		PLL_I2S1_CLK(status, clk);
+	}
+}
+
+/**
   * @brief  Get I2S PLL clock.
   * @retval  can be one of the following values:
   *          98:98.304M
@@ -248,8 +263,9 @@ u32 PLL_I2S_CLKGet(void)
   *            @arg PLL_FASTER: pll clock faster than 98.304M
   *            @arg PLL_SLOWER: pll clock slower than 98.304M
   */
-float PLL_I2S_98P304M_ClkTune(float ppm, u32 action)
+float PLL_I2S_98P304M_ClkTune(u32 pll_sel, float ppm, u32 action)
 {
+	(void)pll_sel;
 	u32 F0F_new;
 	float real_ppm = 0;
 	double step = 0.886973813872093;
@@ -286,8 +302,9 @@ float PLL_I2S_98P304M_ClkTune(float ppm, u32 action)
   *            @arg PLL_FASTER: pll clock faster than 45.1584M
   *            @arg PLL_SLOWER: pll clock slower than 45.1584M
   */
-float PLL_I2S_45P1584M_ClkTune(float ppm, u32 action)
+float PLL_I2S_45P158M_ClkTune(u32 pll_sel, float ppm, u32 action)
 {
+	(void)pll_sel;
 	u32 F0F_new;
 	float real_ppm = 0;
 	double step = 0.901052699869257;

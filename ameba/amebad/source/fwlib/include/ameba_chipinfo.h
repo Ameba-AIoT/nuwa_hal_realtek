@@ -28,6 +28,8 @@ typedef struct {
   */
 _LONG_CALL_ void ChipInfo_GetSocName_ToBuf(char *buf, size_t buflen);
 _LONG_CALL_ void ChipInfo_GetLibVersion_ToBuf(char *buf, size_t buflen);
+_LONG_CALL_ bool ChipInfo_PsramExists(void);
+
 /**
   * @}
   */

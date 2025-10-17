@@ -42,6 +42,7 @@
 #include "ameba_sysreg.h"
 #include "ameba_pinmux.h"
 #include "ameba_usb.h"
+#include "ameba_reset.h"
 #ifndef CONFIG_BUILD_ROM
 #include "ameba_ipc_api.h"
 #endif

@@ -13,6 +13,7 @@ typedef enum {
 	PMU_KM4_RUN,
 	PMU_WLAN_FW_DEVICE,
 	PMU_BT_DEVICE,
+	PMU_FULLMAC_WIFI,
 	PMU_DEV_USER_BASE,
 	PMU_MAX
 } PMU_DEVICE;
@@ -41,7 +42,9 @@ uint32_t pmu_exec_sleep_hook_funs(void);
 void pmu_exec_wakeup_hook_funs(uint32_t nDeviceIdMax);
 uint32_t pmu_set_sleep_type(uint32_t type);
 uint32_t pmu_get_sleep_type(void);
+uint32_t pmu_get_sleep_time(void);
 void pmu_set_max_sleep_time(uint32_t timer_ms);
+void pmu_set_sleep_time_range(uint32_t min_time, uint32_t max_time);
 void pmu_init_wakeup_timer(void);
 void pmu_set_wakeup_timer(uint32_t timeout_ms);
 void pmu_reset_wakeup_timer(void);

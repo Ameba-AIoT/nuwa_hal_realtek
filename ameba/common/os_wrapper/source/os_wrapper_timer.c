@@ -22,17 +22,17 @@ int rtos_timer_create(rtos_timer_t *pp_handle, const char *p_timer_name, uint32_
 	ARG_UNUSED(p_timer_name);
 
 	if (pp_handle == NULL || p_timer_callback == NULL) {
-		return FAIL;
+		return RTK_FAIL;
 	}
 
 #if (CONFIG_HEAP_MEM_POOL_SIZE > 0)
 	p_timer = k_malloc(sizeof(k_timer_wrapper_t));
 	if (p_timer == NULL) {
-		return FAIL;
+		return RTK_FAIL;
 	}
 #else
 	LOG_ERR("%s <<< k_malloc not support. >>>\n", __FUNCTION__);
-	return FAIL;
+	return RTK_FAIL;
 #endif
 
 	k_timer_init((struct k_timer *)p_timer, (k_timer_expiry_t)p_timer_callback, NULL);
@@ -41,7 +41,7 @@ int rtos_timer_create(rtos_timer_t *pp_handle, const char *p_timer_name, uint32_
 	p_timer->reload = reload;
 
 	*pp_handle = p_timer;
-	return SUCCESS;
+	return RTK_SUCCESS;
 }
 
 int rtos_timer_delete(rtos_timer_t p_handle, uint32_t wait_ms)
@@ -50,12 +50,12 @@ int rtos_timer_delete(rtos_timer_t p_handle, uint32_t wait_ms)
 	ARG_UNUSED(wait_ms);
 
 	if (p_handle == NULL) {
-		return FAIL;
+		return RTK_FAIL;
 	}
 
 	k_timer_stop(p_timer);
 	k_free(p_timer);
-	return SUCCESS;
+	return RTK_SUCCESS;
 }
 
 int rtos_timer_create_static(rtos_timer_t *pp_handle, const char *p_timer_name, uint32_t timer_id,
@@ -75,7 +75,7 @@ int rtos_timer_start(rtos_timer_t p_handle, uint32_t wait_ms)
 	ARG_UNUSED(wait_ms);
 
 	if (p_handle == NULL) {
-		return FAIL;
+		return RTK_FAIL;
 	}
 
 	if (p_timer->reload) {
@@ -86,18 +86,18 @@ int rtos_timer_start(rtos_timer_t p_handle, uint32_t wait_ms)
 		k_timer_start((struct k_timer *)p_timer, K_MSEC(p_timer->interval_ms), K_NO_WAIT);
 	}
 
-	return SUCCESS;
+	return RTK_SUCCESS;
 }
 
 int rtos_timer_stop(rtos_timer_t p_handle, uint32_t wait_ms)
 {
 	ARG_UNUSED(wait_ms);
 	if (p_handle == NULL) {
-		return FAIL;
+		return RTK_FAIL;
 	}
 
 	k_timer_stop(p_handle);
-	return SUCCESS;
+	return RTK_SUCCESS;
 }
 
 int rtos_timer_change_period(rtos_timer_t p_handle, uint32_t interval_ms, uint32_t wait_ms)
@@ -106,7 +106,7 @@ int rtos_timer_change_period(rtos_timer_t p_handle, uint32_t interval_ms, uint32
 	ARG_UNUSED(wait_ms);
 
 	if (p_handle == NULL) {
-		return FAIL;
+		return RTK_FAIL;
 	}
 
 	if (p_timer->reload) {
@@ -118,7 +118,7 @@ int rtos_timer_change_period(rtos_timer_t p_handle, uint32_t interval_ms, uint32
 	}
 
 	p_timer->interval_ms = interval_ms;
-	return SUCCESS;
+	return RTK_SUCCESS;
 }
 
 uint32_t rtos_timer_is_timer_active(rtos_timer_t p_handle)

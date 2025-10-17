@@ -604,7 +604,7 @@ void RTIM_CCxCmd(RTIM_TypeDef *TIMx, u16 TIM_Channel, u32 TIM_CCx)
   *          This parameter can be one of the following values:
   *            @arg TIM_OPMode_Single
   *            @arg TIM_OPMode_Repetitive
-  * @param  TrigerPolarity: specifies the OPM Mode Trigger Polarity.
+  * @param  TrigerPolarity: specifies the OPM Mode Triger Polarity.
   *          This parameter can be one of the following values:
   *            @arg TIM_OPMode_ETP_positive
   *            @arg TIM_OPMode_ETP_negative

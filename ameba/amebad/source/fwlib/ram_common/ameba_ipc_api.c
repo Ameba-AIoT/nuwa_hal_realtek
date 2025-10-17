@@ -60,7 +60,11 @@ u32 ipc_send_message(u32 IPC_Dir, u8 IPC_ChNum, PIPC_MSG_STRUCT IPC_Msg)
 	} else {
 		IPC_DEV = IPCM0_DEV;
 	}
+
 #ifndef __ZEPHYR__
+	extern uint32_t *vTaskStackAddr(void);
+	extern uint32_t vTaskStackSize(void);
+
 	if (IPC_USER_POINT == ipc_init_config[IPC_ChNum].USER_MSG_TYPE) {
 		/*message is shared between two cpu ,so it can't store in stack
 		 * assume stack down growth, and 0x100 is an estimated value
@@ -68,6 +72,7 @@ u32 ipc_send_message(u32 IPC_Dir, u8 IPC_ChNum, PIPC_MSG_STRUCT IPC_Msg)
 		assert_param((IPC_Msg->msg > (u32)(vTaskStackAddr() + vTaskStackSize() * 4)) || (IPC_Msg->msg < (u32)vTaskStackAddr()));
 	}
 #endif
+
 	if ((IPC_ChNum > 10) && (IPC_ChNum < 32)) {
 		Messages[IPC_ChNum] = (u32)IPC_Msg->msg;
 		IPC_DEV->IPCx_USR[11] = (u32)&Messages[0];

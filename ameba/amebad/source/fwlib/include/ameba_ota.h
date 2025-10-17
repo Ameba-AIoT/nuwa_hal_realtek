@@ -167,11 +167,10 @@ int http_update_ota(char *host, int port, char *resource);
 #include "mbedtls/version.h"
 #if defined(MBEDTLS_VERSION_NUMBER) && (MBEDTLS_VERSION_NUMBER>=0x03010000)
 #else
-#include <mbedtls/config.h>
+#include "mbedtls/config.h"
 #endif
-#include <mbedtls/platform.h>
-#include <mbedtls/net_sockets.h>
-#include <mbedtls/ssl.h>
+#include "mbedtls/net_sockets.h"
+#include "mbedtls/ssl.h"
 
 u32 recv_ota_file_hdr_https(u8 *Recvbuf, u32 writelen, u32 *len, update_ota_target_hdr *pOtaTgtHdr, mbedtls_ssl_context *ssl);
 int https_read_socket(mbedtls_ssl_context *ssl, u8 *recevie_buf, int buf_len);

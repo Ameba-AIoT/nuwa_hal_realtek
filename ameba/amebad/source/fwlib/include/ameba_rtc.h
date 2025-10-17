@@ -122,7 +122,7 @@ typedef struct {
   * @brief  RTC Time structure definition
   */
 typedef struct {
-	u16 RTC_Year;	/*!< Year in binary format 16bits 1900~2155. */
+	u16 RTC_Year;	/*!< Year in binary format 16bits 1900~2155*/
 
 	u16 RTC_Days;	/*!< Day in binary format 9bits 0~0x1FF */
 
@@ -375,6 +375,7 @@ typedef struct {
 /** @defgroup RTC_Exported_Functions RTC Exported Functions
   * @{
   */
+_LONG_CALL_ void RTC_Enable(u8 NewState);
 _LONG_CALL_ u32 RTC_BypassShadowCmd(u32 NewState);
 _LONG_CALL_ void RTC_StructInit(RTC_InitTypeDef *RTC_InitStruct);
 _LONG_CALL_ u32 RTC_Init(RTC_InitTypeDef *RTC_InitStruct);

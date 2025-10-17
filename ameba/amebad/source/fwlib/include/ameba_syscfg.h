@@ -144,6 +144,8 @@ _LONG_CALL_ u32 SYSCFG_TRP_UARTImage(void);
 _LONG_CALL_ u32 SYSCFG_TRP_ICFG(void);
 _LONG_CALL_ u32 SYSCFG_ROMINFO_Get(void);
 _LONG_CALL_ void SYSCFG_ROMINFO_Set(void);
+u32 SYSCFG_OTP_RSIPEn(void);
+
 void SYSCFG_CHIPType_Set(void);
 /**
   * @}
