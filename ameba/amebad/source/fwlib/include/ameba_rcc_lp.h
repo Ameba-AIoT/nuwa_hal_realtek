@@ -1,19 +1,8 @@
-/**
-  ******************************************************************************
-  * @file    ameba_rcc.h
-  * @author
-  * @version V1.0.0
-  * @date    2016-05-17
-  * @brief   This file contains all the functions prototypes for peripheral reset and clock control driver.
-  ******************************************************************************
-  * @attention
-  *
-  * This module is a confidential and proprietary property of RealTek and
-  * possession or use of this module requires written permission of RealTek.
-  *
-  * Copyright(c) 2015, Realtek Semiconductor Corporation. All rights reserved.
-  ******************************************************************************
-  */
+/*
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #ifndef _AMEBA_LP_RCC_H_
 #define _AMEBA_LP_RCC_H_

@@ -1,20 +1,8 @@
-/**
-  ******************************************************************************
-  * @file    ameba_sdio.h
-  * @author
-  * @version V1.0.0
-  * @date    2016-05-17
-  * @brief   This file contains all the functions prototypes for the SDIO firmware
-  *          library.
-  ******************************************************************************
-  * @attention
-  *
-  * This module is a confidential and proprietary property of RealTek and
-  * possession or use of this module requires written permission of RealTek.
-  *
-  * Copyright(c) 2015, Realtek Semiconductor Corporation. All rights reserved.
-  ******************************************************************************
-  */
+/*
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #ifndef _AMEBA_SDIO_H_
 #define _AMEBA_SDIO_H_
@@ -110,7 +98,7 @@ typedef struct {
   */
 #define CPWM2_ACT_BIT			(0x00000001 << 0)     // Active
 #define CPWM2_DSTANDBY_BIT	(0x00000001 << 1)     // Deep Standby
-#define CPWM2_FBOOT_BIT		(0x00000001 << 2)     // fast reboot
+#define CPWM2_IMG1_BIT		(0x00000001 << 2)     // bootloader
 #define CPWM2_INIC_FW_RDY_BIT	(0x00000001 << 3)     // is the iNIC FW(1) or Boot FW(0)
 #define CPWM2_TOGGLE_BIT		(0x00000001 << 15)    // Toggle bit
 /**

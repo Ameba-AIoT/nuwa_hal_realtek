@@ -1,20 +1,8 @@
-/**
-  ******************************************************************************
-  * @file    ameba_uart.h
-  * @author
-  * @version V1.0.0
-  * @date    2016-05-17
-  * @brief   This file contains all the functions prototypes for the UART firmware
-  *          library.
-  ******************************************************************************
-  * @attention
-  *
-  * This module is a confidential and proprietary property of RealTek and
-  * possession or use of this module requires written permission of RealTek.
-  *
-  * Copyright(c) 2016, Realtek Semiconductor Corporation. All rights reserved.
-  ******************************************************************************
-  */
+/*
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #ifndef _AMEBA_UART_H_
 #define _AMEBA_UART_H_

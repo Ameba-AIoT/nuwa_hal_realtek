@@ -1,12 +1,16 @@
 /*
-* Copyright (c) 2024 Realtek Semiconductor Corp.
-*
-* SPDX-License-Identifier: Apache-2.0
-*/
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #include "ameba_soc.h"
 #include "os_wrapper.h"
 #include "os_wrapper_specific.h"
+
+#if defined(CONFIG_STANDARD_TICKLESS) && defined(CONFIG_LWIP_LAYER)
+extern void lwip_update_internal_counter(uint32_t ms);
+#endif
 
 static const char *const TAG = "PMU";
 uint32_t missing_tick = 0;
@@ -15,7 +19,6 @@ static uint32_t wakelock     = DEFAULT_WAKELOCK;
 static uint32_t sleepwakelock_timeout     = 0;
 u32 system_can_yield = 1; /* default is can */
 static uint32_t sleep_type = SLEEP_PG; /* 0 is power gate, 1 is clock gate */
-static uint32_t max_sleep_time = 0; /* if user want wakeup peridically, can set this timer*/
 KM4SLEEP_ParamDef sleep_param;
 
 static uint32_t deepwakelock     = DEFAULT_DEEP_WAKELOCK;
@@ -33,8 +36,8 @@ u8 roaming_awake_rssi_range = 0;			// tickless awake |rssi| change range
 u8 roaming_normal_rssi_range = 0;
 rtos_sema_t roaming_sema = NULL;	// start roaming semaphore
 
-static uint32_t timer_min_sleep_time = 0;
-static uint32_t timer_max_sleep_time = 0;
+static uint32_t timer_min_sleep_time = PMU_SLEEP_FOREVER;
+static uint32_t timer_max_sleep_time = PMU_SLEEP_FOREVER;
 /* ++++++++ FreeRTOS macro implementation ++++++++ */
 void vTaskCompTick(const uint32_t xTicksToComp);
 
@@ -249,7 +252,11 @@ void freertos_pre_sleep_processing(unsigned int *expected_idle_time)
 		sleep_param.sleep_time = pmu_get_sleep_time();// do not wake on system schedule tick
 		sleep_param.dlps_enable = ENABLE;
 	} else {
+#if defined(CONFIG_STANDARD_TICKLESS)
+		sleep_param.sleep_time = *expected_idle_time;
+#else
 		sleep_param.sleep_time = pmu_get_sleep_time();//*expected_idle_time;
+#endif
 		sleep_param.dlps_enable = DISABLE;
 	}
 	sleep_param.sleep_type = sleep_type;
@@ -296,6 +303,9 @@ void freertos_pre_sleep_processing(unsigned int *expected_idle_time)
 	//ms_passed = (((tick_passed & 0xFFFFFFE0) * 1000)/32768); /* overflow when time over 0x418937, about 130s */
 	/* update xTickCount and mark to trigger task list update in xTaskResumeAll */
 	vTaskCompTick(ms_passed);
+#if defined(CONFIG_STANDARD_TICKLESS) && defined(CONFIG_LWIP_LAYER)
+	lwip_update_internal_counter(ms_passed);
+#endif
 
 	wakeup_time_ms = SYSTIMER_GetPassTime(0);
 
@@ -426,29 +436,39 @@ uint32_t pmu_get_sleep_type(void)
 	return sleep_type;
 }
 
-void pmu_set_max_sleep_time(uint32_t timer_ms)
-{
-	max_sleep_time = timer_ms;
-}
-
-uint32_t pmu_get_max_sleep_time(void)
-{
-	return max_sleep_time;
-}
-uint32_t pmu_get_sleep_time(void)
-{
-	u32 time = 0;
-	if (timer_max_sleep_time > timer_min_sleep_time) {
-		time = _rand() % (timer_max_sleep_time - timer_min_sleep_time + 1) + timer_min_sleep_time;
-	} else if (timer_min_sleep_time != 0) {
-		time = timer_min_sleep_time;
-	}
-	return time;
-}
 void pmu_set_sleep_time_range(uint32_t min_time, uint32_t max_time)
 {
 	timer_min_sleep_time = min_time;
 	timer_max_sleep_time = max_time;
+}
+
+void pmu_set_max_sleep_time(uint32_t timer_ms)
+{
+	timer_max_sleep_time = timer_ms;
+}
+
+uint32_t pmu_get_sleep_time(void)
+{
+	u32 time = 0;
+	/*case 1: max = 0, including [0, 0], [min, 0], invalid settings.
+	  case 2.1: min <= max, max != 0, wake up multiple times.
+	  case 2.2: min > max, inlcuding [PMU_SLEEP_FOREVER, max], and can only be woken up once.
+	*/
+	if (timer_max_sleep_time == 0) {
+		time = PMU_SLEEP_FOREVER;
+		pmu_set_sleep_time_range(PMU_SLEEP_FOREVER, PMU_SLEEP_FOREVER);
+	} else {
+		if (timer_max_sleep_time >= timer_min_sleep_time) {
+			/*min == max, periodic awakening, but [PMU_SLEEP_FOREVER, PMU_SLEEP_FOREVER] is invalid.
+			  min < max, randomly wakeup*/
+			time = _rand() % (timer_max_sleep_time - timer_min_sleep_time + 1) + timer_min_sleep_time;
+		} else {
+			time = timer_max_sleep_time;
+			pmu_set_sleep_time_range(PMU_SLEEP_FOREVER, PMU_SLEEP_FOREVER);
+		}
+	}
+
+	return time;
 }
 
 void pmu_set_dsleep_active_time(uint32_t TimeOutMs)

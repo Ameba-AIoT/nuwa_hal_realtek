@@ -1,10 +1,7 @@
 /*
- *  Routines to access hardware
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
  *
- *  Copyright (c) 2013 Realtek Semiconductor Corp.
- *
- *  This module is a confidential and proprietary property of RealTek and
- *  possession or use of this module requires written permission of RealTek.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #ifndef _STRPROC_H_
@@ -47,10 +44,10 @@ extern _LONG_CALL_ char *_strcat(char *__restrict s1, const char *__restrict s2)
 extern _LONG_CALL_ char *_strpbrk(const char *cs, const char *ct);
 extern _LONG_CALL_ char *_strchr(const char *s, int c);
 extern _LONG_CALL_ int _stricmp(const char *str1, const char *str2);
-extern _LONG_CALL_ u8 *_strupr(IN  u8  *string);
-extern _LONG_CALL_ int _stratoi(IN const char *s);
-extern _LONG_CALL_  char *_strstr(IN const char *str1, IN const char *str2);
-extern _LONG_CALL_ char *_strtok(IN char *str, IN const char *delim);
+extern _LONG_CALL_ u8 *_strupr(u8  *string);
+extern _LONG_CALL_ int _stratoi(const char *s);
+extern _LONG_CALL_  char *_strstr(const char *str1, const char *str2);
+extern _LONG_CALL_ char *_strtok(char *str, const char *delim);
 
 extern _LONG_CALL_ long _strtol(const char *cp, char **endp, int base);
 extern _LONG_CALL_ unsigned long _strtoul(const char *cp, char **endp, int base);

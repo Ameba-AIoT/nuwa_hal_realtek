@@ -1,20 +1,8 @@
-/**
-  ******************************************************************************
-  * @file    ameba_gdma.h
-  * @author
-  * @version V1.0.0
-  * @date    2016-05-17
-  * @brief   This file contains all the functions prototypes for the GDMA firmware
-  *          library.
-  ******************************************************************************
-  * @attention
-  *
-  * This module is a confidential and proprietary property of RealTek and
-  * possession or use of this module requires written permission of RealTek.
-  *
-  * Copyright(c) 2016, Realtek Semiconductor Corporation. All rights reserved.
-  ******************************************************************************
-  */
+/*
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #ifndef _AMEBA_GDMA_H_
 #define _AMEBA_GDMA_H_
@@ -461,7 +449,7 @@ _LONG_CALL_ u32	 GDMA_GetDstAddr(u8 GDMA_Index, u8 GDMA_ChNum);
 _LONG_CALL_ void GDMA_SetDstAddr(u8 GDMA_Index, u8 GDMA_ChNum, u32 DstAddr);
 _LONG_CALL_ void GDMA_SetBlkSize(u8 GDMA_Index, u8 GDMA_ChNum, u32 BlkSize);
 _LONG_CALL_ u32	 GDMA_GetBlkSize(u8 GDMA_Index, u8 GDMA_ChNum);
-
+_LONG_CALL_ u8   GDMA_ChnlFIFOIsEmpty(u8 GDMA_Index, u8 GDMA_ChNum);
 _LONG_CALL_ bool GDMA_ChnlRegister(u8 GDMA_Index, u8 GDMA_ChNum);
 _LONG_CALL_ void GDMA_ChnlUnRegister(u8 GDMA_Index, u8 GDMA_ChNum);
 _LONG_CALL_ u8	 GDMA_ChnlAlloc(u32 GDMA_Index, IRQ_FUN IrqFun, u32 IrqData, u32 IrqPriority);

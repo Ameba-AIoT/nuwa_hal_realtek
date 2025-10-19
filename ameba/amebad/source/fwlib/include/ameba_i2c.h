@@ -1,20 +1,8 @@
-/**
-  ******************************************************************************
-  * @file    ameba_i2c.h
-  * @author
-  * @version V1.0.0
-  * @date    2016-05-17
-  * @brief   This file contains all the functions prototypes for the I2C firmware
-  *          library.
-  ******************************************************************************
-  * @attention
-  *
-  * This module is a confidential and proprietary property of RealTek and
-  * possession or use of this module requires written permission of RealTek.
-  *
-  * Copyright(c) 2016, Realtek Semiconductor Corporation. All rights reserved.
-  ******************************************************************************
-  */
+/*
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #ifndef _AMEBA_I2C_H_
 #define _AMEBA_I2C_H_
@@ -322,6 +310,7 @@ _LONG_CALL_ u32 I2C_ClearINT(I2C_TypeDef *I2Cx, u32 INTrAddr);
 _LONG_CALL_ void I2C_SetSpeed(I2C_TypeDef *I2Cx, u32 SpdMd, u32 I2Clk, u32 I2CIPClk);
 _LONG_CALL_ void I2C_StructInit(I2C_InitTypeDef *I2C_InitStruct);
 _LONG_CALL_ u8 I2C_ReceiveData(I2C_TypeDef *I2Cx);
+_LONG_CALL_ s32 I2C_PollFlagRawINT(I2C_TypeDef *I2Cx, u32 I2C_FLAG, u32 I2C_RawINT, u32 timeout_ms);
 /**
   * @}
   */
@@ -332,9 +321,9 @@ _LONG_CALL_ u8 I2C_ReceiveData(I2C_TypeDef *I2Cx);
 _LONG_CALL_ void I2C_MasterSendNullData(I2C_TypeDef *I2Cx, u8 *pBuf, u8  I2CCmd, u8  I2CStop, u8  I2CReSTR);
 _LONG_CALL_ void I2C_MasterSend(I2C_TypeDef *I2Cx, u8 *pBuf, u8  I2CCmd, u8  I2CStop, u8  I2CReSTR);
 _LONG_CALL_ u32 I2C_MasterWrite(I2C_TypeDef *I2Cx, u8 *pBuf, u32 len);
-_LONG_CALL_ void I2C_MasterReadDW(I2C_TypeDef *I2Cx, u8 *pBuf, u32 len);
+_LONG_CALL_ u32 I2C_MasterReadDW(I2C_TypeDef *I2Cx, u8 *pBuf, u32 len);
 _LONG_CALL_ u32 I2C_MasterRead(I2C_TypeDef *I2Cx, u8 *pBuf, u32 len);
-_LONG_CALL_ void I2C_MasterRepeatRead(I2C_TypeDef *I2Cx, u8 *pWriteBuf, u32 Writelen, u8 *pReadBuf, u32 Readlen);
+_LONG_CALL_ u32 I2C_MasterRepeatRead(I2C_TypeDef *I2Cx, u8 *pWriteBuf, u32 Writelen, u8 *pReadBuf, u32 Readlen);
 _LONG_CALL_ void I2C_SetSlaveAddress(I2C_TypeDef *I2Cx, u16 Address);
 _LONG_CALL_ u32 I2C_MasterWriteInt(I2C_TypeDef *I2Cx, I2C_IntModeCtrl *I2C_SemStruct, u8 *pBuf, u32 len);
 _LONG_CALL_ u32 I2C_MasterReadInt(I2C_TypeDef *I2Cx, I2C_IntModeCtrl *I2C_SemStruct, u8 *pBuf, u32 len);
@@ -634,6 +623,7 @@ _LONG_CALL_ void I2C_WakeUp(I2C_TypeDef *I2Cx);
 
 
 #define I2C_TRX_BUFFER_DEPTH 16
+#define I2C_POLL_TIMEOUT_MS  1000
 
 typedef struct {
 	I2C_TypeDef *I2Cx;

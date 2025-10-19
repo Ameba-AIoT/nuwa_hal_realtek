@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #ifndef _HAL_AMEBA_BOOT_
 #define _HAL_AMEBA_BOOT_
 

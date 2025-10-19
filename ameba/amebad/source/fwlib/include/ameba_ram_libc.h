@@ -1,4 +1,10 @@
 /*
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
  * ameba_ram_libc.h
  *
  * Definitions for RTL library functions
@@ -12,7 +18,7 @@
 #include <va_list.h>
 
 extern int _rtl_vsprintf(char *buf, size_t size, const char *fmt, const int *dp);
-extern int _rtl_printf(IN const char *fmt, ...);
+extern int _rtl_printf(const char *fmt, ...);
 extern int _rtl_sprintf(char *str, const char *fmt, ...);
 extern int _rtl_snprintf(char *str, size_t size, const char *fmt, ...);
 extern int _rtl_vsnprintf(char *buf, size_t size, const char *fmt, va_list ap);

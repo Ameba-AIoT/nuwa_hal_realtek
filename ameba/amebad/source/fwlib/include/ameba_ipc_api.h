@@ -1,20 +1,8 @@
-/**
-  ******************************************************************************
-  * @file    ameba_ipc_api.h
-  * @author
-  * @version V1.0.0
-  * @date    2018-06-11
-  * @brief   This file contains all the functions prototypes for the IPC API function
-  *          library.
-  ******************************************************************************
-  * @attention
-  *
-  * This module is a confidential and proprietary property of RealTek and
-  * possession or use of this module requires written permission of RealTek.
-  *
-  * Copyright(c) 2016, Realtek Semiconductor Corporation. All rights reserved.
-  ******************************************************************************
-  */
+/*
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #ifndef _AMEBA_IPC_API_H
 #define _AMEBA_IPC_API_H

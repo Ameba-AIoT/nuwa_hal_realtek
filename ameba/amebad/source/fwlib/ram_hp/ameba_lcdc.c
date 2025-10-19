@@ -1,38 +1,8 @@
-/**
-  ******************************************************************************
-  * @file    ameba_lcdc.c
-  * @author
-  * @version V1.0.0
-  * @date    2017-08-14
-  * @brief   This file contains all the functions prototypes for the LCDC firmware
-  *             library, including the following functionalities of LCD controller:
-
-  *           - MCU I/F Initialization
-  *           - TE mode configuration in MCU I/F mode
-  *           - VSYNC mode configuration in MCU I/F mode
-  *           - trigger DMA mode configuration in MCU I/F mode
-  *           - write/read data through MCU I/F in IO mode
-  *           - write command through MCU I/F in IO mode
-  *           - RGB I/F Initialization
-  *           - RGB I/F configuration for DE mode
-  *           - RGB I/F configuration for HV mode
-  *           - Synchronization status acquisition in RGB I/F mode
-  *           - LED I/F Initialization
-  *           - Color channel and color numbers configuration in LED I/F mode
-  *           - Timing configuration in LED I/F mode
-  *           - OE active width configuration in LED I/F mode
-  *           - LCDC DMA configurations
-  *           - Interrupts and flags management
-  *
-  ******************************************************************************
-  * @attention
-  *
-  * This module is a confidential and proprietary property of RealTek and
-  * possession or use of this module requires written permission of RealTek.
-  *
-  * Copyright(c) 2017, Realtek Semiconductor Corporation. All rights reserved.
-  ******************************************************************************
-  */
+/*
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #include "ameba_soc.h"
 #include "ameba_lcdc.h"

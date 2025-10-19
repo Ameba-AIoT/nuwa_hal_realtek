@@ -1,20 +1,8 @@
-/**
-  ******************************************************************************
-  * @file    ameba_audio.h
-  * @author
-  * @version V1.0.0
-  * @date    2017-12-13
-  * @brief   This file contains all the functions prototypes for the audio codec firmware
-  *          library.
-  ******************************************************************************
-  * @attention
-  *
-  * This module is a confidential and proprietary property of RealTek and
-  * possession or use of this module requires written permission of RealTek.
-  *
-  * Copyright(c) 2017, Realtek Semiconductor Corporation. All rights reserved.
-  ******************************************************************************
-  */
+/*
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #ifndef _AMEBA_AUDIO_H_
 #define _AMEBA_AUDIO_H_

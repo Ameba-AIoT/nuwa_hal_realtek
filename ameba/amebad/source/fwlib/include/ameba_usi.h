@@ -1,20 +1,8 @@
-/**
-  ******************************************************************************
-  * @file    ameba_usi.h
-  * @author
-  * @version V1.0.0
-  * @date    2017-09-26
-  * @brief   This file contains all the functions prototypes for the USI firmware
-  *          library.
-  ******************************************************************************
-  * @attention
-  *
-  * This module is a confidential and proprietary property of RealTek and
-  * possession or use of this module requires written permission of RealTek.
-  *
-  * Copyright(c) 2017, Realtek Semiconductor Corporation. All rights reserved.
-  ******************************************************************************
-  */
+/*
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #ifndef _AMEBA_USI_H_
 #define _AMEBA_USI_H_
@@ -614,7 +602,7 @@
  *****************************************************************************/
 #define USI_I2C_IC_TAR							((u32)0x000003FF)    		/*BIT[9:0], target address for any master transaction.*/
 #define USI_I2C_GC_OR_START						((u32)0x00000001<<10)    	/*BIT[10], If i2c_special is set to 1, then this bit indicates whether a General Call or START BYTE 
-																		 command is to be performed by I2C. 0: General Call ¨C after issuing a General Call, only write may be performed. 1: START BYTE*/
+																		 command is to be performed by I2C. 0: General Call C after issuing a General Call, only write may be performed. 1: START BYTE*/
 #define USI_I2C_SPECIAL							((u32)0x00000001<<11)  		/*BIT[11], This bit indicates whether software performs a General Call or START BYTE command.*/
 #define USI_I2C_10BITADDR_MST					((u32)0x00000001<<12)  		/*BIT[12], Control whether I2C starts its transfers in 7- or 10-bit addressing mode when acting as a master. */
 

@@ -1,8 +1,8 @@
 /*
-* Copyright (c) 2024 Realtek Semiconductor Corp.
-*
-* SPDX-License-Identifier: Apache-2.0
-*/
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #ifndef _AMEBA_PMU_H_
 #define _AMEBA_PMU_H_
@@ -25,8 +25,10 @@ typedef enum {
 	PMU_WAKWLOCK_TIMEOUT = 13,
 	PMU_KEYSCAN_DEVICE	= 14,
 	PMU_PSRAM_DEVICE	= 15,
-	PMU_DEV_USER_BASE	= 16, /*number 16 ~ 31 is reserved for customer use*/
-	PMU_SDIO_DEVICE     = 17,
+	PMU_SDIO_DEVICE		= 16,
+	PMU_DHCP_PROCESS,
+	PMU_LWIP_STACK,
+	PMU_DEV_USER_BASE, /* reserved for customer use */
 
 	PMU_MAX				= 31
 } PMU_DEVICE;
@@ -43,7 +45,7 @@ enum SLEEP_TYPE {
 #define DEFAULT_WAKELOCK		(BIT(PMU_OS))
 #endif
 #define DEFAULT_DEEP_WAKELOCK		(BIT(PMU_OS))
-#define SLEEP_MAX_DELAY		(uint32_t) 0xffffffffUL
+#define PMU_SLEEP_FOREVER		(uint32_t) 0xffffffffUL
 
 typedef uint32_t (*PSM_HOOK_FUN)(unsigned int, void *param_ptr);
 
@@ -65,7 +67,6 @@ uint32_t pmu_set_sleep_type(uint32_t type);
 uint32_t pmu_get_sleep_type(void);
 uint32_t pmu_get_sleep_time(void);
 void pmu_set_max_sleep_time(uint32_t timer_ms);
-uint32_t pmu_get_max_sleep_time(void);
 void pmu_set_sleep_time_range(uint32_t min_time, uint32_t max_time);
 #ifndef CONFIG_BUILD_ROM
 void pmu_deepsleep_cmd(uint32_t NewStatus);

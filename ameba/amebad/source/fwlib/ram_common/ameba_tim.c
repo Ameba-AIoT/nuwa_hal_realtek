@@ -1,24 +1,9 @@
-/**
-  ******************************************************************************
-  * @file    ameba_tim.c
-  * @author
-  * @version V1.0.0
-  * @date    2016-05-17
-  * @brief   This file provides firmware functions to manage the following
-  *          functionalities of the Timer peripheral:
-  *           - Initialization
-  *           - TimeBase configuration and management
-  *           - Intput Capture/Output Compare configuration and management
-  *           - Interrupt and DMA management
-  ******************************************************************************
-  * @attention
-  *
-  * This module is a confidential and proprietary property of RealTek and
-  * possession or use of this module requires written permission of RealTek.
-  *
-  * Copyright(c) 2015, Realtek Semiconductor Corporation. All rights reserved.
-  ******************************************************************************
-  */
+/*
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include "ameba_soc.h"
 
 int TIMx_irq[6] = {

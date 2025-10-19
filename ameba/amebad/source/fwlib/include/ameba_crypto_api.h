@@ -1,30 +1,8 @@
-/**
-  ******************************************************************************
-  * @file    rtl_8721d_crypto_api.h
-  * @author
-  * @version V1.0.0
-  * @date    2017-10-26
-  * @brief   This file provides firmware functions to manage the following
-  *          functionalities of the HW crypto:
-  *           - Initialization
-  *           - MD5
-  *           - SHA1/SHA2
-  *           - HMAC
-  *           - AES CBC/ECB/CFB/OFB/CTR/GCM
-  *           - 3DES CBC/ECB/CFB/OFB/CTR
-  *           - DES CBC/ECB/CFB/OFB/CTR
-  *           - Chacha20-poly1305
-  *           - Sequential hash
-  *           - CRC
-  ******************************************************************************
-  * @attention
-  *
-  * This module is a confidential and proprietary property of RealTek and
-  * possession or use of this module requires written permission of RealTek.
-  *
-  * Copyright(c) 2017, Realtek Semiconductor Corporation. All rights reserved.
-  ******************************************************************************
-  */
+/*
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #ifndef __AMEBA_CRYPTO_API_H__
 #define __AMEBA_CRYPTO_API_H__
@@ -98,44 +76,44 @@
 /** @defgroup Authentication_Functions
   * @{
   */
-_LONG_CALL_ int rtl_crypto_md5(IN const u8 *message, IN const u32 msglen, OUT u8 *pDigest);
+_LONG_CALL_ int rtl_crypto_md5(const u8 *message, const u32 msglen, u8 *pDigest);
 _LONG_CALL_ int rtl_crypto_md5_init(void);
-_LONG_CALL_ int rtl_crypto_md5_process(IN const u8 *message, const IN u32 msglen, OUT u8 *pDigest);
-_LONG_CALL_ int rtl_crypto_md5_update(IN const u8 *message, IN const u32 msglen);
-_LONG_CALL_ int rtl_crypto_md5_final(OUT u8 *pDigest);
+_LONG_CALL_ int rtl_crypto_md5_process(const u8 *message, const u32 msglen, u8 *pDigest);
+_LONG_CALL_ int rtl_crypto_md5_update(const u8 *message, const u32 msglen);
+_LONG_CALL_ int rtl_crypto_md5_final(u8 *pDigest);
 
-_LONG_CALL_ int rtl_crypto_sha1(IN const u8 *message, IN const u32 msglen, OUT u8 *pDigest);
+_LONG_CALL_ int rtl_crypto_sha1(const u8 *message, const u32 msglen, u8 *pDigest);
 _LONG_CALL_ int rtl_crypto_sha1_init(void);
-_LONG_CALL_ int rtl_crypto_sha1_process(IN const u8 *message, IN const u32 msglen, OUT u8 *pDigest);
-_LONG_CALL_ int rtl_crypto_sha1_update(IN const u8 *message, IN const u32 msglen);
-_LONG_CALL_ int rtl_crypto_sha1_final(OUT u8 *pDigest);
+_LONG_CALL_ int rtl_crypto_sha1_process(const u8 *message, const u32 msglen, u8 *pDigest);
+_LONG_CALL_ int rtl_crypto_sha1_update(const u8 *message, const u32 msglen);
+_LONG_CALL_ int rtl_crypto_sha1_final(u8 *pDigest);
 
-_LONG_CALL_ int rtl_crypto_sha2(IN const SHA2_TYPE sha2type, IN const u8 *message, IN const u32 msglen, OUT u8 *pDigest);
-_LONG_CALL_ int rtl_crypto_sha2_init(IN const SHA2_TYPE sha2type);
-_LONG_CALL_ int rtl_crypto_sha2_process(IN const u8 *message, IN const u32 msglen, OUT u8 *pDigest);
-_LONG_CALL_ int rtl_crypto_sha2_update(IN const u8 *message, IN const u32 msglen);
-_LONG_CALL_ int rtl_crypto_sha2_final(OUT u8 *pDigest);
+_LONG_CALL_ int rtl_crypto_sha2(const SHA2_TYPE sha2type, const u8 *message, const u32 msglen, u8 *pDigest);
+_LONG_CALL_ int rtl_crypto_sha2_init(const SHA2_TYPE sha2type);
+_LONG_CALL_ int rtl_crypto_sha2_process(const u8 *message, const u32 msglen, u8 *pDigest);
+_LONG_CALL_ int rtl_crypto_sha2_update(const u8 *message, const u32 msglen);
+_LONG_CALL_ int rtl_crypto_sha2_final(u8 *pDigest);
 
-_LONG_CALL_ int rtl_crypto_hmac_md5(IN const u8 *message, IN const u32 msglen, IN const u8 *key, IN const u32 keylen, OUT u8 *pDigest);
-_LONG_CALL_ int rtl_crypto_hmac_md5_init(IN const u8 *key, IN const u32 keylen);
-_LONG_CALL_ int rtl_crypto_hmac_md5_process(IN const u8 *message, IN const u32 msglen, OUT u8 *pDigest);
-_LONG_CALL_ int rtl_crypto_hmac_md5_update(IN const u8 *message, IN const u32 msglen);
-_LONG_CALL_ int rtl_crypto_hmac_md5_final(OUT u8 *pDigest);
+_LONG_CALL_ int rtl_crypto_hmac_md5(const u8 *message, const u32 msglen, const u8 *key, const u32 keylen, u8 *pDigest);
+_LONG_CALL_ int rtl_crypto_hmac_md5_init(const u8 *key, const u32 keylen);
+_LONG_CALL_ int rtl_crypto_hmac_md5_process(const u8 *message, const u32 msglen, u8 *pDigest);
+_LONG_CALL_ int rtl_crypto_hmac_md5_update(const u8 *message, const u32 msglen);
+_LONG_CALL_ int rtl_crypto_hmac_md5_final(u8 *pDigest);
 
-_LONG_CALL_ int rtl_crypto_hmac_sha1(IN const u8 *message, IN const u32 msglen, IN const u8 *key, IN const u32 keylen, OUT u8 *pDigest);
-_LONG_CALL_ int rtl_crypto_hmac_sha1_start(IN const u8 *key, IN const u32 keylen);
-_LONG_CALL_ int rtl_crypto_hmac_sha1_init(IN const u8 *key, IN const u32 keylen);
-_LONG_CALL_ int rtl_crypto_hmac_sha1_process(IN const u8 *message, IN const u32 msglen, OUT u8 *pDigest);
-_LONG_CALL_ int rtl_crypto_hmac_sha1_update(IN const u8 *message, IN const u32 msglen);
-_LONG_CALL_ int rtl_crypto_hmac_sha1_final(OUT u8 *pDigest);
+_LONG_CALL_ int rtl_crypto_hmac_sha1(const u8 *message, const u32 msglen, const u8 *key, const u32 keylen, u8 *pDigest);
+_LONG_CALL_ int rtl_crypto_hmac_sha1_start(const u8 *key, const u32 keylen);
+_LONG_CALL_ int rtl_crypto_hmac_sha1_init(const u8 *key, const u32 keylen);
+_LONG_CALL_ int rtl_crypto_hmac_sha1_process(const u8 *message, const u32 msglen, u8 *pDigest);
+_LONG_CALL_ int rtl_crypto_hmac_sha1_update(const u8 *message, const u32 msglen);
+_LONG_CALL_ int rtl_crypto_hmac_sha1_final(u8 *pDigest);
 
-_LONG_CALL_ int rtl_crypto_hmac_sha2(IN const SHA2_TYPE sha2type, IN const u8 *message, IN const u32 msglen, IN const u8 *key, IN const u32 keylen,
-									 OUT u8 *pDigest);
-_LONG_CALL_ int rtl_crypto_hmac_sha2_start(IN const u8 *key, IN const u32 keylen);
-_LONG_CALL_ int rtl_crypto_hmac_sha2_init(IN const SHA2_TYPE sha2type, IN const u8 *key, IN const u32 keylen);
-_LONG_CALL_ int rtl_crypto_hmac_sha2_process(IN const u8 *message, IN const u32 msglen, OUT u8 *pDigest);
-_LONG_CALL_ int rtl_crypto_hmac_sha2_update(IN const u8 *message, IN const u32 msglen);
-_LONG_CALL_ int rtl_crypto_hmac_sha2_final(OUT u8 *pDigest);
+_LONG_CALL_ int rtl_crypto_hmac_sha2(const SHA2_TYPE sha2type, const u8 *message, const u32 msglen, const u8 *key, const u32 keylen,
+									 u8 *pDigest);
+_LONG_CALL_ int rtl_crypto_hmac_sha2_start(const u8 *key, const u32 keylen);
+_LONG_CALL_ int rtl_crypto_hmac_sha2_init(const SHA2_TYPE sha2type, const u8 *key, const u32 keylen);
+_LONG_CALL_ int rtl_crypto_hmac_sha2_process(const u8 *message, const u32 msglen, u8 *pDigest);
+_LONG_CALL_ int rtl_crypto_hmac_sha2_update(const u8 *message, const u32 msglen);
+_LONG_CALL_ int rtl_crypto_hmac_sha2_final(u8 *pDigest);
 /**
   * @}
   */
@@ -143,85 +121,85 @@ _LONG_CALL_ int rtl_crypto_hmac_sha2_final(OUT u8 *pDigest);
 /** @defgroup Cipher_Functions
   * @{
   */
-_LONG_CALL_ int rtl_crypto_aes_cbc_init(IN const u8 *key, IN const u32 keylen);
-_LONG_CALL_ int rtl_crypto_aes_cbc_encrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
-_LONG_CALL_ int rtl_crypto_aes_cbc_decrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
+_LONG_CALL_ int rtl_crypto_aes_cbc_init(const u8 *key, const u32 keylen);
+_LONG_CALL_ int rtl_crypto_aes_cbc_encrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
+_LONG_CALL_ int rtl_crypto_aes_cbc_decrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
 
-_LONG_CALL_ int rtl_crypto_aes_ecb_init(IN const u8 *key, IN const u32 keylen);
-_LONG_CALL_ int rtl_crypto_aes_ecb_encrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
-_LONG_CALL_ int rtl_crypto_aes_ecb_decrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
+_LONG_CALL_ int rtl_crypto_aes_ecb_init(const u8 *key, const u32 keylen);
+_LONG_CALL_ int rtl_crypto_aes_ecb_encrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
+_LONG_CALL_ int rtl_crypto_aes_ecb_decrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
 
-_LONG_CALL_ int rtl_crypto_aes_ctr_init(IN const u8 *key, IN const u32 keylen);
-_LONG_CALL_ int rtl_crypto_aes_ctr_encrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
-_LONG_CALL_ int rtl_crypto_aes_ctr_decrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
+_LONG_CALL_ int rtl_crypto_aes_ctr_init(const u8 *key, const u32 keylen);
+_LONG_CALL_ int rtl_crypto_aes_ctr_encrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
+_LONG_CALL_ int rtl_crypto_aes_ctr_decrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
 
-_LONG_CALL_ int rtl_crypto_aes_cfb_init(IN const u8 *key, IN const u32 keylen);
-_LONG_CALL_ int rtl_crypto_aes_cfb_encrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
-_LONG_CALL_ int rtl_crypto_aes_cfb_decrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
+_LONG_CALL_ int rtl_crypto_aes_cfb_init(const u8 *key, const u32 keylen);
+_LONG_CALL_ int rtl_crypto_aes_cfb_encrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
+_LONG_CALL_ int rtl_crypto_aes_cfb_decrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
 
-_LONG_CALL_ int rtl_crypto_aes_ofb_init(IN const u8 *key, IN const u32 keylen);
-_LONG_CALL_ int rtl_crypto_aes_ofb_encrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
-_LONG_CALL_ int rtl_crypto_aes_ofb_decrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
+_LONG_CALL_ int rtl_crypto_aes_ofb_init(const u8 *key, const u32 keylen);
+_LONG_CALL_ int rtl_crypto_aes_ofb_encrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
+_LONG_CALL_ int rtl_crypto_aes_ofb_decrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
 
-_LONG_CALL_ int rtl_crypto_aes_gcm_init(IN const u8 *key, IN const u32 keylen);
-_LONG_CALL_ int rtl_crypto_aes_gcm_encrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u8 *aad, IN const u32 aadlen, OUT u8 *pResult,
-		OUT u8 *pTag);
-_LONG_CALL_ int rtl_crypto_aes_gcm_decrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u8 *aad, IN const u32 aadlen, OUT u8 *pResult,
-		OUT u8 *pTag);
+_LONG_CALL_ int rtl_crypto_aes_gcm_init(const u8 *key, const u32 keylen);
+_LONG_CALL_ int rtl_crypto_aes_gcm_encrypt(const u8 *message, const u32 msglen, const u8 *iv, const u8 *aad, const u32 aadlen, u8 *pResult,
+		u8 *pTag);
+_LONG_CALL_ int rtl_crypto_aes_gcm_decrypt(const u8 *message, const u32 msglen, const u8 *iv, const u8 *aad, const u32 aadlen, u8 *pResult,
+		u8 *pTag);
 
-_LONG_CALL_ int rtl_crypto_3des_cbc_init(IN const u8 *key, IN const u32 keylen);
-_LONG_CALL_ int rtl_crypto_3des_cbc_encrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
-_LONG_CALL_ int rtl_crypto_3des_cbc_decrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
+_LONG_CALL_ int rtl_crypto_3des_cbc_init(const u8 *key, const u32 keylen);
+_LONG_CALL_ int rtl_crypto_3des_cbc_encrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
+_LONG_CALL_ int rtl_crypto_3des_cbc_decrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
 
-_LONG_CALL_ int rtl_crypto_3des_ecb_init(IN const u8 *key, IN const u32 keylen);
-_LONG_CALL_ int rtl_crypto_3des_ecb_encrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
-_LONG_CALL_ int rtl_crypto_3des_ecb_decrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
+_LONG_CALL_ int rtl_crypto_3des_ecb_init(const u8 *key, const u32 keylen);
+_LONG_CALL_ int rtl_crypto_3des_ecb_encrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
+_LONG_CALL_ int rtl_crypto_3des_ecb_decrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
 
-_LONG_CALL_ int rtl_crypto_3des_ctr_init(IN const u8 *key, IN const u32 keylen);
-_LONG_CALL_ int rtl_crypto_3des_ctr_encrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
-_LONG_CALL_ int rtl_crypto_3des_ctr_decrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
+_LONG_CALL_ int rtl_crypto_3des_ctr_init(const u8 *key, const u32 keylen);
+_LONG_CALL_ int rtl_crypto_3des_ctr_encrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
+_LONG_CALL_ int rtl_crypto_3des_ctr_decrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
 
-_LONG_CALL_ int rtl_crypto_3des_cfb_init(IN const u8 *key, IN const u32 keylen);
-_LONG_CALL_ int rtl_crypto_3des_cfb_encrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
-_LONG_CALL_ int rtl_crypto_3des_cfb_decrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
+_LONG_CALL_ int rtl_crypto_3des_cfb_init(const u8 *key, const u32 keylen);
+_LONG_CALL_ int rtl_crypto_3des_cfb_encrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
+_LONG_CALL_ int rtl_crypto_3des_cfb_decrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
 
-_LONG_CALL_ int rtl_crypto_3des_ofb_init(IN const u8 *key, IN const u32 keylen);
-_LONG_CALL_ int rtl_crypto_3des_ofb_encrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
-_LONG_CALL_ int rtl_crypto_3des_ofb_decrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
+_LONG_CALL_ int rtl_crypto_3des_ofb_init(const u8 *key, const u32 keylen);
+_LONG_CALL_ int rtl_crypto_3des_ofb_encrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
+_LONG_CALL_ int rtl_crypto_3des_ofb_decrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
 
-_LONG_CALL_ int rtl_crypto_des_cbc_init(IN const u8 *key, IN const u32 keylen);
-_LONG_CALL_ int rtl_crypto_des_cbc_encrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
-_LONG_CALL_ int rtl_crypto_des_cbc_decrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
+_LONG_CALL_ int rtl_crypto_des_cbc_init(const u8 *key, const u32 keylen);
+_LONG_CALL_ int rtl_crypto_des_cbc_encrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
+_LONG_CALL_ int rtl_crypto_des_cbc_decrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
 
-_LONG_CALL_ int rtl_crypto_des_ecb_init(IN const u8 *key, IN const u32 keylen);
-_LONG_CALL_ int rtl_crypto_des_ecb_encrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
-_LONG_CALL_ int rtl_crypto_des_ecb_decrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
+_LONG_CALL_ int rtl_crypto_des_ecb_init(const u8 *key, const u32 keylen);
+_LONG_CALL_ int rtl_crypto_des_ecb_encrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
+_LONG_CALL_ int rtl_crypto_des_ecb_decrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
 
-_LONG_CALL_ int rtl_crypto_des_ctr_init(IN const u8 *key, IN const u32 keylen);
-_LONG_CALL_ int rtl_crypto_des_ctr_encrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
-_LONG_CALL_ int rtl_crypto_des_ctr_decrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
+_LONG_CALL_ int rtl_crypto_des_ctr_init(const u8 *key, const u32 keylen);
+_LONG_CALL_ int rtl_crypto_des_ctr_encrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
+_LONG_CALL_ int rtl_crypto_des_ctr_decrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
 
-_LONG_CALL_ int rtl_crypto_des_cfb_init(IN const u8 *key, IN const u32 keylen);
-_LONG_CALL_ int rtl_crypto_des_cfb_encrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
-_LONG_CALL_ int rtl_crypto_des_cfb_decrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
+_LONG_CALL_ int rtl_crypto_des_cfb_init(const u8 *key, const u32 keylen);
+_LONG_CALL_ int rtl_crypto_des_cfb_encrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
+_LONG_CALL_ int rtl_crypto_des_cfb_decrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
 
-_LONG_CALL_ int rtl_crypto_des_ofb_init(IN const u8 *key, IN const u32 keylen);
-_LONG_CALL_ int rtl_crypto_des_ofb_encrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
-_LONG_CALL_ int rtl_crypto_des_ofb_decrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 ivlen, OUT u8 *pResult);
+_LONG_CALL_ int rtl_crypto_des_ofb_init(const u8 *key, const u32 keylen);
+_LONG_CALL_ int rtl_crypto_des_ofb_encrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
+_LONG_CALL_ int rtl_crypto_des_ofb_decrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 ivlen, u8 *pResult);
 
-_LONG_CALL_ int rtl_crypto_poly1305_init(IN const u8 *key);
-_LONG_CALL_ int rtl_crypto_poly1305_process(IN const u8 *message, IN const u32 msglen, OUT u8 *pDigest);
-_LONG_CALL_ int rtl_crypto_poly1305(IN const u8 *message, IN const u32 msglen, IN const u8 *key, OUT u8 *pDigest);
+_LONG_CALL_ int rtl_crypto_poly1305_init(const u8 *key);
+_LONG_CALL_ int rtl_crypto_poly1305_process(const u8 *message, const u32 msglen, u8 *pDigest);
+_LONG_CALL_ int rtl_crypto_poly1305(const u8 *message, const u32 msglen, const u8 *key, u8 *pDigest);
 
-_LONG_CALL_ int rtl_crypto_chacha_init(IN const u8 *key);
-_LONG_CALL_ int rtl_crypto_chacha_encrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 count, OUT u8 *pResult);
-_LONG_CALL_ int rtl_crypto_chacha_decrypt(IN const u8 *message, IN const u32 msglen, IN const u8 *iv, IN const u32 count, OUT u8 *pResult);
+_LONG_CALL_ int rtl_crypto_chacha_init(const u8 *key);
+_LONG_CALL_ int rtl_crypto_chacha_encrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 count, u8 *pResult);
+_LONG_CALL_ int rtl_crypto_chacha_decrypt(const u8 *message, const u32 msglen, const u8 *iv, const u32 count, u8 *pResult);
 
-_LONG_CALL_ int rtl_crypto_chacha_poly1305_init(IN const u8 *key);
-_LONG_CALL_ int rtl_crypto_chacha_poly1305_encrypt(IN const u8 *message, 	IN const u32 msglen, IN const u8 *nonce, IN const u8 *aad, IN const u32 aadlen,
-		OUT u8 *pResult, OUT u8 *pTag);
-_LONG_CALL_ int rtl_crypto_chacha_poly1305_decrypt(IN const u8 *message, 	IN const u32 msglen, IN const u8 *nonce, IN const u8 *aad, IN const u32 aadlen,
-		OUT u8 *pResult, OUT u8 *pTag);
+_LONG_CALL_ int rtl_crypto_chacha_poly1305_init(const u8 *key);
+_LONG_CALL_ int rtl_crypto_chacha_poly1305_encrypt(const u8 *message, 	const u32 msglen, const u8 *nonce, const u8 *aad, const u32 aadlen,
+		u8 *pResult, u8 *pTag);
+_LONG_CALL_ int rtl_crypto_chacha_poly1305_decrypt(const u8 *message, 	const u32 msglen, const u8 *nonce, const u8 *aad, const u32 aadlen,
+		u8 *pResult, u8 *pTag);
 /**
   * @}
   */

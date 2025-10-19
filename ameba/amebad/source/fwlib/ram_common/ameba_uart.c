@@ -1,70 +1,8 @@
-/**
-  ******************************************************************************
-  * @file    ameba_uart.c
-  * @author
-  * @version V1.0.0
-  * @date    2016-05-17
-  * @brief   This file contains all the functions prototypes for the UART firmware
-  *             library, including the following functionalities of the Universal Asynchronous
-  *             Receiver/Transmitter (UART) peripheral:
-  *           - Uart DMA mode Initialization
-  *           - Uart DMA mode config
-  *           - Uart DMA mode control(enable or disable)
-  *           - Uart Low Power Rx Initialization
-  *           - Uart Low Power Rx Monitor Function config
-  *           - Low Power Rx Baud Rate Setting
-  *           - Uart IrDA Function Initialization
-  *           - Uart IrDA Function control(enable or disable)
-  *
-  *  @verbatim
-  *
-  *          ===================================================================
-  *                                 How to use this driver
-  *          ===================================================================
-  *          1. Enable peripheral clock using the following functions
-  *              RCC_PeriphClockCmd(APBPeriph_UARTx, APBPeriph_UARTx_CLOCK, ENABLE);
-  *
-  *          2. configure the UART pinmux.
-  *		    Pinmux_Config(Pin_Num, PINMUX_FUNCTION_UART)
-  *
-  *          3. disable uart rx path
-  *
-  *          4. select rx path clock source(XTAL 40M Hz/XTAL 2M Hz/OSC 2M Hz)
-  *
-  *          5. clear rx fifo.
-  *
-  *          6. Program Word Length , Stop Bit, Parity, Hardware flow control and DMA Mode(ENABLE/DISABLE)
-  *              using the UART_Init() function.
-  *
-  *          7. Program the Baud Rate, using function UART_SetBaud().
-  *
-  *          8. Enable the NVIC and the corresponding interrupt using the function
-  *             UART_INTConfig() and register the uart irq handler if you need to use interrupt mode.
-  *
-  *          9. When using the DMA mode
-  *                   - GDMA related configurations(source address/destination address/block size etc.)
-  *                   - Configure the uart DMA burst size using UART_TXDMAConfig()/UART_RXDMAConfig() function
-  *                   - Active the UART TX/RX DMA Request using UART_TXDMACmd()/UART_RXDMACmd() function
-  *
-  *          10. enable uart rx path
-  *
-  *          Refer to related specifications for more details about IrDA function and Low Power Rx Path(monitoring and clock
-  *           swicth).
-  *
-  *          In order to reach higher communication baudrates, high rate rx path can be used.
-  *          Low power rx can be used for saving power.
-  *
-  *  @endverbatim
-  *
-  ******************************************************************************
-  * @attention
-  *
-  * This module is a confidential and proprietary property of RealTek and
-  * possession or use of this module requires written permission of RealTek.
-  *
-  * Copyright(c) 2016, Realtek Semiconductor Corporation. All rights reserved.
-  ******************************************************************************
-  */
+/*
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #include "ameba_soc.h"
 

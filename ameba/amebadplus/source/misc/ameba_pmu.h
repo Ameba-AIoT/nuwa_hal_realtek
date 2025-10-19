@@ -1,8 +1,8 @@
 /*
-* Copyright (c) 2024 Realtek Semiconductor Corp.
-*
-* SPDX-License-Identifier: Apache-2.0
-*/
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #ifndef _AMEBA_PMU_H_
 #define _AMEBA_PMU_H_
@@ -13,7 +13,9 @@ typedef enum {
 	PMU_KM4_RUN,
 	PMU_WLAN_FW_DEVICE,
 	PMU_BT_DEVICE,
-	PMU_FULLMAC_WIFI,
+	PMU_WHC_WIFI,
+	PMU_DHCP_PROCESS,
+	PMU_LWIP_STACK,
 	PMU_DEV_USER_BASE,
 	PMU_MAX
 } PMU_DEVICE;
@@ -22,7 +24,7 @@ typedef enum {
 #define DEFAULT_WAKELOCK		(BIT(PMU_OS))
 
 #define DEFAULT_DEEP_WAKELOCK		(BIT(PMU_OS))
-#define SLEEP_MAX_DELAY		(uint32_t) 0xffffffffUL
+#define PMU_SLEEP_FOREVER		(uint32_t) 0xffffffffUL
 
 typedef uint32_t (*PSM_HOOK_FUN)(uint32_t, void *param_ptr);
 

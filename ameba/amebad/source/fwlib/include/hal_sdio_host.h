@@ -1,10 +1,7 @@
 /*
- *  Routines to access hardware
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
  *
- *  Copyright (c) 2013 Realtek Semiconductor Corp.
- *
- *  This module is a confidential and proprietary property of RealTek and
- *  possession or use of this module requires written permission of RealTek.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #ifndef _HAL_SDIO_HOST_H_
@@ -61,27 +58,27 @@ typedef struct _HAL_SDIO_HOST_ADAPTER_ {
 
 extern HAL_Status
 HalSdioHostInit(
-	IN void *Data
+	void *Data
 );
 
 extern HAL_Status
 HalSdioHostDeInit(
-	IN void *Data
+	void *Data
 );
 
 extern HAL_Status
 HalSdioHostEnable(
-	IN void *Data
+	void *Data
 );
 
 extern HAL_Status
 HalSdioHostDisable(
-	IN void *Data
+	void *Data
 );
 
 extern void
 HalSdioHostOpInit(
-	IN void *Data
+	void *Data
 );
 
 

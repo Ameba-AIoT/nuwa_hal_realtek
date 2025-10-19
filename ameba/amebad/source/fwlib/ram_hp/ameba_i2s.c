@@ -1,25 +1,9 @@
-/**
-  ******************************************************************************
-  * @file    ameba_i2s.c
-  * @author
-  * @version V1.0.0
-  * @date    2017-11-03
-  * @brief   This file provides firmware functions to manage the following
-  *          functionalities of the Inter-IC Sound (I2S) peripheral:
-  *           - Initialization and Deinitialization
-  *           - Interrupts management
-  *           - Data transfers configuration
-  *           - Pinmux clock configuration
-  *
-  ******************************************************************************
-  * @attention
-  *
-  * This module is a confidential and proprietary property of RealTek and
-  * possession or use of this module requires written permission of RealTek.
-  *
-  * Copyright(c) 2017, Realtek Semiconductor Corporation. All rights reserved.
-  ******************************************************************************
-  */
+/*
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include "ameba_soc.h"
 
 static const char *const TAG = "I2S";

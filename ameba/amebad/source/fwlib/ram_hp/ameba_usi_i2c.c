@@ -1,30 +1,8 @@
-/**
-  ******************************************************************************
-  * @file    ameba_usi_i2c.c
-  * @author
-  * @version V1.0.0
-  * @date    2017-12-18
-  * @brief   This file contains all the functions prototypes for the I2C firmware
-  *          library, including the following functionalities of theIntel-Integrated
-  *             Circuit (I2C) peripheral:
-  *           - Initialization
-  *           - I2C Speed Setting
-  *           - I2C Slave Address Updating
-  *           - Receive/Send Data Interface
-  *           - I2C Peripheral Control (disable/enable)
-  *           - I2C SleepMode Control
-  *           - Output pin Configuration
-  *           - Interrupts and flags management
-  *
-  ******************************************************************************
-  * @attention
-  *
-  * This module is a confidential and proprietary property of RealTek and
-  * possession or use of this module requires written permission of RealTek.
-  *
-  * Copyright(c) 2017, Realtek Semiconductor Corporation. All rights reserved.
-  ******************************************************************************
-  */
+/*
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #include "ameba_soc.h"
 #include "ameba_usi_i2c.h"

@@ -1,10 +1,7 @@
 /*
- *  Routines to access hardware
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
  *
- *  Copyright (c) 2013 Realtek Semiconductor Corp.
- *
- *  This module is a confidential and proprietary property of RealTek and
- *  possession or use of this module requires written permission of RealTek.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #ifndef _RTK_CONSOL_H_
@@ -22,7 +19,7 @@
 #define UART_LOG_CMD_BUFLEN     127
 #define MAX_ARGV                16
 
-typedef u32(*ECHOFUNC)(IN u8 *, ...);   //UART LOG echo-function type.
+typedef u32(*ECHOFUNC)(u8 *, ...);   //UART LOG echo-function type.
 typedef u32(*monitor_cmd_handler)(u16 argc, u8 *argv[]);
 
 typedef struct {
@@ -96,24 +93,24 @@ _LONG_CALL_ u32 shell_uart_irq_rom(void *Data);
 _LONG_CALL_
 extern void
 shell_cmd_history(
-	IN  u8  RevData,
-	IN  UART_LOG_CTL    *prvUartLogCtl,
-	IN  u8  EchoFlag
+	u8  RevData,
+	UART_LOG_CTL    *prvUartLogCtl,
+	u8  EchoFlag
 );
 _LONG_CALL_
 extern u8
 shell_cmd_chk(
-	IN  u8  RevData,
-	IN  UART_LOG_CTL    *prvUartLogCtl,
-	IN  u8  EchoFlag
+	u8  RevData,
+	UART_LOG_CTL    *prvUartLogCtl,
+	u8  EchoFlag
 );
 
 _LONG_CALL_
 extern void
 shell_array_init(
-	IN  u8  *pArrayToInit,
-	IN  u8  ArrayLen,
-	IN  u8  InitValue
+	u8  *pArrayToInit,
+	u8  ArrayLen,
+	u8  InitValue
 );
 extern u8 **shell_get_argv(const   u8  *string);
 extern u8 shell_get_argc(const   u8  *string);

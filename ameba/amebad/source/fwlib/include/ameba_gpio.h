@@ -1,20 +1,8 @@
-/**
-  ******************************************************************************
-  * @file    ameba_gpio.h
-  * @author
-  * @version V1.0.0
-  * @date    2016-05-17
-  * @brief   This file contains all the functions prototypes for the GPIO firmware
-  *          library.
-  ******************************************************************************
-  * @attention
-  *
-  * This module is a confidential and proprietary property of RealTek and
-  * possession or use of this module requires written permission of RealTek.
-  *
-  * Copyright(c) 2016, Realtek Semiconductor Corporation. All rights reserved.
-  ******************************************************************************
-  */
+/*
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #ifndef _AMEBA_GPIO_H_
 #define _AMEBA_GPIO_H_
@@ -239,7 +227,7 @@ _LONG_CALL_ void GPIO_UserRegIrq(u32 GPIO_Pin, void *IrqHandler, void *IrqData);
 _LONG_CALL_ void GPIO_INTMode(u32 GPIO_Pin, u32 NewState, u32 GPIO_ITTrigger, u32 GPIO_ITPolarity, u32 GPIO_ITDebounce);
 _LONG_CALL_ void GPIO_INTConfig(u32 GPIO_Pin, u32 NewState);
 _LONG_CALL_ void GPIO_Init(GPIO_InitTypeDef  *GPIO_InitStruct);
-_LONG_CALL_ u32 GPIO_INTHandler(IN void *pData);
+_LONG_CALL_ u32 GPIO_INTHandler(void *pData);
 _LONG_CALL_ void GPIO_Direction(u32 GPIO_Pin, u32 data_direction);
 _LONG_CALL_ u32 GPIO_PortRead(u32 GPIO_Port, u32 GPIO_Mask);
 _LONG_CALL_ u32 GPIO_INTStatusGet(u32 GPIO_Port);

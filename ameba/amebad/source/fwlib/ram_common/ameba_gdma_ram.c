@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2025 Realtek Semiconductor Corp.
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+
 #include "ameba_soc.h"
 
 static const char *const TAG = "GDMA";
@@ -165,6 +166,32 @@ void GDMA_SetChnlPriority(u8 GDMA_Index, u8 GDMA_ChNum, u32 ChnlPriority)
 	RTK_LOGW(TAG, "AmebaD does not support priority setting\n");
 }
 
+/**
+ * @brief Get whether the fifo is empty
+ *
+ * @param  GDMA_Index: 0.
+ * @param  GDMA_ChNum: 0 ~ 7.
+ * @retval TRUE/FALSE
+ */
+__weak u8
+GDMA_ChnlFIFOIsEmpty(u8 GDMA_Index, u8 GDMA_ChNum)
+{
+	GDMA_TypeDef *GDMA = ((GDMA_TypeDef *) GDMA_BASE);
+	u8 ret = FALSE;
+	/* Check the parameters */
+	assert_param(IS_GDMA_Index(GDMA_Index));
+	assert_param(IS_GDMA_ChannelNum(GDMA_ChNum));
+
+	if (TrustZone_IsSecure()) {
+		GDMA = ((GDMA_TypeDef *) GDMA0S_REG_BASE);
+	}
+
+	if (GDMA->CH[GDMA_ChNum].CFG_LOW & BIT_CFGx_L_FIFO_EMPTY) {
+		ret = TRUE;
+	}
+
+	return  ret;
+}
 /**
   * @brief  Suspend a channel.
   * @param  GDMA_Index: 0.

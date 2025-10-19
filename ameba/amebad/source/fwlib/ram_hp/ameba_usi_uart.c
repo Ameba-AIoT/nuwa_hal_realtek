@@ -1,33 +1,8 @@
-/**
-  ******************************************************************************
-  * @file    ameba_usi_uart.c
-  * @author
-  * @version V1.0.0
-  * @date    2017-09-30
-  * @brief   This file contains all the functions prototypes for the USI UART firmware
-  *             library, including the following functionalities of the Universal Asynchronous
-  *             Receiver/Transmitter (UART) peripheral:
-  *           - Initialization
-  *           - Clear UART TX/RX FIFO
-  *           - Uart Rx Path Control (disable/enable)
-  *           - Baud Rate Setting
-  *           - Receive/Send Data Interface
-  *           - Uart Low Power Rx Initialization
-  *           - Uart Low Power Rx Monitor Function Initialization
-  *           - Low Power Rx Baud Rate Setting
-  *           - Uart IrDA Function Initialization
-  *           - Uart Rx Byte Counter Interface
-  *           - Interrupts and flags management
-  *
-  ******************************************************************************
-  * @attention
-  *
-  * This module is a confidential and proprietary property of RealTek and
-  * possession or use of this module requires written permission of RealTek.
-  *
-  * Copyright(c) 2017, Realtek Semiconductor Corporation. All rights reserved.
-  ******************************************************************************
-  */
+/*
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #include "ameba_soc.h"
 #include "ameba_usi_uart.h"

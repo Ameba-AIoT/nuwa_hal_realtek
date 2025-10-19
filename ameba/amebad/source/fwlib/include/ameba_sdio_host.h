@@ -1,12 +1,8 @@
 /*
-*  Routines to access hardware
-*
-*  Copyright (c) 2013 Realtek Semiconductor Corp.
-*
-*  This module is a confidential and proprietary property of RealTek and
-*  possession or use of this module requires written permission of RealTek.
-*/
-
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #ifndef _AMEBA_SDIO_HOST_H_
 #define _AMEBA_SDIO_HOST_H_
@@ -174,7 +170,7 @@
 
 /* Operating Condition (ACMD41) */
 #define ACMD41_POLL_INTERVAL			10000	// 10 ms
-#define ACMD41_INIT_TIMEOUT				1000000	// 1 sec	
+#define ACMD41_INIT_TIMEOUT				1000000	// 1 sec
 
 /* Card Status (R1) */
 #define R1_APP_CMD						BIT5
@@ -416,85 +412,85 @@ typedef struct _SDIO_HOST_CMD_ {
 
 HAL_Status
 HalSdioHostInitHostRtl8721d(
-	IN void *Data
+	void *Data
 );
 
 HAL_Status
 HalSdioHostInitCardRtl8721d(
-	IN void *Data
+	void *Data
 );
 
 HAL_Status
 HalSdioHostDeInitRtl8721d(
-	IN void *Data
+	void *Data
 );
 
 HAL_Status
 HalSdioHostEnableRtl8721d(
-	IN void *Data
+	void *Data
 );
 
 HAL_Status
 HalSdioHostDisableRtl8721d(
-	IN void *Data
+	void *Data
 );
 
 HAL_Status
 HalSdioHostIrqInitRtl8721d(
-	IN void *Data
+	void *Data
 );
 
 HAL_Status
 HalSdioHostReadBlocksDmaRtl8721d(
-	IN void *Data,
-	IN u64 ReadAddr,
-	IN u32 BlockCnt
+	void *Data,
+	u64 ReadAddr,
+	u32 BlockCnt
 );
 
 HAL_Status
 HalSdioHostWriteBlocksDmaRtl8721d(
-	IN void *Data,
-	IN u64 WriteAddr,
-	IN u32 BlockCnt
+	void *Data,
+	u64 WriteAddr,
+	u32 BlockCnt
 );
 
 HAL_Status
 HalSdioHostStopTransferRtl8721d(
-	IN void *Data
+	void *Data
 );
 
 HAL_Status
 HalSdioHostGetCardStatusRtl8721d(
-	IN void *Data
+	void *Data
 );
 
 HAL_Status
 HalSdioHostGetSdStatusRtl8721d(
-	IN void *Data
+	void *Data
 );
 
 HAL_Status
 HalSdioHostChangeSdClockRtl8721d(
-	IN void *Data,
-	IN u8 Frequency
+	void *Data,
+	u8 Frequency
 );
 
 HAL_Status
 HalSdioHostEraseRtl8721d(
-	IN void *Data,
-	IN u64 StartAddr,
-	IN u64 EndAddr
+	void *Data,
+	u64 StartAddr,
+	u64 EndAddr
 );
 
 HAL_Status
 HalSdioHostGetWriteProtectRtl8721d(
-	IN void *Data
+	void *Data
 );
 
 HAL_Status
 HalSdioHostSetWriteProtectRtl8721d(
-	IN void *Data,
-	IN u8 Setting
+	void *Data,
+	u8 Setting
 );
 
 
@@ -768,7 +764,7 @@ typedef struct _ADMA_BUFFER_ {
 
 void
 SdHostTestApp(
-	IN  u8      *argv[]
+	u8      *argv[]
 );
 #endif	// end of "#ifdef CONFIG_SDIO_HOST_VERIFY"
 

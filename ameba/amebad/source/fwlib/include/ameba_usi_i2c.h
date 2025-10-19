@@ -1,20 +1,8 @@
-/**
-  ******************************************************************************
-  * @file    ameba_usi_i2c.h
-  * @author
-  * @version V1.0.0
-  * @date    2017-12-18
-  * @brief   This file contains all the functions prototypes for the I2C firmware
-  *          library.
-  ******************************************************************************
-  * @attention
-  *
-  * This module is a confidential and proprietary property of RealTek and
-  * possession or use of this module requires written permission of RealTek.
-  *
-  * Copyright(c) 2017, Realtek Semiconductor Corporation. All rights reserved.
-  ******************************************************************************
-  */
+/*
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #ifndef _AMEBA_USI_I2C_H_
 #define _AMEBA_USI_I2C_H_
@@ -146,7 +134,7 @@ typedef struct {
 				is selected or 0-1023 range if the USI_I2C_ADDR_10BIT is selected. */
 
 	u32	USI_I2CSlvSetup;       /*!< Specifies the USI_I2C SDA Setup Time. It controls the amount of time delay
-				introduced in the rising edge of SCL¡ªrelative to SDA changing¡ªby holding SCL low
+				introduced in the rising edge of SCLrelative to SDA changingby holding SCL low
 				when USI_I2C Device operating as a slave transmitter, in units of ic_clk period.
 				This parameter must be set to a value in the 0-255 range, it must be set larger than USI_I2CSdaHd*/
 

@@ -1,19 +1,8 @@
-/**
-  ******************************************************************************
-  * @file    ameba_captouch.c
-  * @author
-  * @version V1.0.0
-  * @date    2017-11-06
-  * @brief   This file contains all the functions prototypes for the CapTouch function
-  ******************************************************************************
-  * @attention
-  *
-  * This module is a confidential and proprietary property of RealTek and
-  * possession or use of this module requires written permission of RealTek.
-  *
-  * Copyright(c) 2015, Realtek Semiconductor Corporation. All rights reserved.
-  ******************************************************************************
-  */
+/*
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #include "ameba_soc.h"
 #include "ameba_captouch.h"

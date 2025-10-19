@@ -1,26 +1,8 @@
-/**
-  ******************************************************************************
-  * @file    rtl8711b_clk.h
-  * @author
-  * @version V1.0.0
-  * @date    2016-05-17
-  * @brief   This file provides firmware functions to manage the following
-  *          functionalities of clock control:
-  *           - NCO32K clock
-  *           - NCO8M clock
-  *           - CPU clock
-  *           - XTAL clock get
-  *           - OSC32K clock
-  *           - EXT32K clock
-  ******************************************************************************
-  * @attention
-  *
-  * This module is a confidential and proprietary property of RealTek and
-  * possession or use of this module requires written permission of RealTek.
-  *
-  * Copyright(c) 2015, Realtek Semiconductor Corporation. All rights reserved.
-  ******************************************************************************
-  */
+/*
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #ifndef _AMEBA_CLK_H_
 #define _AMEBA_CLK_H_

@@ -1,20 +1,8 @@
-/**
-  ******************************************************************************
-  * @file    ameba_crypto.h
-  * @author
-  * @version V1.0.0
-  * @date    2017-09-15
-  * @brief   This file contains all the functions prototypes for the IPsec firmware
-  *          library
-  ******************************************************************************
-  * @attention
-  *
-  * This module is a confidential and proprietary property of RealTek and
-  * possession or use of this module requires written permission of RealTek.
-  *
-  * Copyright(c) 2017, Realtek Semiconductor Corporation. All rights reserved.
-  ******************************************************************************
-  */
+/*
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #ifndef _AMEBA_CRYPTO_H_
 #define _AMEBA_CRYPTO_H_
@@ -395,16 +383,16 @@ _LONG_CALL_ void CRYPTO_RegDump(void);
 _LONG_CALL_ void CRYPTO_CleanCmdOk(void);
 _LONG_CALL_ void CRYPTO_ClearAllINT(void);
 _LONG_CALL_ void CRYPTO_Reset(HAL_CRYPTO_ADAPTER *pIE);
-_LONG_CALL_ int CRYPTO_SetSecurityModeAD(HAL_CRYPTO_ADAPTER *pIE, IN const u32 cipher_type, IN const u32 auth_type, IN const void *pCipherKey,
-		IN const u32 lenCipherKey, IN const void *pAuthKey, IN const u32 lenAuthKey);
+_LONG_CALL_ int CRYPTO_SetSecurityModeAD(HAL_CRYPTO_ADAPTER *pIE, const u32 cipher_type, const u32 auth_type, const void *pCipherKey,
+		const u32 lenCipherKey, const void *pAuthKey, const u32 lenAuthKey);
 _LONG_CALL_ int CRYPTO_Init(HAL_CRYPTO_ADAPTER *pIE);
-_LONG_CALL_ int CRYPTO_ProcessAD(HAL_CRYPTO_ADAPTER *pIE, IN const u8 *message, IN const u32 msglen, IN const u8 *pIv, IN const u32 ivlen, IN const u8 *paad,
-								 IN const u32 aadlen, OUT u8 *pResult, OUT u8 *pTag);
-_LONG_CALL_ int CRYPTO_CipherInit(HAL_CRYPTO_ADAPTER *pIE, IN const u32 cipher_type, IN const u8 *key, IN const u32 keylen);
-_LONG_CALL_ int CRYPTO_CipherEncryptAD(HAL_CRYPTO_ADAPTER *pIE, IN const u8 *message, IN const u32 msglen, IN const u8 *piv, IN const u32 ivlen,
-									   IN const u8 *paad, IN const u32 aadlen, OUT u8 *pResult, OUT u8 *pTag);
-_LONG_CALL_ int CRYPTO_CipherDecryptAD(HAL_CRYPTO_ADAPTER *pIE, IN const u8 *message, IN const u32 msglen, IN const u8 *piv, IN const u32 ivlen,
-									   IN const u8 *paad, IN const u32 aadlen, OUT u8 *pResult, OUT u8 *pTag);
+_LONG_CALL_ int CRYPTO_ProcessAD(HAL_CRYPTO_ADAPTER *pIE, const u8 *message, const u32 msglen, const u8 *pIv, const u32 ivlen, const u8 *paad,
+								 const u32 aadlen, u8 *pResult, u8 *pTag);
+_LONG_CALL_ int CRYPTO_CipherInit(HAL_CRYPTO_ADAPTER *pIE, const u32 cipher_type, const u8 *key, const u32 keylen);
+_LONG_CALL_ int CRYPTO_CipherEncryptAD(HAL_CRYPTO_ADAPTER *pIE, const u8 *message, const u32 msglen, const u8 *piv, const u32 ivlen,
+									   const u8 *paad, const u32 aadlen, u8 *pResult, u8 *pTag);
+_LONG_CALL_ int CRYPTO_CipherDecryptAD(HAL_CRYPTO_ADAPTER *pIE, const u8 *message, const u32 msglen, const u8 *piv, const u32 ivlen,
+									   const u8 *paad, const u32 aadlen, u8 *pResult, u8 *pTag);
 _LONG_CALL_ int CRYPTO_SendSeqBuf(u8 *pDigest);
 /**
   * @}

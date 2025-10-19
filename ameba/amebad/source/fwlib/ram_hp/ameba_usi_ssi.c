@@ -1,29 +1,8 @@
-/**
-  ******************************************************************************
-  * @file    ameba_usi_ssi.c
-  * @author
-  * @version V1.0.0
-  * @date    2017-11-27
-  * @brief   This file contains all the functions prototypes for USI-SPI:
-  *		- Initialization
-  *		- Clock polarity and phase setting
-  *		- SPI data frame size setting
-  *		- SPI baud rate setting
-  *		- Receive/Send data interface
-  *		- Get TRx FIFO valid entries
-  *		- check SPI device busy status
-  *		- DMA transfers management
-  *		- Interrupts and management
-  *
-  ******************************************************************************
-  * @attention
-  *
-  * This module is a confidential and proprietary property of RealTek and
-  * possession or use of this module requires written permission of RealTek.
-  *
-  * Copyright(c) 2016, Realtek Semiconductor Corporation. All rights reserved.
-  ******************************************************************************
-  */
+/*
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #include "ameba_soc.h"
 

@@ -1375,6 +1375,7 @@ void RTC_Enable(u8 NewState)
 {
 	UNUSED(NewState);
 }
+
 /**
   * @}
   */
