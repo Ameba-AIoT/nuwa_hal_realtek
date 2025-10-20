@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+
 #include <osif.h>
 #include <string.h>
 #include "hci/hci_transport.h"

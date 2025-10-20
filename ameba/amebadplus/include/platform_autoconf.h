@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+
 #define CONFIG_AMEBADPLUS 1
 #define CONFIG_IMG1_FLASH 1
 #define CONFIG_IMG2_FLASH 1

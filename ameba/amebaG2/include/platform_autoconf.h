@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2024 Realtek Semiconductor Corp.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #define CONFIG_AMEBAGREEN2 1
 #define CONFIG_SUPPORT_NAND_FLASH 1
 #define CONFIG_SUPPORT_SDIO_DEVICE 1

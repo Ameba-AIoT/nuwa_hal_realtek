@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+
 #ifndef _HCI_UART_H_
 #define _HCI_UART_H_
 

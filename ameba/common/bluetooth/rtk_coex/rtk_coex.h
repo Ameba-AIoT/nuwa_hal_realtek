@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+
 #ifndef _RTK_COEX_H_
 #define _RTK_COEX_H_
 
