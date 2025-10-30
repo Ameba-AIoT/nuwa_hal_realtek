@@ -184,11 +184,11 @@ static const video_buf_setup_t v_buf_cfg = {
 	.v1_bps = 2 * 1024 * 1024,
 	.v1_snapshot = 1,
 
-	.v2_enable = 0,
-	.v2_width = 0,
-	.v2_height = 0,
-	.v2_bps = 0,
-	.v2_snapshot = 0,
+	.v2_enable = 1,
+	.v2_width = sensor_params[USE_SENSOR].sensor_width,
+	.v2_height = sensor_params[USE_SENSOR].sensor_height,
+	.v2_bps = 2 * 1024 * 1024,
+	.v2_snapshot = 1,
 
 	.v3_enable = 0,
 	.v3_width = 0,
