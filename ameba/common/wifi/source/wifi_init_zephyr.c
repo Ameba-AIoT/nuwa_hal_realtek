@@ -7,7 +7,7 @@
 #include "ameba_soc.h"
 #include <zephyr/kernel.h>
 
-#ifdef CONFIG_SOC_AMEBAD
+#ifdef CONFIG_SOC_SERIES_AMEBAD
 extern u32 wifi_hal_dma_interrupt(void *data);
 
 void wlan_int_enable(void)

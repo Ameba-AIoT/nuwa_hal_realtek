@@ -1,0 +1,25 @@
+# Copyright (c) 2024 Realtek Semiconductor Corp.
+# SPDX-License-Identifier: Apache-2.0
+
+config ARM_CORE_CM4
+	bool
+	default y if SOC_SERIES_AMEBAG2
+
+config ARM_CORE_CM4_KM4TZ
+	bool
+	default y if SOC_SERIES_AMEBAG2
+
+# comment "--------Build Config---------"
+menu "Build Option"
+
+choice
+    prompt "Chip Version"
+    default AMEBAGREEN2_A_CUT
+    config AMEBAGREEN2_A_CUT
+        bool "AMEBAGREEN2_A_Cut"
+
+    config AMEBAGREEN2_B_CUT
+        bool "AMEBAGREEN2_B_Cut"
+endchoice
+
+endmenu

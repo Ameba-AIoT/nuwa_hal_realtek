@@ -54,7 +54,7 @@ static void bt_coex_send_vendor_cmd(uint16_t cmd_id, uint8_t *pbuf, uint8_t len)
 	DBG_BT_COEX_DUMP("bt_coex_send_vendor_cmd: pbuf = ", pbuf, len);
 
 	struct net_buf *net_buf = NULL;
-	net_buf = bt_hci_cmd_create(cmd_id, len);
+	net_buf = bt_hci_cmd_alloc(K_FOREVER);
 	if (!net_buf) {
 		return;
 	}

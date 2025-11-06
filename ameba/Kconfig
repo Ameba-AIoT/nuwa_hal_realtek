@@ -12,24 +12,11 @@ config REALTEK_AMEBA_HAL_LIB
 	help
 	  This option enables the Realtek Ameba HAL library.
 
-config ARM_CORE_CM4
-	bool
-	default y if SOC_SERIES_AMEBAD || SOC_SERIES_AMEBADPLUS || SOC_SERIES_AMEBAG2
-
-config ARM_CORE_CM4_KM4TZ
-	bool
-	default y if SOC_SERIES_AMEBAG2
+rsource "ameba*/Kconfig"
 
 orsource "common/usb/Kconfig"
 rsource "common/wifi/Kconfig"
 rsource "common/bluetooth/Kconfig"
-
-config SOC_SERIES_AMEBAD
-	select SINGLE_CORE_WIFI if WLAN
-
-config SOC_SERIES_AMEBADPLUS
-	select AS_INIC_AP if WLAN
-
 rsource "common/rtk_coex/Kconfig"
 
 endif # SOC_FAMILY_REALTEK_AMEBA

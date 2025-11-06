@@ -83,6 +83,13 @@ def get_toolchain_config():
     GCC_FROMELF = os.path.join(toolchain_path, toolchain_prefix + "-objcopy")
     GCC_STRIP = os.path.join(toolchain_path, toolchain_prefix + "-strip")
 
+def if_enable_config(config_file, target_str):
+    with open(config_file, 'r') as infile:
+        for line in infile:
+            if target_str in line:
+                return True
+    return False
+
 def amebadplus_bin_handle(bt_coexist):
     target_dir = Path(out_dir) / 'amebadplus_gcc_project'
     target_dir.mkdir(parents=True, exist_ok=True)
@@ -259,7 +266,11 @@ def amebaG2_bin_handle(bt_coexist):
 
     blobs_dir = Path(module_dir) / 'zephyr' / 'blobs' / soc_name / 'bin'
     copy_bin_file(blobs_dir / path_leaf(amebagreen2_boot_bin), amebagreen2_boot_bin)
-    copy_bin_file(blobs_dir / path_leaf(km4ns_image2_all_bin), km4ns_image2_all_bin)
+    if if_enable_config(Path(zephyr_bin).parent / ".config", 'CONFIG_AMEBAGREEN2_A_CUT=y'):
+        copy_bin_file(blobs_dir / 'a-cut' / path_leaf(km4ns_image2_all_bin), km4ns_image2_all_bin)
+    else:
+        copy_bin_file(blobs_dir / path_leaf(km4ns_image2_all_bin), km4ns_image2_all_bin)
+
     copy_file_if_exists(blobs_dir / path_leaf(km4tz_image3_all_bin), km4tz_image3_all_bin)
     shutil.copy(os.path.join(module_dir, 'ameba', soc_name, 'manifest.json5'), target_dir)
     shutil.copy(os.path.join(module_dir, 'ameba', soc_name, 'ameba_layout.ld'), target_dir)

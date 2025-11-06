@@ -5,7 +5,7 @@ if REALTEK_AMEBA_ZEPHYR_WIFI
 
 config BT_COEXIST
 	bool "Enable CoExist"
-	default y if !SOC_AMEBAD
+	default y if !SOC_SERIES_AMEBAD
 
 	select COEXIST_HOST if AS_INIC_AP && !SINGLE_CORE_WIFI
 
@@ -18,7 +18,7 @@ config COEXIST_DEV
 config ZEPHYR_SDK
 	bool
 
-if BT_COEXIST && !SOC_AMEBAD
+if BT_COEXIST && !SOC_SERIES_AMEBAD
 	config COEXIST_EXT
 		bool "Enable Ext Coex Support"
 		default n
@@ -88,21 +88,21 @@ if BT_COEXIST && !SOC_AMEBAD
 		# PTA PINMUX PIN set
 		config EXT_PTA_PIN_REQ
 			string "Pin PTA Request"
-			default "PB_0" if SOC_AMEBADPLUS
-			default "PA_21" if SOC_AMEBAG2
-			default "PA_26" if SOC_AMEBAD
+			default "PB_0" if SOC_SERIES_AMEBADPLUS
+			default "PA_21" if SOC_SERIES_AMEBAG2
+			default "PA_26" if SOC_SERIES_AMEBAD
 
 		config EXT_PTA_PIN_PRI
 			string "Pin PTA Priority"
-			default "PB_2" if SOC_AMEBADPLUS
-			default "PA_18" if SOC_AMEBAG2
-			default "PB_1" if SOC_AMEBAD
+			default "PB_2" if SOC_SERIES_AMEBADPLUS
+			default "PA_18" if SOC_SERIES_AMEBAG2
+			default "PB_1" if SOC_SERIES_AMEBAD
 
 		config EXT_PTA_PIN_GNT
 			string "Pin PTA Gnt"
-			default "PB_1" if SOC_AMEBADPLUS
-			default "PA_19" if SOC_AMEBAG2
-			default "PA_27" if SOC_AMEBAD
+			default "PB_1" if SOC_SERIES_AMEBADPLUS
+			default "PA_19" if SOC_SERIES_AMEBAG2
+			default "PA_27" if SOC_SERIES_AMEBAD
 
 		config COEX_EXT_CHIP_SUPPORT
 			bool

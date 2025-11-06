@@ -156,7 +156,7 @@ static void usb_chip_disable_interrupt(void)
 static void usb_chip_register_irq_handler(void *handler, u8 priority)
 {
 	if (handler != NULL) {
-		InterruptRegister((IRQ_FUN)handler, USB_INT_IRQ, NULL, priority);
+		InterruptRegister((IRQ_FUN)handler, USB_INT_IRQ, (u32)NULL, priority);
 	}
 }
 

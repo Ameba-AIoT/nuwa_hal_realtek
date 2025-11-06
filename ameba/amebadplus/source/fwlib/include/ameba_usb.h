@@ -34,9 +34,18 @@
 /** @defgroup USB_Hardware_Configurations
   * @{
   */
-
+#define USB_IRQ               68U
 #define USB_MAX_ENDPOINTS     6U
 #define USB_MAX_PIPES         0U
+
+/** @} */
+
+/** @defgroup USB_Hardware_Support
+  * @{
+  */
+
+#define CONFIG_SUPPORT_USB_NO_PHY
+#define CONFIG_SUPPORT_USB_FS_ONLY
 
 /** @} */
 

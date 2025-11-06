@@ -23,3 +23,4 @@
 #define CONFIG_AMEBAD_B_CUT 1
 #define CONFIG_SOC_PS_EN 1
 #define CONFIG_SOC_PS_MODULE 1
+#include <zephyr/autoconf.h>

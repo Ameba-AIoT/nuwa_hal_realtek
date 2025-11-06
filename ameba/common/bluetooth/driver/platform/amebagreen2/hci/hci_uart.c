@@ -19,7 +19,7 @@
 #define HCI_UART_IDX             (3)
 #define HCI_UART_DEV             (UART3_DEV)
 #define HCI_UART_IRQ             (UART3_IRQ)
-#define HCI_UART_IRQ_PRIO        (INT_PRI_LOWEST)
+#define HCI_UART_IRQ_PRIO        (INT_PRI6)
 
 static struct hci_uart_t {
 	/* UART */

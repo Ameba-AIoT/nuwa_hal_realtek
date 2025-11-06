@@ -6,31 +6,45 @@ zephyr_compile_options(-mcmse)
 set(LIB_PATH ${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/${CONFIG_SOC_SERIES}/lib)
 zephyr_link_libraries(${LIB_PATH}/lib_chipinfo.a)
 
-zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${LIB_PATH}/lib_wifi_whc_ap.a)
-zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${LIB_PATH}/lib_rtw_event.a)
-zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${LIB_PATH}/lib_wifi_api.a)
-zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${LIB_PATH}/lib_wpa_lite.a)
-zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${LIB_PATH}/lib_wifi_common.a)
-zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${LIB_PATH}/lib_coex_api.a)
-zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA ${LIB_PATH}/lib_wifi_rtk_app.a)
+if(CONFIG_AMEBAGREEN2_A_CUT)
+  set(WIFI_LIB_PATH ${LIB_PATH}/a-cut)
+else()
+  set(WIFI_LIB_PATH ${LIB_PATH})
+endif()
 
-zephyr_include_directories(include)
-zephyr_include_directories(source/fwlib/include)
-zephyr_include_directories(source/fwlib/include/cmsis)
-zephyr_include_directories(source/fwlib/include/rom)
-zephyr_include_directories(source/app/monitor/include)
+zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA
+  ${WIFI_LIB_PATH}/lib_wifi_whc_ap.a
+  ${WIFI_LIB_PATH}/lib_rtw_event.a
+  ${WIFI_LIB_PATH}/lib_wifi_api.a
+  ${WIFI_LIB_PATH}/lib_wpa_lite.a
+  ${WIFI_LIB_PATH}/lib_wifi_common.a
+  ${WIFI_LIB_PATH}/lib_coex_api.a
+  ${WIFI_LIB_PATH}/lib_wifi_rtk_app.a
+)
 
-# # used by common
-zephyr_library_sources(source/fwlib/ram_common/ameba_reset.c)
-zephyr_library_sources(source/fwlib/ram_common/ameba_clk.c)
-zephyr_library_sources(source/fwlib/ram_common/ameba_arch.c)
-zephyr_library_sources(source/fwlib/ram_common/ameba_ipc_api.c)
-zephyr_library_sources(source/fwlib/ram_common/ameba_ipc_ram.c)
-zephyr_library_sources(source/fwlib/ram_common/ameba_rtc.c)
+zephyr_include_directories(
+  include
+  source/fwlib/include
+  source/fwlib/include/cmsis
+  source/fwlib/include/rom
+  source/app/monitor/include
+)
+
+# used by common
+zephyr_library_sources(
+  source/fwlib/ram_common/ameba_reset.c
+  source/fwlib/ram_common/ameba_clk.c
+  source/fwlib/ram_common/ameba_arch.c
+  source/fwlib/ram_common/ameba_ipc_api.c
+  source/fwlib/ram_common/ameba_ipc_ram.c
+  source/fwlib/ram_common/ameba_rtc.c
+)
 
 # used by driver, need use zephyr_library_sources_ifdef
 zephyr_library_sources_ifdef(CONFIG_ADC_AMEBA source/fwlib/ram_common/ameba_adc.c)
 zephyr_library_sources_ifdef(CONFIG_CAN_AMEBA_A2C source/fwlib/ram_common/ameba_a2c.c)
+zephyr_library_sources_ifdef(CONFIG_ETH_AMEBA source/fwlib/ram_km4tz/ameba_phy.c)
+zephyr_library_sources_ifdef(CONFIG_ETH_AMEBA source/fwlib/ram_km4tz/ameba_ethernet.c)
 zephyr_library_sources_ifdef(CONFIG_AMEBA_LCDC source/fwlib/ram_common/ameba_lcdc.c)
 zephyr_library_sources_ifdef(CONFIG_MIPI_DBI_AMEBA_LCDC source/fwlib/ram_common/ameba_lcdc.c)
 zephyr_library_sources_ifdef(CONFIG_INPUT_CTC_AMEBA source/fwlib/ram_common/ameba_captouch.c)
@@ -47,6 +61,15 @@ zephyr_library_sources_ifdef(CONFIG_COUNTER_TMR_AMEBA source/fwlib/ram_common/am
 zephyr_library_sources_ifdef(CONFIG_COUNTER_TMR_AMEBA source/fwlib/ram_common/ameba_ups.c)
 zephyr_library_sources_ifdef(CONFIG_UART_AMEBA source/fwlib/ram_common/ameba_uart.c)
 zephyr_library_sources_ifdef(CONFIG_TEMP_AMEBA source/fwlib/ram_common/ameba_thermal.c)
-zephyr_library_sources_ifdef(CONFIG_UDC_AMEBA source/fwlib/ram_common/ameba_usb.c)
+zephyr_library_sources_ifdef(CONFIG_REALTEK_AMEBA_ZEPHYR_USB source/fwlib/ram_common/ameba_usb.c)
 zephyr_library_sources_ifdef(CONFIG_WIFI_AMEBA source/fwlib/ram_common/ameba_pmu.c)
 zephyr_library_sources_ifdef(CONFIG_WIFI_AMEBA source/fwlib/ram_common/ameba_pmctimer.c)
+
+zephyr_link_libraries_ifdef(CONFIG_AMEBAGREEN2_A_CUT
+  -T${CMAKE_CURRENT_SOURCE_DIR}/ld/ameba_rom_symbol_acut_s.ld
+  -T${CMAKE_CURRENT_SOURCE_DIR}/ld/ameba_rom_symbol_acut_wifi.ld
+)
+zephyr_link_libraries_ifdef(CONFIG_AMEBAGREEN2_B_CUT
+  -T${CMAKE_CURRENT_SOURCE_DIR}/ld/ameba_rom_symbol_bcut_s.ld
+  -T${CMAKE_CURRENT_SOURCE_DIR}/ld/ameba_rom_symbol_bcut_wifi.ld
+)

@@ -54,4 +54,7 @@ endif
 config COMMON_LIBC_MALLOC_ARENA_SIZE
 	default 8192
 
+config BT_BUF_ACL_TX_COUNT
+	default 8
+	
 endif # REALTEK_AMEBA_ZEPHYR_BT

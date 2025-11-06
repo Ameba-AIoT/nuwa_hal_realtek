@@ -31,11 +31,10 @@
 #define RTK_DCACHE_2WAY           1U        /* 2-way Cache */
 #include "core_cm33_km4.h"                 /* Processor and core peripherals */
 // #include "core_armv8mml.h"
-#include "cmsis_ridr.h"
 /* ##########################  Cache functions  #################################### */
 #if ((defined (__ICACHE_PRESENT) && (__ICACHE_PRESENT == 1U)) || \
      (defined (__DCACHE_PRESENT) && (__DCACHE_PRESENT == 1U)))
-#include "cachel1_armv7.h"
+#include "m-profile/armv7m_cachel1.h"
 #endif
 
 #if defined (__ARM_FEATURE_CMSE) &&  (__ARM_FEATURE_CMSE == 3U)
@@ -57,7 +56,6 @@
 #define RTK_DCACHE_2WAY           1U        /* 2-way Cache */
 #include "core_cm23_km0.h"
 // #include "core_armv8mbl.h"
-#include "cmsis_ridr.h"
 
 /* CM23 Does not support Cache, But Ameba Has it */
 #define __ICACHE_PRESENT          1U        /* Instruction Cache present */
@@ -65,7 +63,7 @@
 /* ##########################  Cache functions  #################################### */
 #if ((defined (__ICACHE_PRESENT) && (__ICACHE_PRESENT == 1U)) || \
      (defined (__DCACHE_PRESENT) && (__DCACHE_PRESENT == 1U)))
-#include "cachel1_armv7.h"
+#include "m-profile/armv7m_cachel1.h"
 #endif
 
 #endif

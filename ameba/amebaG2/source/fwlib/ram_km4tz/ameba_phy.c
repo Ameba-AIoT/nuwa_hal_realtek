@@ -37,7 +37,7 @@ void PHY_SET_MMD_REG(u32 type, u32 device, u32 addr, u32 data)
 
 u32 PHY_GET_MMD_REG(u32 type, u32 device, u32 addr)
 {
-	u32 rvalue;
+	u32 rvalue = 0;
 	switch (type) {
 	case RTK_MMD_TYPE:
 		Ethernet_Write_PhyReg(FEPHY_REG_PAGE_0, FEPHY_REG_ADDR_13, device);
