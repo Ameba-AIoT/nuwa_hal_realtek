@@ -2870,8 +2870,6 @@ void hal_rtl_set_eq_para(hal_audio_adapter_t *paudio_adapter, BOOL en, u32 first
  */
 void hal_rtl_audio_input_l_eq(hal_audio_adapter_t *paudio_adapter, audio_eq_t audio_eq, BOOL en, hal_eq_params_t *peq_params)
 {
-	u16 audio_codec_index_en;
-
 	if (audio_eq == AUDIO_EQ_0) {
 		hal_rtl_set_eq_para(paudio_adapter, en, 0x91, peq_params);
 	} else if (audio_eq == AUDIO_EQ_1) {
@@ -2897,8 +2895,6 @@ void hal_rtl_audio_input_l_eq(hal_audio_adapter_t *paudio_adapter, audio_eq_t au
  */
 void hal_rtl_audio_input_r_eq(hal_audio_adapter_t *paudio_adapter, audio_eq_t audio_eq, BOOL en, hal_eq_params_t *peq_params)
 {
-	u16 audio_codec_index_en;
-
 	if (audio_eq == AUDIO_EQ_0) {
 		hal_rtl_set_eq_para(paudio_adapter, en, 0xC4, peq_params);
 	} else if (audio_eq == AUDIO_EQ_1) {
@@ -2924,8 +2920,6 @@ void hal_rtl_audio_input_r_eq(hal_audio_adapter_t *paudio_adapter, audio_eq_t au
  */
 void hal_rtl_audio_output_l_eq(hal_audio_adapter_t *paudio_adapter, audio_eq_t audio_eq, BOOL en, hal_eq_params_t *peq_params)
 {
-	u16 audio_codec_index_en;
-
 	if (audio_eq == AUDIO_EQ_0) {
 		hal_rtl_set_eq_para(paudio_adapter, en, 0x2B, peq_params);
 	} else if (audio_eq == AUDIO_EQ_1) {

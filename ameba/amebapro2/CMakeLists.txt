@@ -38,3 +38,7 @@ zephyr_library_sources_ifdef(CONFIG_ENTROPY_AMEBAPRO2_TRNG source/fwlib/rtl8735b
 zephyr_library_sources_ifdef(CONFIG_SOC_FLASH_AMEBAPRO2 source/fwlib/rtl8735b/source/ram/hal_spic.c)
 zephyr_library_sources_ifdef(CONFIG_SOC_FLASH_AMEBAPRO2 source/fwlib/rtl8735b/source/ram/hal_flash.c)
 zephyr_library_sources_ifdef(CONFIG_SDMMC_AMEBAPRO2 source/fwlib/rtl8735b/source/ram/hal_sdhost.c)
+zephyr_library_sources_ifdef(CONFIG_AUDIO_AMEBAPRO2_DMIC source/fwlib/rtl8735b/source/ram/hal_audio.c)
+zephyr_library_sources_ifdef(CONFIG_AUDIO_AMEBAPRO2_DMIC source/fwlib/rtl8735b/source/ram/rtl8735b_audio.c)
+zephyr_library_sources_ifdef(CONFIG_AUDIO_AMEBAPRO2_DMIC source/fwlib/rtl8735b/source/ram/hal_sport.c)
+zephyr_library_sources_ifdef(CONFIG_AUDIO_AMEBAPRO2_DMIC source/fwlib/rtl8735b/source/ram/rtl8735b_sport.c)
