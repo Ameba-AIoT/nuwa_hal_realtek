@@ -14,7 +14,7 @@ menu "Build Option"
 
 choice
     prompt "Chip Version"
-    default AMEBAGREEN2_A_CUT
+    default AMEBAGREEN2_B_CUT
     config AMEBAGREEN2_A_CUT
         bool "AMEBAGREEN2_A_Cut"
 

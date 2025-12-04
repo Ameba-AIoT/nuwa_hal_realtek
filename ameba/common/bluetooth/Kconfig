@@ -57,4 +57,10 @@ config COMMON_LIBC_MALLOC_ARENA_SIZE
 config BT_BUF_ACL_TX_COUNT
 	default 8
 	
+if SETTINGS
+	config BT_SETTINGS
+		bool 
+		default y
+endif
+
 endif # REALTEK_AMEBA_ZEPHYR_BT

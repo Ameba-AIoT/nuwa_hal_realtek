@@ -64,6 +64,7 @@ zephyr_library_sources_ifdef(CONFIG_TEMP_AMEBA source/fwlib/ram_common/ameba_the
 zephyr_library_sources_ifdef(CONFIG_REALTEK_AMEBA_ZEPHYR_USB source/fwlib/ram_common/ameba_usb.c)
 zephyr_library_sources_ifdef(CONFIG_WIFI_AMEBA source/fwlib/ram_common/ameba_pmu.c)
 zephyr_library_sources_ifdef(CONFIG_WIFI_AMEBA source/fwlib/ram_common/ameba_pmctimer.c)
+zephyr_library_sources_ifdef(CONFIG_AMEBA_PPE source/fwlib/ram_common/ameba_ppe.c)
 
 zephyr_link_libraries_ifdef(CONFIG_AMEBAGREEN2_A_CUT
   -T${CMAKE_CURRENT_SOURCE_DIR}/ld/ameba_rom_symbol_acut_s.ld
@@ -73,3 +74,5 @@ zephyr_link_libraries_ifdef(CONFIG_AMEBAGREEN2_B_CUT
   -T${CMAKE_CURRENT_SOURCE_DIR}/ld/ameba_rom_symbol_bcut_s.ld
   -T${CMAKE_CURRENT_SOURCE_DIR}/ld/ameba_rom_symbol_bcut_wifi.ld
 )
+
+add_subdirectory_ifdef(CONFIG_AMEBA_MJPEG source/fwlib/jpeg_decoder)

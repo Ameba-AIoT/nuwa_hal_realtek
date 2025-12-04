@@ -92,3 +92,8 @@ int rtk_diag_event_add(uint8_t evt_level, uint16_t evt_type, const uint8_t *evt_
 	UNUSED(evt_len);
 	return 0;
 }
+
+void eap_autoreconnect_hdl(uint8_t method_id)
+{
+	UNUSED(method_id);
+}

@@ -35,10 +35,10 @@ zephyr_library_sources(
   source/swlib/log.c
   source/fwlib/ram_common/ameba_ipc_api.c
   source/fwlib/ram_common/ameba_ipc_ram.c
+  source/fwlib/ram_common/ameba_adc.c
 )
 
 # used by driver, need use zephyr_library_sources_ifdef
-zephyr_library_sources_ifdef(CONFIG_ADC_AMEBA source/fwlib/ram_common/ameba_adc.c)
 zephyr_library_sources_ifdef(CONFIG_INPUT_CTC_AMEBA source/fwlib/ram_common/ameba_captouch.c)
 zephyr_library_sources_ifdef(CONFIG_I2S_AMEBA source/fwlib/ram_common/ameba_audio_clock.c)
 zephyr_library_sources_ifdef(CONFIG_I2S_AMEBA source/fwlib/ram_common/ameba_pll.c)
