@@ -137,7 +137,7 @@ typedef enum {
 /* =========================================================================================================================== */
 
 /* ===========================  Configuration of the ARM ARMV8MML Processor and Core Peripherals  ============================ */
-#define __ARMV8MML_REV                 0x0000U  /*!< ARMV8MML Core Revision                                                    */
+#define __CM33_REV                     0x0000U  /*!< Core revision                                                             */
 #define __NVIC_PRIO_BITS               4        /*!< Number of Bits used for Priority Levels                                   */
 #define __Vendor_SysTickConfig         0        /*!< Set to 1 if different SysTick Config is used                              */
 #define __VTOR_PRESENT                 1        /*!< Set to 1 if CPU supports Vector Table Offset Register                     */
@@ -153,8 +153,14 @@ typedef enum {
 
 /** @} */ /* End of group Configuration_of_CMSIS */
 
-#include "core_armv8mml.h"                      /*!< ARM ARMV8MML processor and core peripherals                               */
+#include "core_cm33.h"
 #include "system_rtl8735b.h"                    /*!< rtl8735b System                                                           */
+
+/* ##########################  Cache functions  #################################### */
+#if ((defined (__ICACHE_PRESENT) && (__ICACHE_PRESENT == 1U)) || \
+     (defined (__DCACHE_PRESENT) && (__DCACHE_PRESENT == 1U)))
+#include "m-profile/armv7m_cachel1.h"
+#endif
 
 #ifndef __IM                                    /*!< Fallback for older CMSIS versions                                         */
 #define __IM   __I
