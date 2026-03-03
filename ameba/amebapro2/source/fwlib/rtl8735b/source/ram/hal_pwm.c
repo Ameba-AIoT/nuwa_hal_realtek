@@ -32,7 +32,7 @@
 #include "hal_timer.h"
 #include "hal_cache.h"
 #include "hal_gdma.h"
-
+#include <string.h>
 
 
 
@@ -561,7 +561,7 @@ hal_status_t hal_pwm_auto_duty_inc(hal_pwm_adapter_t *ppwm_adp, u32 max_duty_us,
 								   u32 step_sz_us, u32 step_period_cnt)
 {
 	PWM_TypeDef *PWM_OBJ = (PWM_TypeDef *)(ppwm_adp->base_addr);
-	u32 PWM_ADJ_LIM, PWM_ADJ_CTRL;
+	u32 PWM_ADJ_LIM = 0;
 	hal_pwm_stubs.hal_pwm_auto_duty_inc(ppwm_adp, max_duty_us, step_sz_us, step_period_cnt);
 	PWM_ADJ_LIM = PWM_ADJ_LIM | (PWM_MASK_DUTY_ADJ_UP_LIM & (((max_duty_us << 1) / ppwm_adp->tick_p5us) << PWM_SHIFT_DUTY_ADJ_UP_LIM));
 	PWM_OBJ->PWM_AUTO_ADJ_LIMIT = PWM_ADJ_LIM;
