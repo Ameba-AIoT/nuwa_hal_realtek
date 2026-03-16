@@ -1,0 +1,62 @@
+# Copyright (c) 2024 Realtek Semiconductor Corp.
+# SPDX-License-Identifier: Apache-2.0
+
+config REALTEK_AMEBA_ZEPHYR_USB
+	bool "RealTek Ameba Zephyr USB stack"
+	default n
+	depends on DT_HAS_REALTEK_AMEBA_USB_ENABLED
+	help
+	  This option enables the Realtek Ameba Zephyr USB stack.
+
+if REALTEK_AMEBA_ZEPHYR_USB
+
+config USBD_CDC_ACM
+	bool "CDC ACM device"
+	help
+	  This option enables the Realtek Ameba Zephyr USB CDC ACM device.
+
+config USBD_HID
+	bool "HID device"
+	help
+	  This option enables the Realtek Ameba Zephyr USB HID device.
+
+config USBD_MSC
+	bool "MSC device"
+	help
+	  This option enables the Realtek Ameba Zephyr USB MSC device.
+
+if USBD_MSC
+	config USBD_MSC_RAM_DISK
+		bool "RAM"
+		help
+		  This option to use RAM as storage media.
+		if USBD_MSC_RAM_DISK
+			config USBD_MSC_RAM_DISK_ZEPHYR_FATFS
+				bool "Use RAM with fatfs"
+		endif
+endif # USBD_MSC
+
+config USBD_COMPOSITE
+    bool "Composite device"
+
+if USBD_COMPOSITE
+	choice
+		prompt "Select Composite Class"
+		config USBD_COMPOSITE_CDC_ACM_HID
+			bool "CDC ACM + HID"
+		config USBD_COMPOSITE_CDC_ACM_MSC
+			bool "CDC ACM + MSC"
+			if USBD_COMPOSITE_CDC_ACM_MSC
+				config COMP_MSC_RAM_DISK
+					bool "RAM"
+					help
+					  This option to use RAM as storage media.
+					if COMP_MSC_RAM_DISK
+						config COMP_MSC_RAM_DISK_ZEPHYR_FATFS
+							bool "Use RAM with fatfs"
+					endif
+			endif
+	endchoice
+endif # USBD_COMPOSITE
+
+endif # REALTEK_AMEBA_ZEPHYR_USB

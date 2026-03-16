@@ -4,172 +4,356 @@
 # Copyright (c) 2024 Realtek Semiconductor Corp.
 # SPDX-License-Identifier: Apache-2.0
 
-import os
 import sys
 import argparse
 import base64
 import json
 import subprocess
+import shutil
+import logging
+from enum import IntEnum
 from pathlib import Path
+import os
+import pickle
+from typing import Dict, Tuple, List, Optional
 
-FLASH_TOOL = str((Path.cwd() / 'tools' / 'meta_tools' / 'scripts' / 'flash' / 'AmebaFlash.py').resolve())
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
-class MemoryInfo:
-    MEMORY_TYPE_RAM = 0
-    MEMORY_TYPE_NOR = 1
-    MEMORY_TYPE_NAND = 2
+# Path constants definition
+THIS_DIR = Path(__file__).resolve().parent
+BLOBS_ROOT = (THIS_DIR / "../../zephyr/blobs/ameba").resolve()
 
-profiles_path = (Path.cwd() / "tools" / "meta_tools" / "scripts" / "flash" / "Devices" / "Profiles").resolve()
+# Tool paths
+DEFAULT_FLASH_TOOL = (THIS_DIR / 'flash' / 'AmebaFlash.py').resolve()
+PROFILES_PATH = (THIS_DIR / "flash" / "Devices" / "Profiles").resolve()
+FLOADERS_DEST = (THIS_DIR / "flash" / "Devices" / "Floaders").resolve()
 
-profiles = {
-    "amebag2": str((profiles_path / "AmebaGreen2_FreeRTOS_NOR.rdev").resolve()),
-    "amebadplus": str((profiles_path / "AmebaDplus_FreeRTOS_NOR.rdev").resolve()),
+class MemoryType(IntEnum):
+    RAM = 0
+    NOR = 1
+    NAND = 2
+
+# Device configuration mapping
+DEVICE_MAP = {
+    "amebag2": {
+        "profile": "RTL8721F_NOR.rdev",
+        "floader": "amebag2/bin/floader_amebagreen2.bin"
+    },
+    "amebadplus": {
+        "profile": "RTL8721Dx.rdev",
+        "floader": "amebadplus/bin/floader_amebadplus.bin"
+    }
 }
 
-def get_profile_path(device: str, check_exists: bool = False) -> str:
+XIP_BASE: int = 0x08000000  # XIP base address
+FILE_TO_LABEL: Dict[str, str] = {
+    "amebagreen2_boot.bin": "bootloader",
+    "amebagreen2_km4ns.signed.bin": "image-2",
+    "amebagreen2_km4tz.signed.bin": "image-0",
+}
+EDT_DEFAULT_NAME: str = "edt.pickle"
+ZEPHYR_DIR_NAME: str = "zephyr"
+
+def resolve_edt_pickle_path(image_dir: str) -> str:
     """
-    Return profile path for given device.
+    Resolve the path to edt.pickle based on the typical build layout:
+    Prefer: <image_dir>/../zephyr/edt.pickle
+    Raises FileNotFoundError if not found.
+    """
+    image_dir_abs = os.path.abspath(image_dir)
+    p = os.path.abspath(os.path.join(image_dir_abs, os.pardir, ZEPHYR_DIR_NAME, EDT_DEFAULT_NAME))
+    if not os.path.isfile(p):
+        raise FileNotFoundError(f"EDT pickle not found at {p}")
+    return p
 
-    Args:
-        device: device name (case-insensitive).
-        check_exists: when True, verify the file exists.
 
-    Returns:
-        Absolute path to the profile file.
+def _safe_get_label(node) -> Optional[str]:
+    """
+    Extract the 'label' property value from a node in a robust way.
+    """
+    props = getattr(node, "props", {})
+    label_prop = props.get("label")
+    if label_prop is not None:
+        # edtlib Property usually exposes .val; keep fallback to .value
+        val = getattr(label_prop, "val", None)
+        if val is None:
+            val = getattr(label_prop, "value", None)
+        if val is not None:
+            return str(val)
+    # Fallback if node has a direct attribute (unlikely, but safe)
+    direct = getattr(node, "label", None)
+    return str(direct) if direct is not None else None
 
-    Raises:
-        ValueError: if device is not supported or empty.
-        FileNotFoundError: if check_exists is True and file does not exist.
+
+def _safe_get_first_reg(node) -> Optional[Tuple[int, int]]:
+    """
+    Extract the first (addr, size) pair from node.regs.
+    Returns None if not available.
+    """
+    regs = getattr(node, "regs", None)
+    if not regs:
+        return None
+    reg0 = regs[0]
+    addr = getattr(reg0, "addr", None)
+    size = getattr(reg0, "size", None)
+    if addr is None or size is None:
+        return None
+    return int(addr), int(size)
+
+def collect_image_load_list(image_dir: str, images: List[List[str]]) -> None:
+    """
+    Populate 'images' in-place with entries of [filename, start_hex, end_hex] for images present under image_dir.
+    The start/end addresses are computed from the partition's reg (offset/size) and XIP_BASE.
+
+    In a multi-domain compilation scenario, each domain will run the runner independently.
+    The image_dir passed in by each domain is the image directory under its own compilation directory,
+    and it will be processed independently according to its own image directory.
+
+    Example result for one file:
+        [["amebagreen2_boot.bin", "0x08000000", "0x08014000"]]
+    """
+    # Reset the target list
+    images.clear()
+
+    # Resolve edt.pickle
+    edt_path = resolve_edt_pickle_path(image_dir)
+
+    # Deserialize EDT (requires edtlib in the environment)
+    with open(edt_path, "rb") as f:
+        edt = pickle.load(f)
+
+    # Build label -> (offset, size) for labels we care about
+    interested_labels = set(FILE_TO_LABEL.values())
+    label_to_reg: Dict[str, Tuple[int, int]] = {}
+
+    for node in getattr(edt, "nodes", []):
+        label = _safe_get_label(node)
+        if not label or label not in interested_labels:
+            continue
+        reg_pair = _safe_get_first_reg(node)
+        if reg_pair is None:
+            continue
+        label_to_reg[label] = reg_pair
+
+    # Create entries for files that actually exist under image_dir
+    for filename, label in FILE_TO_LABEL.items():
+        file_path = os.path.join(image_dir, filename)
+        if not os.path.isfile(file_path):
+            continue
+        if label not in label_to_reg:
+            raise KeyError(
+                f"Partition label '{label}' not found in EDT for image '{filename}'."
+            )
+        offset, size = label_to_reg[label]
+        start = XIP_BASE + offset
+        end = start + size
+        images.append([filename, f"0x{start:08x}", f"0x{end:08x}"])
+
+def prepare_flash_environment(device: str) -> str:
+    """
+    Validate device, copy necessary bootloader (floader), and return Profile file path.
     """
     if not device:
-        raise ValueError("device must not be empty")
+        raise ValueError("Device argument must not be empty.")
 
     key = device.lower()
-    if key not in profiles:
-        valid = ", ".join(sorted(profiles.keys()))
-        raise ValueError(f"unsupported device: {device}. valid options: {valid}")
+    if key not in DEVICE_MAP:
+        valid_options = ", ".join(sorted(DEVICE_MAP.keys()))
+        raise ValueError(f"Unsupported device: '{device}'. Valid options: {valid_options}")
 
-    path = profiles[key]
-    if check_exists and not os.path.isfile(path):
-        raise FileNotFoundError(f"profile file not found: {path}")
+    config = DEVICE_MAP[key]
 
+    # 1. Determine Profile path
+    profile_path = PROFILES_PATH / config["profile"]
+    if not profile_path.is_file():
+        raise FileNotFoundError(f"Profile file not found: {profile_path}")
+
+    # 2. Handle Floader copy
+    floader_src = BLOBS_ROOT / config["floader"]
+    if not floader_src.is_file():
+        raise FileNotFoundError(f"Floader file for {key} not found at: {floader_src}")
+
+    FLOADERS_DEST.mkdir(parents=True, exist_ok=True)
+
+    # Copy file (overwrite to ensure correctness)
+    try:
+        shutil.copy2(floader_src, FLOADERS_DEST)
+    except Exception as e:
+        logger.error(f"Failed to copy floader: {e}")
+        raise
+
+    return str(profile_path)
+
+def validate_tool_path(tool_path: str) -> Path:
+    """Validate if the flash tool path exists."""
+    path = Path(tool_path).resolve()
+    if not path.is_file():
+        raise FileNotFoundError(f"Flash tool not found: {path}")
     return path
 
-def ensure_tool_path_exists(tool_path: str) -> None:
-    """
-    Check if tool_path exists and is a directory.
-    Raise FileNotFoundError if it does not exist.
-    """
-    if not tool_path:
-        raise ValueError("tool_path must not be empty")
-
-    if not os.path.exists(tool_path):
-        raise FileNotFoundError(f"tool_path does not exist: {tool_path}")
-
-def setup_parser(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+def setup_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--tool-path', help='Path to flash.py (absolute or relative)')
-    parser.add_argument('--device', help='Device type')
-    parser.add_argument('--image-dir', help="directory of image files")
+    parser.add_argument('--device', required=True, help='Device type (e.g., amebag2)')
+    parser.add_argument('--image-dir', required=True, type=Path, help="Directory containing image files")
 
-    # Serial
-    parser.add_argument('--port', action='append',
-                        help='Serial port (repeatable), e.g. --port COM3 --port COM4')
+    # Serial configuration
+    parser.add_argument('--port', action='append', required=True,
+                        help='Serial port (repeatable), e.g. --port COM3')
     parser.add_argument('--baudrate', default='1500000', help='Serial baudrate (default: 1500000)')
 
     # Memory and addressing
     parser.add_argument('--memory-type', choices=['nor', 'nand', 'ram'], default='nor',
                         help='Memory type (default: nor)')
     parser.add_argument('--images', nargs=3, action='append', metavar=('image-name', 'start-address', 'end-address'),
-                    help="user define image layout")
+                        help="User defined image layout: name start_addr end_addr")
 
     # Erase control
-    parser.add_argument('--chip-erase', action='store_true', help='Chip erase (NOR only)')
+    parser.add_argument('--chip-erase', action='store_true', help='Perform Chip Erase (NOR only)')
 
     # Logging and remote
-    parser.add_argument('--log-level', default='info', help='Log level (info/debug/warn/error)')
+    parser.add_argument('--log-level', default='info', choices=['info', 'debug', 'warn', 'error'], help='Log level')
     parser.add_argument('--log-file', help='Log file path')
     parser.add_argument('--remote-server', help='Remote serial server IP')
     parser.add_argument('--remote-password', help='Remote serial server password')
 
+def build_partition_table(image_dir: Path, images: list, memory_type_str: str) -> str:
+    """
+    Build partition table and encode in Base64.
+    """
+    partition_table = []
+
+    # Map memory type string to Enum value
+    mem_type_map = {
+        "nor": MemoryType.NOR,
+        "nand": MemoryType.NAND,
+        "ram": MemoryType.RAM
+    }
+    mem_type_val = mem_type_map.get(memory_type_str, MemoryType.NOR)
+
+    for img_name, start_addr_str, end_addr_str in images:
+        full_image_path = (image_dir / img_name).resolve()
+
+        # Pre-check if file exists to provide friendlier error
+        if not full_image_path.is_file():
+            raise FileNotFoundError(f"Image file not found: {full_image_path}")
+
+        try:
+            start_addr = int(start_addr_str, 16)
+            end_addr = int(end_addr_str, 16)
+        except ValueError as e:
+            raise ValueError(f"Invalid address format for image {img_name}: {e}")
+
+        partition_table.append({
+            "ImageName": str(full_image_path),
+            "StartAddress": start_addr,
+            "EndAddress": end_addr,
+            "FullErase": False,
+            "MemoryType": int(mem_type_val),
+            "Mandatory": True,
+            "Description": img_name
+        })
+
+    # Serialize -> Encode -> Base64
+    json_bytes = json.dumps(partition_table).encode('utf-8')
+    return base64.b64encode(json_bytes).decode('utf-8')
+
+def detect_multidomain(image_dir: str) -> bool:
+    """
+    Return True if a 'domains.yaml' file exists two directories above
+    'image_dir' and contains a 'domains' list with at least two entries.
+
+    Any exception results in False.
+    """
+    build_dir = Path(image_dir).resolve().parent.parent
+    domains_file = build_dir / "domains.yaml"
+    if not domains_file.is_file():
+        return False
+    try:
+        import yaml
+        text = domains_file.read_text()
+        data = yaml.safe_load(text) or {}
+        domains = data.get("domains")
+        return isinstance(domains, list) and len(domains) >= 2
+    except Exception:
+        return False
+
 def main(args):
-    if args is None:
-        raise ValueError("Argument 'args' must not be None.")
+    # 1. Prepare environment (Profile & Floader)
+    multidomain = detect_multidomain(args.image_dir)
 
-    profile = get_profile_path(args.device)
+    try:
+        profile_path = prepare_flash_environment(args.device)
+    except Exception as e:
+        logger.error(str(e))
+        sys.exit(1)
 
-    if not args.tool_path:
-        args.tool_path = FLASH_TOOL
+    if multidomain and args.images is None:
+        print("multidomain:",multidomain)
+        args.images = []
+        collect_image_load_list(args.image_dir,args.images)
+        print("args.images:",args.images)
 
-    ensure_tool_path_exists(args.tool_path)
+    # 2. Determine tool path
+    tool_path_str = args.tool_path if args.tool_path else str(DEFAULT_FLASH_TOOL)
+    try:
+        tool_path = validate_tool_path(tool_path_str)
+    except FileNotFoundError as e:
+        logger.error(str(e))
+        sys.exit(1)
 
-    cmds = [sys.executable, args.tool_path, '--download', '--profile', profile]
+    # 3. Build base command
+    cmd = [sys.executable, str(tool_path), '--download', '--profile', profile_path]
 
-    if not args.port:
-        raise ValueError("Serial port is invalid")
+    # Add serial port arguments
+    cmd.append('--port')
+    cmd.extend(args.port) # args.port is already a list
+    cmd.extend(['--baudrate', args.baudrate])
+    cmd.extend(['--memory-type', args.memory_type])
+    cmd.extend(['--log-level', args.log_level])
 
-    cmds.extend(['--port'])
-    cmds.extend(args.port)
-    cmds.extend(['--baudrate', args.baudrate])
-    cmds.extend(['--memory-type', args.memory_type])
-    cmds.extend(['--log-level', args.log_level])
-
+    # 4. Optional arguments
     if args.log_file:
-        cmds.extend(['--log-file', args.log_file])
+        cmd.extend(['--log-file', args.log_file])
+
     if args.remote_server:
-        cmds.extend(['--remote-server', args.remote_server])
-    if args.remote_password:
-        cmds.extend(['--remote-password', str(args.remote_password)])
+        cmd.extend(['--remote-server', args.remote_server])
+        if args.remote_password:
+            cmd.extend(['--remote-password', str(args.remote_password)])
 
     if args.chip_erase:
-        cmds.extend(['--chip-erase'])
+        cmd.extend(['--chip-erase'])
 
+    # 5. Image and partition handling
     if not args.images:
-        cmds.extend(['--image-dir', args.image_dir])
+        # Simple mode: pass directory directly
+        if not args.image_dir.is_dir():
+            logger.error(f"Image directory does not exist: {args.image_dir}")
+            sys.exit(1)
+        cmd.extend(['--image-dir', str(args.image_dir)])
     else:
-        partition_table = []
+        # Advanced mode: custom partition table
+        try:
+            b64_table = build_partition_table(args.image_dir, args.images, args.memory_type)
+            cmd.extend(['--partition-table', b64_table])
+        except Exception as e:
+            logger.error(f"Failed to build partition table: {e}")
+            sys.exit(1)
 
-        if args.memory_type == "nand":
-            memory_type = MemoryInfo.MEMORY_TYPE_NAND
-        elif args.memory_type == "ram":
-            memory_type = MemoryInfo.MEMORY_TYPE_RAM
-        else:
-            memory_type = MemoryInfo.MEMORY_TYPE_NOR
+    # 6. Execute command
+    logger.info(f"Executing flash tool: {' '.join(cmd)}")
+    try:
+        subprocess.check_call(cmd)
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Flash tool exited with error code {e.returncode}")
+        sys.exit(e.returncode)
+    except KeyboardInterrupt:
+        logger.warning("\nOperation cancelled by user.")
+        sys.exit(130)
 
-        # 1. Argparse.images format [[image-name, start-address, end-address], ...]
-        for group in args.images:
-            image_name_with_path = os.path.realpath(os.path.join(args.image_dir, group[0]))
-            image_name = os.path.basename(image_name_with_path)
-            try:
-                start_addr = int(group[1], 16)
-            except Exception as err:
-                raise ValueError(f"Start addr in invalid: {err}")
-                sys.exit(1)
-
-            try:
-                end_addr = int(group[2], 16)
-            except Exception as err:
-                raise ValueError(f"End addr in invalid: {err}")
-                sys.exit(1)
-
-            partition_table.append({
-                "ImageName": image_name_with_path,
-                "StartAddress": start_addr,
-                "EndAddress": end_addr,
-                "FullErase": False,
-                "MemoryType": memory_type,
-                "Mandatory": True,
-                "Description": image_name
-            })
-
-        # 2. Convert list to json-str
-        partition_table_json_string = json.dumps(partition_table)
-
-        # 3. Encode json-str to bytes
-        partition_table_bytes = partition_table_json_string.encode('utf-8')
-
-        # 4. Base64 encode bytes
-        partition_table_base64 = base64.b64encode(partition_table_bytes).decode('utf-8')
-
-        cmds.extend(['--partition-table', partition_table_base64])
-
-    subprocess.check_call(cmds)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Realtek Ameba Flash Wrapper')
+    setup_parser(parser)
+    args = parser.parse_args()
+    main(args)

@@ -231,7 +231,7 @@ bool osif_task_signal_clear(void *p_handle)
 /****************************************************************************/
 uint32_t osif_lock(void)
 {
-	rtos_critical_enter();
+	rtos_critical_enter(RTOS_CRITICAL_BT);
 
 	return 0;
 }
@@ -243,7 +243,7 @@ void osif_unlock(uint32_t flags)
 {
 	(void)flags;
 
-	rtos_critical_exit();
+	rtos_critical_exit(RTOS_CRITICAL_BT);
 }
 
 /****************************************************************************/

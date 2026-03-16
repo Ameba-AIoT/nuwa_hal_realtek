@@ -14,13 +14,13 @@ from pathlib import Path
 # p = Path('/project/hal/realtek/ameba/scripts/update_blobs.py')
 # p.parents[0]  # => /project/hal/realtek/ameba/scripts
 # p.parents[1]  # => /project/hal/realtek/ameba
-MODULE_PATH = Path(Path(__file__).resolve().parents[2], "zephyr", "module.yml")
+MODULE_PATH = Path(__file__).resolve().parents[2] / "zephyr" / "module.yml"
 git_url = f"https://github.com/Ameba-AIoT/nuwa_lib"
 
 logger: logging.Logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-socs = ["amebadplus"]
+socs = ["amebadplus", "amebad", "amebag2"]
 
 module_yaml = """\
 name: hal_realtek
@@ -30,22 +30,22 @@ build:
 blobs:"""
 
 lib_item = '''
-  - path: {SOC}/lib/{FILENAME}
+  - path: {SOC}/lib/{REL_PATH}
     sha256: {SHA256}
     type: lib
     version: '1.0'
     license-path: LICENSE
-    url: {URL}/raw/{REV}/{SOC}/lib/{FILENAME}
+    url: {URL}/raw/{REV}/{SOC}/lib/{REL_PATH}
     description: "Binary libraries supporting the Ameba series RF subsystems"
     doc-url: {URL_BASE}'''
 
 img_item = '''
-  - path: {SOC}/bin/{FILENAME}
+  - path: {SOC}/bin/{REL_PATH}
     sha256: {SHA256}
     type: img
     version: '1.0'
     license-path: LICENSE
-    url: {URL}/raw/{REV}/{SOC}/bin/{FILENAME}
+    url: {URL}/raw/{REV}/{SOC}/bin/{REL_PATH}
     description: "Binary libraries supporting the Ameba series RF subsystems"
     doc-url: {URL_BASE}'''
 
@@ -87,41 +87,49 @@ def get_file_sha256(path):
 
 def generate_blob_list(output_path: str, git_rev: str) -> None:
     file_out = module_yaml
+    script_dir = Path(__file__).resolve().parent
+    temp_root = script_dir / "temp"
 
-    path = os.path.dirname(os.path.abspath(__file__))
+    for soc in socs:
+        # === Handle .a library files under lib/ ===
+        lib_root = temp_root / soc / "lib"
+        for lib_file in lib_root.rglob("*.a"):
+            if not lib_file.is_file():
+                continue
+            rel_path = lib_file.relative_to(lib_root)
+            rel_path_str = str(rel_path).replace(os.sep, '/')
+            logger.debug(f"Processing lib: {soc}/lib/{rel_path_str}")
+            sha256 = get_file_sha256(lib_file)
+            file_out += lib_item.format(
+                SOC=soc,
+                REL_PATH=rel_path_str,
+                SHA256=sha256,
+                URL=git_url,
+                REV=git_rev,
+                URL_BASE=git_url
+            )
 
-    for s in socs:
-        folder = Path(path, "temp", s)
-        pathlist = []
-        pathlist.extend(Path(folder).glob('**/*.a'))
-        for item in pathlist:
-            logger.debug(item)
-            path_in_str = str(item)
-            filename = path_leaf(path_in_str)
-            sha256 = get_file_sha256(path_in_str)
-            file_out += lib_item.format(SOC=s,
-                                         FILENAME=filename,
-                                         SHA256=sha256,
-                                         URL=git_url,
-                                         REV=git_rev,
-                                         URL_BASE=git_url)
-
-        pathlist = []
-        pathlist.extend(Path(folder).glob('**/*.bin'))
-        for item in pathlist:
-            logger.debug(item)
-            path_in_str = str(item)
-            filename = path_leaf(path_in_str)
-            sha256 = get_file_sha256(path_in_str)
-            file_out += img_item.format(SOC=s,
-                                         FILENAME=filename,
-                                         SHA256=sha256,
-                                         URL=git_url,
-                                         REV=git_rev,
-                                         URL_BASE=git_url)
+        # === Handle .bin image files under bin/ ===
+        bin_root = temp_root / soc / "bin"
+        for bin_file in bin_root.rglob("*.bin"):
+            if not bin_file.is_file():
+                continue
+            rel_path = bin_file.relative_to(bin_root)
+            rel_path_str = str(rel_path).replace(os.sep, '/')
+            logger.debug(f"Processing bin: {soc}/bin/{rel_path_str}")
+            sha256 = get_file_sha256(bin_file)
+            file_out += img_item.format(
+                SOC=soc,
+                REL_PATH=rel_path_str,
+                SHA256=sha256,
+                URL=git_url,
+                REV=git_rev,
+                URL_BASE=git_url
+            )
 
     file_out += "\r\n"
 
+    # Write output
     try:
         os.remove(output_path)
     except OSError:
@@ -140,7 +148,7 @@ def main() -> None:
     parser.add_argument(
         "-o",
         "--output",
-        default=MODULE_PATH,
+        default=str(MODULE_PATH),
         help="Path to the output YAML file.",
     )
     parser.add_argument(

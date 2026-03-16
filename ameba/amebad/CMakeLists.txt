@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 if (CONFIG_BT_COEXIST)
-  set(LIB_PATH ${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/${CONFIG_SOC_SERIES}/lib/coex)
+  set(LIB_PATH ${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/ameba/${CONFIG_SOC_SERIES}/lib/coex)
 else()
-  set(LIB_PATH ${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/${CONFIG_SOC_SERIES}/lib)
+  set(LIB_PATH ${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/ameba/${CONFIG_SOC_SERIES}/lib)
 endif()
 
 zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA
@@ -43,6 +43,7 @@ zephyr_library_sources(
 )
 
 # used by driver, need use zephyr_library_sources_ifdef
+zephyr_library_sources_ifdef(CONFIG_GPIO_AMEBA source/fwlib/ram_common/ameba_gpio.c)
 zephyr_library_sources_ifdef(CONFIG_ENTROPY_AMEBA_TRNG source/lib/chipinfo/ameba_rand2.c)
 zephyr_library_sources_ifdef(CONFIG_ADC_AMEBA source/fwlib/ram_common/ameba_adc.c)
 zephyr_library_sources_ifdef(CONFIG_SOC_FLASH_AMEBA source/fwlib/ram_common/ameba_flash_ram.c)

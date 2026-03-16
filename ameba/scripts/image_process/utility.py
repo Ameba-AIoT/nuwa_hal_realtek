@@ -7,6 +7,8 @@ from functools import wraps
 from typing import Callable, Union
 import traceback
 import hashlib
+import click
+import copy
 
 from ameba_enums import *
 
@@ -191,15 +193,9 @@ def parse_project_info(path:str) -> dict:
                     else:
                         default_logger.warning(f"File maybe not in right location: file name: {os.path.basename(path)}, mcu project from path: {mcu_project}")
         else: # add for zephyr build
-            mcu_same_list=['km0', 'km4', 'ca32', 'kr4']
-            for mcu in mcu_same_list:
-                if mcu in file_body:
-                    mcu_project = mcu.lower()
-                    break
-            for key, value in mcu_dicts.items():
-                if key in file_body:
-                    mcu_project = key.lower()
-                    break
+            # Extract mcu_project from filename pattern: km4tz_image2_all.bin -> km4tz
+            if '_' in file_body:
+                mcu_project = file_body.split('_')[0].lower()
             if mcu_project == '':
                 default_logger.fatal(f"Failed to get mcu project from file name: {os.path.basename(path)}")
 
@@ -242,7 +238,7 @@ def parse_map_file(file_path:str, symbol:str) -> tuple:
         with open(file_path, 'r') as file:
             for line in file:
                 columns = line.strip().split()
-                if columns[2] == symbol:
+                if len(columns) >= 3 and columns[2] == symbol:
                     return tuple(columns)
     return ('0', '?', symbol)
 
@@ -301,3 +297,33 @@ def get_file_md5sum(file_path):
 
 def get_file_dir(file_path):
     return os.path.dirname(os.path.abspath(file_path))
+
+def manifest_preprocess(origin_data):
+    new_data = copy.deepcopy(origin_data)
+    # Add key from outside(global config) of image part if key not in image part
+    for img in ['image1', 'image2', 'image3', 'cert']:
+        if img not in new_data:
+            default_logger.info(f"manifest file does not contains {img}")
+            continue
+        #优先级: image内部直接定义>inherit_from>外部的全局定义
+        if "inherit_from" in new_data[img]:
+            for key, value in new_data[new_data[img]["inherit_from"]].items():
+                if key not in new_data[img]:
+                    new_data[img][key] = value
+        for key, value in origin_data.items():
+            if isinstance(value, dict): continue
+
+            if key not in new_data[img]:
+                new_data[img][key] = value
+    return new_data
+
+class BasedIntParamType(click.ParamType):
+    name = 'integer'
+
+    def convert(self, value, param, ctx):
+        try:
+            return int(value, 0)
+        except ValueError:
+            self.fail('%s is not a valid integer. Please use code literals '
+                      'prefixed with 0b/0B, 0o/0O, or 0x/0X as necessary.'
+                      % value, param, ctx)

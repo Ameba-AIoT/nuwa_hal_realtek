@@ -795,59 +795,6 @@ u32 SYSCFG_OTP_RSIPEn(void)
 {
 	return HAL_READ32(SYSTEM_CTRL_BASE_LP, REG_SYS_EFUSE_SYSCFG3) & BIT_SYS_FLASH_ENCRYPT_EN;
 }
-/**
-  * @brief  Reads the specified GPIO pins.
-  * @param  GPIO_Port: Specifies port number
-  *          This parameter can be one of the following values:
-  *		 		@arg GPIO_PORT_A: port number is A
-  *		 		@arg GPIO_PORT_B: port number is B
-  * @param  GPIO_Mask: One bit one GPIO pin, PortA/B:0x00000000 ~0xFFFFFFFF.
-  * @note   It can config multiple pins of one port by parameter GPIO_Mask
-  * @retval The value of the specified port pins
-  */
-u32 GPIO_PortRead(u32 GPIO_Port, u32 GPIO_Mask)
-{
-	GPIO_TypeDef *GPIO = NULL;
-	u32 RegValue;
-
-	GPIO = PORT_AB[GPIO_Port];
-
-	RegValue = GPIO->EXT_PORT[0];
-
-	RegValue &= GPIO_Mask;
-
-	return RegValue;
-}
-
-
-static GPIO_TypeDef *GPIO_PortAddrGet(u32 GPIO_Port)
-{
-	GPIO_TypeDef *GPIO = NULL;
-
-	GPIO = PORT_AB[GPIO_Port];
-
-	return GPIO;
-}
-
-u32 GPIO_INTStatusGet(u32 GPIO_Port)
-{
-	GPIO_TypeDef *GPIO = GPIO_PortAddrGet(GPIO_Port);
-
-	return GPIO->INT_STATUS;
-}
-
-void GPIO_INTStatusClearEdge(u32 GPIO_Port)
-{
-	GPIO_TypeDef *GPIO = NULL;
-	u32 IntStatus;
-
-	GPIO = GPIO_PortAddrGet(GPIO_Port);
-
-	IntStatus = GPIO->INT_STATUS;
-
-	/* Clear pending edge interrupt */
-	GPIO->PORTA_EOI = IntStatus;
-}
 
 
 void SYSCFG_CHIPType_Set(void)
@@ -1086,41 +1033,4 @@ char *__wrap_strcpy(char *s1, const char *s2)
 long __wrap_strtol(const char *nptr, char **endptr, int base)
 {
 	return __real_strtol(nptr, endptr, base);
-}
-
-/**
-  * @brief  Check whether the APB peripheral's clock has been enabled or not
-  * @param  APBPeriph_Clock_in: specifies the APB peripheral to check.
-  *      This parameter can be one of @ref APBPeriph_UART0_CLOCK, APBPeriph_ATIM_CLOCK and etc.
-  * @retval TRUE: The APB peripheral's clock has been enabled
-  * 		FALSE: The APB peripheral's clock has not been enabled
-  */
-u8 RCC_PeriphClockEnableChk(u32 APBPeriph_Clock_in)
-{
-	u8 ret;
-	u32 TempVal, CkeRegOffset = 0;
-	u32 ClkRegIndx = (APBPeriph_Clock_in >> 30) & 0x03;
-	u32 APBPeriph_Clock = APBPeriph_Clock_in & (~(BIT(31) | BIT(30)));
-	assert_param((ClkRegIndx == 0x1) || (ClkRegIndx == 0x2) || (ClkRegIndx == 0x3));
-
-	switch (ClkRegIndx) {
-	case SYS_CLK_CTRL1:
-		CkeRegOffset = REG_HS_PERI_CLK_CTRL1;
-		break;
-	case SYS_CLK_CTRL2:
-		CkeRegOffset = REG_HS_PERI_CLK_CTRL2;
-		break;
-	case SYS_CLK_CTRL3:
-		CkeRegOffset = REG_HS_PERI_CLK_CTRL3;
-		break;
-	}
-
-	TempVal = HAL_READ32(SYSTEM_CTRL_BASE, CkeRegOffset);
-	if (TempVal & APBPeriph_Clock) {
-		ret = TRUE;
-	} else {
-		ret = FALSE;
-	}
-
-	return ret;
 }
