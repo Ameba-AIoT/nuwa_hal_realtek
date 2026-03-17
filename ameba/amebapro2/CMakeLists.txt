@@ -43,3 +43,4 @@ zephyr_library_sources_ifdef(CONFIG_AUDIO_AMEBAPRO2_DMIC source/fwlib/rtl8735b/s
 zephyr_library_sources_ifdef(CONFIG_AUDIO_AMEBAPRO2_DMIC source/fwlib/rtl8735b/source/ram/hal_sport.c)
 zephyr_library_sources_ifdef(CONFIG_AUDIO_AMEBAPRO2_DMIC source/fwlib/rtl8735b/source/ram/rtl8735b_sport.c)
 zephyr_library_sources_ifdef(CONFIG_PWM_AMEBAPRO2 source/fwlib/rtl8735b/source/ram/hal_pwm.c)
+zephyr_library_sources_ifdef(CONFIG_ADC_AMEBAPRO2 source/fwlib/rtl8735b/source/ram/hal_adc.c)
