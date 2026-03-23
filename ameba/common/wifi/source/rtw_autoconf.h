@@ -19,12 +19,6 @@
 
 #define WIFI_LOGO_CERTIFICATION 0
 
-/* no IOT chip supports 80M now, so close it in common */
-#ifndef ZEPHYR_WIFI
-/* no IOT chip supports 80M now, so close it in common */
-#define CONFIG_AUTO_RECONNECT 1
-#endif
-
 #define MACID_HW_MAX_NUM 16
 #define NET_IF_NUM 2
 

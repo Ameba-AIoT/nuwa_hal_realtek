@@ -21,6 +21,9 @@ zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA
 zephyr_link_libraries_ifdef(CONFIG_REALTEK_AMEBA_ZEPHYR_USB
   ${LIB_PATH}/lib_usbd.a
 )
+zephyr_link_libraries_ifdef(CONFIG_PM
+  ${LIB_PATH}/lib_pmc.a
+)
 
 zephyr_include_directories(
   include
@@ -35,6 +38,7 @@ zephyr_include_directories(
 zephyr_library_sources(
   source/fwlib/ram_common/ameba_reset.c
   source/fwlib/ram_common/ameba_clk.c
+  source/fwlib/ram_common/ameba_rcc.c
   source/fwlib/ram_common/ameba_arch.c
   source/fwlib/ram_common/ameba_ipc_api.c
   source/fwlib/ram_common/ameba_ipc_ram.c
@@ -68,6 +72,17 @@ zephyr_library_sources_ifdef(CONFIG_AMEBA_PPE source/fwlib/ram_common/ameba_ppe.
 zephyr_library_sources_ifdef(CONFIG_SDHC_AMEBA source/fwlib/ram_common/ameba_sd.c)
 zephyr_library_sources_ifdef(CONFIG_SDHC_AMEBA source/fwlib/ram_common/ameba_sd_host.c)
 
+zephyr_library_sources_ifdef(CONFIG_PM
+  source/fwlib/ram_common/ameba_pmu.c
+  source/fwlib/ram_common/ameba_pmctimer.c
+  source/fwlib/ram_common/ameba_psram.c
+  source/fwlib/ram_common/ameba_pll.c
+  source/fwlib/ram_common/ameba_pmc_com.c
+  source/fwlib/ram_common/ameba_gpio_ram.c
+  source/fwlib/ram_common/ameba_aontimer.c
+  source/fwlib/ram_km4tz/ameba_pmc.c
+)
+
 zephyr_library_sources_ifdef(CONFIG_MCUBOOT
   source/loader/bootloader/bootloader_km4tz.c
   source/loader/bootloader/bootloader_clk.c
@@ -75,6 +90,7 @@ zephyr_library_sources_ifdef(CONFIG_MCUBOOT
   source/fwlib/ram_common/ameba_psram.c
   source/fwlib/ram_common/ameba_ldo.c
   source/fwlib/ram_common/ameba_pll.c
+  source/fwlib/ram_km4tz/ameba_flashclk.c
 )
 
 if(CONFIG_MCUBOOT)

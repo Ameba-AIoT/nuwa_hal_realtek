@@ -35,6 +35,7 @@ zephyr_include_directories(
 # used by common
 zephyr_library_sources(
   source/fwlib/ram_hp/ameba_system.c
+  source/fwlib/ram_common/ameba_pll.c
   source/fwlib/ram_common/ameba_ipc_api.c
   source/fwlib/ram_common/ameba_arch.c
   source/swlib/log.c

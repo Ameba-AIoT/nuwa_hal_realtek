@@ -38,4 +38,3 @@ class ErrType(enum.Enum):
     SYS_OVERRANGE = _SYS_ERR_BASE + 0x24  # operation overrange
     SYS_CANCEL = _SYS_ERR_BASE + 0x30  # Operation cancelled
     SYS_UNKNOWN = _SYS_ERR_BASE + 0xEE  # Unknown error
-
