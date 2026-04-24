@@ -13,6 +13,7 @@ uint32_t PrevIrqStatus;
  * @note  All interrupt include systick will be stopped.
  * @retval None
  */
+__weak
 void FLASH_Write_Lock(void)
 {
 	/* disable irq */
@@ -27,6 +28,7 @@ void FLASH_Write_Lock(void)
  * @note All interrupt will be restored.
  * @retval None
  */
+__weak
 void FLASH_Write_Unlock(void)
 {
 	/* Free core-to-core hardware semphone */

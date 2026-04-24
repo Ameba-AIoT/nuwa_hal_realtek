@@ -229,8 +229,7 @@ static int usbd_composite_hid_send_data_internal(u8 *data, u32 len)
 
 			if (dev->is_ready) { // In case deinit when plug out
 				ep_hid_in->xfer_len = valid_len;
-				usbd_ep_transmit(hid->cdev->dev, ep_hid_in);
-				ret = HAL_OK;
+				ret = usbd_ep_transmit(hid->cdev->dev, ep_hid_in);
 			} else {
 				ep_hid_in->xfer_state = 0U;
 			}
@@ -294,8 +293,7 @@ static int usbd_composite_hid_priv_send_data_internal(u8 *data, u32 len, u8 repo
 
 			if (dev->is_ready) { // In case deinit when plug out
 				ep_hid_priv_in->xfer_len = valid_len;
-				usbd_ep_transmit(hid->cdev->dev, ep_hid_priv_in);
-				ret = HAL_OK;
+				ret = usbd_ep_transmit(hid->cdev->dev, ep_hid_priv_in);
 			} else {
 				ep_hid_priv_in->xfer_state = 0U;
 			}
@@ -340,9 +338,7 @@ static int usbd_hid_receive(void)
 
 	ep_intr_out->xfer_buf = p_buf->buf_raw;
 	ep_intr_out->xfer_len = pbuf_ctrl->hid_mps;
-	usbd_ep_receive(cdev->dev, ep_intr_out);
-
-	return HAL_OK;
+	return usbd_ep_receive(cdev->dev, ep_intr_out);
 }
 
 static int composite_hid_setup(usb_dev_t *dev, usb_setup_req_t *req)

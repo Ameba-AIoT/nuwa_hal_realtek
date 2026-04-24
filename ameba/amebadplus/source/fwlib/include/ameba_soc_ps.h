@@ -7,31 +7,26 @@
 #ifndef _AMEBA_SOCPS_H_
 #define _AMEBA_SOCPS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum wakeup_mask {
 	WAKEUP_NULL	= 0,
 	WAKEUP_KM0	= 1,
 	WAKEUP_KM4	= 2,
 };
 
-enum xtal_mode_sleep {
-	XTAL_OFF = 0,
-	XTAL_LPS_Without_40M = 1,
-	XTAL_LPS_With_40M = 2,
-	XTAL_Normal = 3,
-	XTAL_HP = 4,
-};
-
-typedef struct {
+struct WakeEvent_TypeDef {
 	u32 Module;
 	enum wakeup_mask Wakeup;
-} WakeEvent_TypeDef;
+};
 
-
-typedef struct {
-	u8 keep_OSC4M_on;			/* keep OSC4M on or off for sleep and dslp*/
-	u8 xtal_mode_in_sleep;	/* see enum xtal_mode_sleep for detail */
+struct PSCFG_TypeDef {
+	u8 keep_osc4m_on;			/* keep OSC4M on or off for sleep and dslp*/
+	u8 xtal_mode_in_sleep;		/* set xtal mode during sleep mode*/
 	u8 sleep_to_08V;			/* default sleep to 0.7V, set this option to TRUE will sleep to 0.8V */
-} PSCFG_TypeDef;
+};
 
 extern void SOCPS_SetNPWakeEvent(u32 Option, u32 NewStatus);
 extern void SOCPS_SetAPWakeEvent(u32 Option, u32 NewStatus);
@@ -50,5 +45,9 @@ extern void SOCPS_HWSleepFilter_KM0(u32 enable);
 
 extern void SOCPS_MDLO_Disable(void);
 extern void SOCPS_UartRxPinWakeSet(u32 status);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif  //_AMEBA_SOCPS_H_

@@ -385,6 +385,10 @@ typedef struct {
 /* AUTO_GEN_END */
 
 /* MANUAL_GEN_START */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 //Please add your defination here
 #define LDO_MEM_DUMMY_200UA	0x1
@@ -397,11 +401,16 @@ typedef struct {
 /** @defgroup LDO_Exported_Functions LDO Exported Functions
   * @{
   */
-_LONG_CALL_ void LDO_Mem_Dummy_Ctrl(u32 dummy_load);
+_LONG_CALL_	void LDO_CoreVolSet(u8 vol_type);
+_LONG_CALL_ void LDO_MemDummyCtrl(u32 dummy_load);
 
 /**
   * @}
   */
+
+#ifdef __cplusplus
+}
+#endif
 
 /* MANUAL_GEN_END */
 

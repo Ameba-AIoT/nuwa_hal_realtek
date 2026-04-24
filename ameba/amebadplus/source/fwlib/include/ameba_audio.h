@@ -534,6 +534,10 @@ typedef struct {
 /* AUTO_GEN_END */
 
 /* MANUAL_GEN_START */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 /* Exported types ------------------------------------------------------------*/
 /** @defgroup AUDIO_CODEC_Exported_Types AUDIO_CODEC Exported Types
@@ -914,7 +918,10 @@ _LONG_CALL_ void AUDIO_CODEC_Record(u32 i2s_sel, u32 type, I2S_InitTypeDef *I2S_
 _LONG_CALL_ void AUDIO_CODEC_EnableADCFifo(u32 ad_chn, u32 newstate);
 _LONG_CALL_ void AUDIO_CODEC_EnableADCFifoForMask(u32 ad_chn_mask);
 
+#ifdef __cplusplus
+}
+#endif
+
 /* MANUAL_GEN_END */
 
 #endif
-

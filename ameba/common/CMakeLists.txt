@@ -3,6 +3,7 @@
 
 zephyr_include_directories(include)
 add_subdirectory(os_wrapper)
+add_subdirectory(crashdump)
 
 add_subdirectory_ifdef(CONFIG_REALTEK_AMEBA_ZEPHYR_USB usb)
 add_subdirectory_ifdef(CONFIG_REALTEK_AMEBA_ZEPHYR_WIFI wifi)

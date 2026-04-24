@@ -25,6 +25,8 @@ extern u8 __ram_nocache_start__[];
 extern u8 __ram_nocache_end__[];
 extern u8 __image3_bss_start__[];
 extern u8 __image3_bss_end__[];
+extern u8 __image3_heap_start__[];
+extern u8 __image3_heap_size__[];
 extern u8 __ram_image2_text_end__[];
 
 extern u8 __ipc_table_start__[];
@@ -67,6 +69,11 @@ extern u8 __psram_heap_buffer_size__[];
 extern u8 __psram_heap_extend_start__[];
 extern u8 __psram_heap_extend_size__[];
 
+#if defined (CONFIG_UNITY_TEST) && CONFIG_UNITY_TEST
+extern u8 __unity_table_start__[];
+extern u8 __unity_table_end__[];
+#endif
+
 #ifdef CONFIG_MP_SHRINK
 extern u8 __sram_floader_mp_start__[];
 extern u8 __sram_floader_mp_size__[];
@@ -87,6 +94,7 @@ extern u8 __km4_tz_nsc_start__[];
 extern u8 __km4_tz_entry_start__[];
 extern u8 __km4_tz_entry_end__[];
 extern u8 __km4_bd_ram_start__[];
+extern u8 __km4_bd_ram_end__[];
 
 extern u8 __km4_psram_tz_nsc_start__[];
 extern u8 __km4_psram_tz_entry_start__[];

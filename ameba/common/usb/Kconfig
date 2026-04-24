@@ -9,54 +9,105 @@ config REALTEK_AMEBA_ZEPHYR_USB
 	  This option enables the Realtek Ameba Zephyr USB stack.
 
 if REALTEK_AMEBA_ZEPHYR_USB
-
-config USBD_CDC_ACM
-	bool "CDC ACM device"
-	help
-	  This option enables the Realtek Ameba Zephyr USB CDC ACM device.
-
-config USBD_HID
-	bool "HID device"
-	help
-	  This option enables the Realtek Ameba Zephyr USB HID device.
-
-config USBD_MSC
-	bool "MSC device"
-	help
-	  This option enables the Realtek Ameba Zephyr USB MSC device.
-
-if USBD_MSC
-	config USBD_MSC_RAM_DISK
-		bool "RAM"
-		help
-		  This option to use RAM as storage media.
-		if USBD_MSC_RAM_DISK
-			config USBD_MSC_RAM_DISK_ZEPHYR_FATFS
-				bool "Use RAM with fatfs"
-		endif
-endif # USBD_MSC
-
-config USBD_COMPOSITE
-    bool "Composite device"
-
-if USBD_COMPOSITE
 	choice
-		prompt "Select Composite Class"
-		config USBD_COMPOSITE_CDC_ACM_HID
-			bool "CDC ACM + HID"
-		config USBD_COMPOSITE_CDC_ACM_MSC
-			bool "CDC ACM + MSC"
-			if USBD_COMPOSITE_CDC_ACM_MSC
-				config COMP_MSC_RAM_DISK
-					bool "RAM"
+		prompt "Select USB Mode"
+		config USB_DEVICE_AMEBA
+			bool "Device"
+			choice
+				prompt "Select Device Class"
+				depends on USB_DEVICE_AMEBA
+				config USBD_CDC_ACM
+					bool "CDC ACM device"
 					help
-					  This option to use RAM as storage media.
-					if COMP_MSC_RAM_DISK
-						config COMP_MSC_RAM_DISK_ZEPHYR_FATFS
-							bool "Use RAM with fatfs"
-					endif
-			endif
-	endchoice
-endif # USBD_COMPOSITE
+					  This option enables the Realtek Ameba Zephyr USB CDC ACM device.
 
+				config USBD_HID
+					bool "HID device"
+					help
+					  This option enables the Realtek Ameba Zephyr USB HID device.
+
+				config USBD_MSC
+					bool "MSC device"
+					help
+					  This option enables the Realtek Ameba Zephyr USB MSC device.
+
+				if USBD_MSC
+					config USBD_MSC_RAM_DISK
+						bool "RAM"
+						help
+						  This option to use RAM as storage media.
+						if USBD_MSC_RAM_DISK
+							config USBD_MSC_RAM_DISK_ZEPHYR_FATFS
+								bool "Use RAM with fatfs"
+						endif
+				endif # USBD_MSC
+
+				config USBD_COMPOSITE
+					bool "Composite device"
+
+				if USBD_COMPOSITE
+					choice
+						prompt "Select Composite Class"
+						config USBD_COMPOSITE_CDC_ACM_HID
+							bool "CDC ACM + HID"
+						config USBD_COMPOSITE_CDC_ACM_MSC
+							bool "CDC ACM + MSC"
+							if USBD_COMPOSITE_CDC_ACM_MSC
+								config COMP_MSC_RAM_DISK
+									bool "RAM"
+									help
+									  This option to use RAM as storage media.
+									if COMP_MSC_RAM_DISK
+										config COMP_MSC_RAM_DISK_ZEPHYR_FATFS
+											bool "Use RAM with fatfs"
+									endif
+							endif
+					endchoice
+				endif # USBD_COMPOSITE
+
+				config USBD_VENDOR
+					bool "VENDOR device"
+					help
+					  This option enables the Realtek Ameba Zephyr USB VENDOR device.
+			endchoice # USB_DEVICE_AMEBA
+
+		config USB_HOST_AMEBA
+			bool "Host"
+			choice
+				prompt "Select Host Class"
+				depends on USB_HOST_AMEBA
+				config USBH_CDC_ACM
+					bool "CDC ACM host"
+					help
+					  This option enables the Realtek Ameba Zephyr USB CDC ACM host.
+
+				config USBH_VENDOR
+					bool "VENDOR host"
+					help
+					  This option enables the Realtek Ameba Zephyr USB VENDOR host.
+
+				config USBH_UAC
+					bool "UAC host"
+					help
+					  This option enables the Realtek Ameba Zephyr USB UAC host.
+
+				config USBH_COMPOSITE
+					bool "Composite host"
+
+				if USBH_COMPOSITE
+					choice
+						prompt "Select Composite Class"
+						config USBH_COMPOSITE_HID_UAC
+							bool "HID + UAC"
+						choice
+							prompt "Select UAC Version"
+							depends on USBH_COMPOSITE_HID_UAC
+							config USBH_COMPOSITE_HID_UAC1
+								bool "UAC 1.0"
+						endchoice
+					endchoice
+				endif # USBH_COMPOSITE
+			endchoice # USB_HOST_AMEBA
+
+	endchoice # REALTEK_AMEBA_ZEPHYR_USB
 endif # REALTEK_AMEBA_ZEPHYR_USB

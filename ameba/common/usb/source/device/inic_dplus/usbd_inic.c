@@ -629,7 +629,7 @@ int usbd_inic_transmit_data(u8 ep_addr, u8 *buf, u32 len, void *userdata)
 				return HAL_ERR_MEM;
 			}
 		}
-		usbd_ep_transmit(idev->dev, ep);
+		ret = usbd_ep_transmit(idev->dev, ep);
 	} else {
 		RTK_LOGS(TAG, RTK_LOG_WARN, "EP%02x TX len=%d data=%d: BUSY\n", num, len, buf[0]);
 		ret = HAL_BUSY;
@@ -668,8 +668,6 @@ int usbd_inic_receive_data(u8 ep_addr, u8 *buf, u32 len, void *userdata)
 			return HAL_ERR_MEM;
 		}
 	}
-	usbd_ep_receive(idev->dev, ep);
-
-	return HAL_OK;
+	return usbd_ep_receive(idev->dev, ep);
 }
 

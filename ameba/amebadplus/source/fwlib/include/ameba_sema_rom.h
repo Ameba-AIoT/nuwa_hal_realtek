@@ -39,6 +39,7 @@
 #define GDMA_SEM_IDX        3
 #define IPC_SEM_CRYPTO		4
 #define IPC_SEM_DIAGNOSE  5
+#define IPC_SEM_SYSON  6
 /**
   * @}
   */
@@ -77,4 +78,3 @@ void IPC_patch_function(void (*pfunc1)(u32), void (*pfunc2)(u32));
   */
 
 #endif
-

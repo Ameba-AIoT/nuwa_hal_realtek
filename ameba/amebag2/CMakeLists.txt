@@ -18,9 +18,14 @@ zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA
   ${WIFI_LIB_PATH}/lib_wifi_rtk_app.a
 )
 
-zephyr_link_libraries_ifdef(CONFIG_REALTEK_AMEBA_ZEPHYR_USB
+zephyr_link_libraries_ifdef(CONFIG_USB_DEVICE_AMEBA
   ${LIB_PATH}/lib_usbd.a
 )
+
+zephyr_link_libraries_ifdef(CONFIG_USB_HOST_AMEBA
+  ${LIB_PATH}/lib_usbh.a
+)
+
 zephyr_link_libraries_ifdef(CONFIG_PM
   ${LIB_PATH}/lib_pmc.a
 )

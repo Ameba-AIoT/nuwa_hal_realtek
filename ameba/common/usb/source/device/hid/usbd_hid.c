@@ -369,9 +369,7 @@ static usbd_hid_t hid_device;
 static int usbd_hid_receive(void)
 {
 	usbd_hid_t *hid = &hid_device;
-	usbd_ep_receive(hid->dev, &hid->ep_intr_out);
-
-	return HAL_OK;
+	return usbd_ep_receive(hid->dev, &hid->ep_intr_out);
 }
 
 static int hid_handle_ep0_data_out(usb_dev_t *dev)
@@ -831,8 +829,7 @@ int usbd_hid_send_data(u8 *data, u32 len)
 			usb_os_memcpy((void *)ep_intr_in->xfer_buf, (void *)data, len);
 			if (dev->is_ready) { // In case deinit when plug out
 				ep_intr_in->xfer_len = len;
-				usbd_ep_transmit(hid->dev, ep_intr_in);
-				ret = HAL_OK;
+				ret = usbd_ep_transmit(hid->dev, ep_intr_in);
 			} else {
 				ep_intr_in->xfer_state = 0U;
 			}

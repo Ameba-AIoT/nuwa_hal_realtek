@@ -213,6 +213,94 @@ class FirmwarePacker:
 
 # --- Specific Logic per SoC ---
 
+def handle_amebadplus_mcuboot(p: FirmwarePacker):
+    """
+    AmebaD Plus MCUboot Bootloader Generation
+    Final image structure:
+        amebadplus_boot.bin = [xip_boot_prepend + xip_boot_data] + [ram_1_prepend + ram_1_data]
+    """
+    td = p.target_dir
+    zephyr_elf = p.zephyr_bin.with_suffix('.elf')
+    raw_map_file = p.zephyr_bin.parent.parent / 'zephyr' / 'zephyr.raw.map'
+
+    axf = td / 'km4_boot.axf'
+    shutil.copy(zephyr_elf, axf)
+    p.run_cmd([p.tools.strip, axf])
+
+    # 1. Generate clean XIP binary without .ram_image1.entry
+    xip_all = td / 'xip_all.bin'
+    p.run_cmd([
+        p.tools.objcopy,
+        '-O', 'binary',
+        '--remove-section=.ram_image1.entry',  # Exclude RAM segment from XIP binary
+        str(axf),
+        str(xip_all),
+    ])
+
+    # 2. Remove padding between __rom_region_start and __km4_boot_text_start__
+    pad_start = parse_map_file(str(raw_map_file), "__rom_region_start")
+    pad_end   = parse_map_file(str(raw_map_file), "__km4_boot_text_start__")
+
+    if not pad_start or not pad_end:
+        logger.error("Error: Boot symbols not found in map file")
+        sys.exit(1)
+
+    pad_len = int(pad_end[0], 16) - int(pad_start[0], 16)
+
+    xip_boot = td / 'xip_boot.bin'
+    if pad_len > 0:
+        op_cut.execute(p.context, str(xip_all), str(xip_boot), pad_len)
+    else:
+        shutil.copy(xip_all, xip_boot)
+
+    # 3. Add padding and header to xip segment
+    op_pad.execute(p.context, str(xip_boot), 32)
+
+    xip_boot_pre = td / 'xip_boot_prepend.bin'
+    op_prepend_header.execute(
+        p.context,
+        str(xip_boot_pre),
+        str(xip_boot),
+        str(raw_map_file),
+        "__km4_boot_text_start__",   # XIP boot entry point (FLASH address)
+        0xFFFFFFFF                   # AmebaD Plus doesn't use 0x01010101 marker
+    )
+
+    # 4. Extract RAM segment data (.ram_image1.entry) separately
+    #    This section contains RamStartTable, RAM_IMG1_VALID_PATTEN, boot_export_symbol, etc.
+    ram_1 = td / 'ram_1.bin'
+    p.run_cmd([
+        p.tools.objcopy,
+        "-O", "binary",
+        "--only-section=.ram_image1.entry",  # Extract only RAM segment data (~0x60 bytes)
+        str(axf),
+        str(ram_1),
+    ])
+
+    # 5. Add header to ram segment
+    ram_1_pre = td / 'ram_1_prepend.bin'
+    op_prepend_header.execute(
+        p.context,
+        str(ram_1_pre),
+        str(ram_1),
+        str(raw_map_file),
+        "__ram_start_table_start__",
+    )
+
+    # 6. Concatenate to generate final_boot Image
+    km4_boot = td / 'km4_boot.bin'
+    p.concat_files([xip_boot_pre, ram_1_pre], km4_boot)
+
+    final_boot = td / 'amebadplus_boot.bin'
+    p.axf2bin_run('fw_pack', '-o', final_boot, '--image1', km4_boot)
+
+    if final_boot.exists():
+        shutil.copy(final_boot, p.image_dir)
+        logger.info("========== AmebaDPlus MCUBoot Image Done ==========")
+    else:
+        logger.error("Failed to generate MCUBoot image for AmebaD Plus")
+        sys.exit(1)
+
 def handle_amebadplus(p: FirmwarePacker):
     """
     Handle AmebaDplus specific logic.
@@ -298,6 +386,10 @@ def handle_amebad(p: FirmwarePacker):
 def handle_amebag2(p: FirmwarePacker):
     # 1. Standard Image2 Processing
     km4tz_img2 = p.standard_process_img2(entry_symbol='__image2_entry_func__')
+
+    km4tz_tfm_ns = p.target_dir.parent / 'tfm_ns' / 'bin' / 'km4tz_image2_all.bin'
+    if km4tz_tfm_ns.exists():
+        shutil.copy(km4tz_tfm_ns, km4tz_img2)
 
     # 2. Blobs
     boot_bin = p.target_dir / 'amebagreen2_boot.bin'
@@ -392,6 +484,8 @@ def main():
         if args.mcuboot:
             if args.soc == "amebag2":
                 handle_amebag2_mcuboot(packer)
+            elif args.soc == "amebadplus":
+                handle_amebadplus_mcuboot(packer)
             else:
                 logger.error(f"MCUBoot not supported for {args.soc}")
                 sys.exit(1)

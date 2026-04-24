@@ -18,6 +18,21 @@
 #define CMD_TABLE_DATA_SECTION				SECTION(".cmd.table.data")
 #define GIT_VER_TABLE_SECTION				SECTION(".git.ver.data")
 #define IPC_TABLE_DATA_SECTION				SECTION(".ipc.table.data")
+#define UNITY_TABLE_DATA_SECTION				SECTION(".unity.table.rodata")
+
+/* ATCMD section type 1: used by all cores */
+#ifdef CONFIG_SUPPORT_ATCMD
+#define ATCMD_TABLE_DATA_SECTION			CMD_TABLE_DATA_SECTION
+#else
+#define ATCMD_TABLE_DATA_SECTION
+#endif
+
+/* ATCMD section type 2: Used in AP && !MP_SHRINK mode */
+#if (defined(CONFIG_SUPPORT_ATCMD) && (defined(CONFIG_WHC_HOST) || defined(CONFIG_WHC_NONE))) && !defined(CONFIG_MP_SHRINK)
+#define ATCMD_APONLY_TABLE_DATA_SECTION		CMD_TABLE_DATA_SECTION
+#else
+#define ATCMD_APONLY_TABLE_DATA_SECTION
+#endif
 
 // Image 1 Entry Data
 #define IMAGE1_ENTRY_SECTION				SECTION(".image1.entry.data")
@@ -33,9 +48,6 @@
 // Define Non-Cacheable region
 #define SRAM_NOCACHE_DATA_SECTION			SECTION(".nocache.data")
 
-#define TIMESENSITIVE_TEXT_SECTION			SECTION(".timesensitive.text")
-#define TIMESENSITIVE_DATA_SECTION			SECTION(".timesensitive.data")
-
 /* non.dram can put in Flash(No DeepPowerDown) or SRAM after psram disabled, such as pmc code */
 #define NON_DRAM_TEXT_SECTION				SECTION(".non.dram.text")
 
@@ -48,7 +60,8 @@
 
 /* place trx udp/tcp related functions in SRAM to avoid fluctuations of tp caused by ICache contention.
    https://jira.realtek.com/browse/RSWLANDIOT-9400 */
-#define SRAM_WLAN_CRITICAL_CODE_SECTION	         SRAMDRAM_ONLY_TEXT_SECTION
+/* Wlan critical code, which could be put in sram */
+#define SRAM_WLAN_CRITICAL_CODE_SECTION     SECTION(".wlan.critical.text")
 
 // Wlan Section(Not Used)
 #define WLAN_ROM_TEXT_SECTION

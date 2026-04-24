@@ -5,6 +5,7 @@ zephyr_compile_options(-mcmse)
 
 set(LIB_PATH ${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/ameba/${CONFIG_SOC_SERIES}/lib)
 zephyr_link_libraries(${LIB_PATH}/lib_chipinfo.a)
+zephyr_link_libraries_ifdef(CONFIG_MCUBOOT ${LIB_PATH}/lib_bootloader.a)
 
 zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA
   ${LIB_PATH}/lib_wifi_whc_ap.a
@@ -28,6 +29,7 @@ zephyr_include_directories(
   source/fwlib/include
   source/usrcfg/include
   source/app/monitor/include
+  source/loader/bootloader
 )
 
 # used by common
@@ -60,8 +62,22 @@ zephyr_library_sources_ifdef(CONFIG_COUNTER_TMR_AMEBA source/fwlib/ram_common/am
 zephyr_library_sources_ifdef(CONFIG_UART_AMEBA source/fwlib/ram_common/ameba_uart.c)
 zephyr_library_sources_ifdef(CONFIG_WIFI_AMEBA source/misc/ameba_pmu.c)
 
+zephyr_library_sources_ifdef(CONFIG_MCUBOOT
+  source/loader/bootloader/bootloader_km4.c
+  source/loader/bootloader/boot_ota_km4.c
+  source/loader/bootloader/boot_security_km4.c
+  source/fwlib/ram_common/ameba_psram.c
+  source/fwlib/ram_common/ameba_ldo.c
+  source/fwlib/ram_common/ameba_pll.c
+  source/fwlib/ram_km4/ameba_flashclk.c
+)
+
+if(CONFIG_MCUBOOT)
+  zephyr_link_libraries(-T${CMAKE_CURRENT_SOURCE_DIR}/ld/ameba_rom_symbol_acut_s.ld)
+else()
 zephyr_link_libraries(
     gcc
     -T${CMAKE_CURRENT_SOURCE_DIR}/ld/ameba_rom_symbol_acut_s.ld
     -T${CMAKE_CURRENT_SOURCE_DIR}/ld/ameba_rom_symbol_stdlib.ld
   )
+endif()
