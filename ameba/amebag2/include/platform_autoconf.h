@@ -40,4 +40,6 @@
 #define CONFIG_ARM_CORE_CM4_KM4TZ 1
 #define CONFIG_ARM_CORE_CM4 1
 
+#ifdef __ZEPHYR__
 #include <zephyr/autoconf.h>
+#endif

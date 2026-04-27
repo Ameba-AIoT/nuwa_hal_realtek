@@ -37,6 +37,7 @@ zephyr_include_directories(
   source/fwlib/include/rom
   source/app/monitor/include
   source/loader/bootloader
+  source/loader/mcuboot
 )
 
 # used by common
@@ -92,10 +93,17 @@ zephyr_library_sources_ifdef(CONFIG_MCUBOOT
   source/loader/bootloader/bootloader_km4tz.c
   source/loader/bootloader/bootloader_clk.c
   source/loader/bootloader/boot_ota_km4tz.c
+  source/loader/mcuboot/boot_prepare.c
   source/fwlib/ram_common/ameba_psram.c
   source/fwlib/ram_common/ameba_ldo.c
   source/fwlib/ram_common/ameba_pll.c
   source/fwlib/ram_km4tz/ameba_flashclk.c
+)
+
+#OPTIMIZE: Place these source file to a common place
+zephyr_library_sources_ifdef(CONFIG_MCUBOOT_HW_DOWNGRADE_PREVENTION
+  source/loader/mcuboot/ameba_security_counter_utils.c
+  source/loader/mcuboot/mcuboot_security_cnt.c
 )
 
 if(CONFIG_MCUBOOT)

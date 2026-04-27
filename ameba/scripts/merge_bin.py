@@ -450,7 +450,7 @@ def handle_amebag2_mcuboot(p: FirmwarePacker):
     km4tz_boot = td / 'km4tz_boot.bin'
     p.concat_files([xip_boot_pre, ram_1_pre], km4tz_boot)
 
-    final_boot = td / 'amebagreen2_boot.bin'
+    final_boot = td / 'amebag2_boot.bin'
     p.axf2bin_run('fw_pack', '-o', final_boot, '--image1', km4tz_boot)
 
     if final_boot.exists():
