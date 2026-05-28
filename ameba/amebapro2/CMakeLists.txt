@@ -6,6 +6,7 @@ zephyr_compile_options(
 
 zephyr_link_libraries(${CMAKE_CURRENT_SOURCE_DIR}/lib/libsoc_ntz.a)
 zephyr_link_libraries(${CMAKE_CURRENT_SOURCE_DIR}/lib/libvideo_ntz.a)
+zephyr_link_libraries(${CMAKE_CURRENT_SOURCE_DIR}/lib/libnn.a)
 
 zephyr_include_directories(
 	include
@@ -14,6 +15,7 @@ zephyr_include_directories(
 	source/fwlib/rtl8735b/include
 	source/fwlib/rtl8735b/lib/include
 	source/fwlib/rtl8735b/lib/source/ram/video
+	source/nn
 
 	source/misc/utilities/include
 	source/app/stdio_port
