@@ -27,6 +27,9 @@ zephyr_library_sources(
 	source/fwlib/rtl8735b/source/ram_s/hal_wdt.c
 	source/fwlib/rtl8735b/source/ram/hal_gdma.c
 	source/fwlib/rtl8735b/source/ram/hal_gpio.c
+	source/fwlib/rtl8735b/source/ram/hal_crypto.c
+	source/fwlib/rtl8735b/source/ram/hal_ecdsa.c
+	source/fwlib/rtl8735b/source/ram_s/hal_hkdf.c
 )
 
 if(CONFIG_VIDEO_AMEBAPRO2 OR CONFIG_I2C_AMEBAPRO2)

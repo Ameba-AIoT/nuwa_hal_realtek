@@ -32,6 +32,7 @@
 #include "hal_crypto.h"
 #include "rtl8735b_hkdf.h"
 #include "rtl8735b_crypto_ctrl.h"
+#include <string.h>
 
 #if CONFIG_HKDF_EN
 
