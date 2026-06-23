@@ -53,7 +53,7 @@ zephyr_library_sources(
 
 # used by driver, need use zephyr_library_sources_ifdef
 zephyr_library_sources_ifdef(CONFIG_ADC_AMEBA source/fwlib/ram_common/ameba_adc.c)
-zephyr_library_sources_ifdef(CONFIG_CAN_AMEBA_A2C source/fwlib/ram_common/ameba_a2c.c)
+zephyr_library_sources_ifdef(CONFIG_CAN_AMEBA_CAN source/fwlib/ram_common/ameba_can.c)
 zephyr_library_sources_ifdef(CONFIG_ETH_AMEBA source/fwlib/ram_km4tz/ameba_phy.c)
 zephyr_library_sources_ifdef(CONFIG_ETH_AMEBA source/fwlib/ram_km4tz/ameba_ethernet.c)
 zephyr_library_sources_ifdef(CONFIG_AMEBA_LCDC source/fwlib/ram_common/ameba_lcdc.c)
@@ -77,6 +77,7 @@ zephyr_library_sources_ifdef(CONFIG_WIFI_AMEBA source/fwlib/ram_common/ameba_pmc
 zephyr_library_sources_ifdef(CONFIG_AMEBA_PPE source/fwlib/ram_common/ameba_ppe.c)
 zephyr_library_sources_ifdef(CONFIG_SDHC_AMEBA source/fwlib/ram_common/ameba_sd.c)
 zephyr_library_sources_ifdef(CONFIG_SDHC_AMEBA source/fwlib/ram_common/ameba_sd_host.c)
+zephyr_library_sources_ifdef(CONFIG_PWM_AMEBA source/fwlib/ram_common/ameba_tim.c)
 
 zephyr_library_sources_ifdef(CONFIG_PM
   source/fwlib/ram_common/ameba_pmu.c

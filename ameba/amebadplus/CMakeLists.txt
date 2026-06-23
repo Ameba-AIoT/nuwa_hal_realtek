@@ -4,7 +4,6 @@
 zephyr_compile_options(-mcmse)
 
 set(LIB_PATH ${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/ameba/${CONFIG_SOC_SERIES}/lib)
-zephyr_link_libraries(${LIB_PATH}/lib_chipinfo.a)
 zephyr_link_libraries_ifdef(CONFIG_MCUBOOT ${LIB_PATH}/lib_bootloader.a)
 
 zephyr_link_libraries_ifdef(CONFIG_WIFI_AMEBA
@@ -21,6 +20,12 @@ zephyr_link_libraries_ifdef(CONFIG_REALTEK_AMEBA_ZEPHYR_USB
   ${LIB_PATH}/lib_usbd.a
 )
 
+zephyr_link_libraries_ifdef(CONFIG_PM
+  ${LIB_PATH}/lib_pmc.a
+)
+#NOTE: lib_pmc.a depends on lib_chipinfo.a: ChipInfo_MCMInfo， keep link order
+zephyr_link_libraries(${LIB_PATH}/lib_chipinfo.a)
+
 zephyr_include_directories(
   include
   source/cmsis
@@ -30,6 +35,7 @@ zephyr_include_directories(
   source/usrcfg/include
   source/app/monitor/include
   source/loader/bootloader
+  source/loader/mcuboot
 )
 
 # used by common
@@ -61,15 +67,36 @@ zephyr_library_sources_ifdef(CONFIG_I2S_AMEBA source/fwlib/ram_common/ameba_spor
 zephyr_library_sources_ifdef(CONFIG_COUNTER_TMR_AMEBA source/fwlib/ram_common/ameba_tim.c)
 zephyr_library_sources_ifdef(CONFIG_UART_AMEBA source/fwlib/ram_common/ameba_uart.c)
 zephyr_library_sources_ifdef(CONFIG_WIFI_AMEBA source/misc/ameba_pmu.c)
+zephyr_library_sources_ifdef(CONFIG_PWM_AMEBA source/fwlib/ram_common/ameba_tim.c)
+
+zephyr_library_sources_ifdef(CONFIG_PM
+  source/misc/ameba_pmu.c
+  source/fwlib/ram_km4/ameba_trustzone.c
+  # source/fwlib/ram_common/ameba_pmctimer.c
+  # source/fwlib/ram_common/ameba_psram.c
+  # source/fwlib/ram_common/ameba_pll.c
+  # source/fwlib/ram_common/ameba_pmc_com.c
+  # source/fwlib/ram_common/ameba_gpio_ram.c
+  # source/fwlib/ram_common/ameba_aontimer.c
+  # source/fwlib/ram_km4tz/ameba_pmc.c
+)
 
 zephyr_library_sources_ifdef(CONFIG_MCUBOOT
+  source/loader/mcuboot/boot_prepare.c
   source/loader/bootloader/bootloader_km4.c
   source/loader/bootloader/boot_ota_km4.c
   source/loader/bootloader/boot_security_km4.c
   source/fwlib/ram_common/ameba_psram.c
   source/fwlib/ram_common/ameba_ldo.c
   source/fwlib/ram_common/ameba_pll.c
+  source/fwlib/ram_common/ameba_fault_handle.c
   source/fwlib/ram_km4/ameba_flashclk.c
+)
+
+#OPTIMIZE: Place these source file to a common place
+zephyr_library_sources_ifdef(CONFIG_MCUBOOT_HW_DOWNGRADE_PREVENTION
+  source/loader/mcuboot/ameba_security_counter_utils.c
+  source/loader/mcuboot/mcuboot_security_cnt.c
 )
 
 if(CONFIG_MCUBOOT)
@@ -77,7 +104,7 @@ if(CONFIG_MCUBOOT)
 else()
 zephyr_link_libraries(
     gcc
-    -T${CMAKE_CURRENT_SOURCE_DIR}/ld/ameba_rom_symbol_acut_s.ld
+    -T${CMAKE_CURRENT_SOURCE_DIR}/ld/ameba_rom_symbol_acut.ld
     -T${CMAKE_CURRENT_SOURCE_DIR}/ld/ameba_rom_symbol_stdlib.ld
   )
 endif()

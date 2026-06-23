@@ -125,4 +125,15 @@ uint32_t rtos_timer_is_timer_active(rtos_timer_t p_handle);
  */
 uint32_t rtos_timer_get_id(rtos_timer_t p_handle);
 
+/**
+ * @brief  Pend a function call to be executed in the RTOS work queue context.
+ * @param  p_func: Function pointer to be executed. The function prototype must be (void (*)(void *, uint32_t)).
+ * @param  pv_p1: First parameter passed to the pended function.
+ * @param  ul_p2: Second parameter passed to the pended function.
+ * @param  wait_ms: Maximum time to wait for the operation (currently unused).
+ * @retval RTK_SUCCESS if the function call was successfully pended.
+ * @retval RTK_FAIL if p_func is NULL, memory allocation fails, or work submission fails.
+ */
+int rtos_timer_pend_function_call(void (*p_func)(void *, uint32_t), void *pv_p1, uint32_t ul_p2, uint32_t wait_ms);
+
 #endif

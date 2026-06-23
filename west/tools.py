@@ -19,7 +19,7 @@ from west import log
 TOOLCHAIN_DB_FILE = "../ameba/scripts/toolchain_db.json"
 
 NUWA_SDK_TOOLCHAIN_DEFAULT_PATH_WINDOWS = r"C:\rtk-toolchain"
-NUWA_SDK_TOOLCHAIN_DEFAULT_PATH_LINUX = "/opt/rtk-toolchain"
+NUWA_SDK_TOOLCHAIN_DEFAULT_PATH_LINUX = str(Path.home() / "rtk-toolchain")
 
 
 def default_toolchain_dir() -> Path:
@@ -326,7 +326,7 @@ def build_help_mapping_text(db: dict) -> str:
     lines.append("  - Install ALL toolchains: west realtek ameba install")
     lines.append("  - Install ONE toolchain: west realtek ameba install -t <toolchain_id>")
     lines.append("  - Use Aliyun mirror: add --aliyun")
-    lines.append("    e.g., west realtek ameba install -t asdk-12.3.1-4568 --aliyun")
+    lines.append("    e.g., west realtek ameba install -t asdk-12.3.1-4600 --aliyun")
     return "\n".join(lines)
 
 
@@ -405,9 +405,9 @@ class Tools(WestCommand):
         parser.epilog = (
             "Examples:\n"
             "  west realtek ameba install\n"
-            "  west realtek ameba install -t asdk-12.3.1-4568\n"
-            "  west realtek ameba install -t asdk-10.3.1-4523 --toolchain-dir ~/rtk-toolchain\n"
-            "  west realtek ameba install -t asdk-12.3.1-4568 --aliyun\n"
+            "  west realtek ameba install -t asdk-12.3.1-4600\n"
+            "  west realtek ameba install -t asdk-10.3.1-4602 --toolchain-dir ~/rtk-toolchain\n"
+            "  west realtek ameba install -t asdk-12.3.1-4600 --aliyun\n"
         )
 
         return parser

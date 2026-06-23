@@ -5,17 +5,17 @@ if REALTEK_AMEBA_ZEPHYR_WIFI
 
 config BT_COEXIST
 	bool "Enable CoExist"
-	default y if !SOC_SERIES_AMEBAD
+	default y if !SOC_SERIES_AMEBAD && !SOC_SERIES_AMEBASMART
 
-	select COEXIST_HOST if AS_INIC_AP && !SINGLE_CORE_WIFI
+	select COEXIST_HOST if !SINGLE_CORE_WIFI
 
-	select ZEPHYR_SDK
+	select PLATFORM_ZEPHYR
 
 config COEXIST_HOST
-	bool            
+	bool
 config COEXIST_DEV
 	bool
-config ZEPHYR_SDK
+config PLATFORM_ZEPHYR
 	bool
 
 if BT_COEXIST && !SOC_SERIES_AMEBAD
@@ -91,18 +91,21 @@ if BT_COEXIST && !SOC_SERIES_AMEBAD
 			default "PB_0" if SOC_SERIES_AMEBADPLUS
 			default "PA_21" if SOC_SERIES_AMEBAG2
 			default "PA_26" if SOC_SERIES_AMEBAD
+			default "PA_10" if SOC_SERIES_AMEBASMART
 
 		config EXT_PTA_PIN_PRI
 			string "Pin PTA Priority"
 			default "PB_2" if SOC_SERIES_AMEBADPLUS
 			default "PA_18" if SOC_SERIES_AMEBAG2
 			default "PB_1" if SOC_SERIES_AMEBAD
+			default "PA_6" if SOC_SERIES_AMEBASMART
 
 		config EXT_PTA_PIN_GNT
 			string "Pin PTA Gnt"
 			default "PB_1" if SOC_SERIES_AMEBADPLUS
 			default "PA_19" if SOC_SERIES_AMEBAG2
 			default "PA_27" if SOC_SERIES_AMEBAD
+			default "PA_9" if SOC_SERIES_AMEBASMART
 
 		config COEX_EXT_CHIP_SUPPORT
 			bool

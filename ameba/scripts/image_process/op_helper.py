@@ -25,6 +25,14 @@ class Helper(OperationBase):
         sub.add_argument('-o', '--output-file', help='Output file', required=True)
         sub.add_argument('-i', '--input-file', nargs='+', help='Input files', required=True)
 
+        #NOTE: args for cut-by-map
+        sub = subparsers.add_parser('cut-by-map', help='Cut file by calculating size from map file symbols')
+        sub.add_argument('-i', '--input-file', help='Input file', required=True)
+        sub.add_argument('-o', '--output-file', help='Output file', required=True)
+        sub.add_argument('-m', '--map-file', help='Map file', required=True)
+        sub.add_argument('--start-sym', help='Start symbol', required=True)
+        sub.add_argument('--end-sym', help='End symbol', required=True)
+
     @staticmethod
     def require_manifest_file(context:Context) -> bool:
         if context.args.sub_operation == "manifest-fmt":
@@ -41,6 +49,11 @@ class Helper(OperationBase):
             for f in self.context.args.input_file:
                 if not os.path.exists(f):
                     return Error(ErrorType.FILE_NOT_FOUND, f)
+        elif self.context.args.sub_operation == "cut-by-map":
+            if not os.path.exists(self.context.args.input_file):
+                return Error(ErrorType.FILE_NOT_FOUND, self.context.args.input_file)
+            if not os.path.exists(self.context.args.map_file):
+                return Error(ErrorType.FILE_NOT_FOUND, self.context.args.map_file)
         return Error.success()
 
     def process(self) -> Error:
@@ -52,6 +65,14 @@ class Helper(OperationBase):
             return self.merge(
                 self.context.args.output_file,
                 *self.context.args.input_file
+            )
+        elif self.context.args.sub_operation == "cut-by-map":
+            return self.cut_by_map(
+                self.context.args.input_file,
+                self.context.args.output_file,
+                self.context.args.map_file,
+                self.context.args.start_sym,
+                self.context.args.end_sym
             )
         else:
             return Error(ErrorType.INVALID_INPUT)
@@ -72,3 +93,22 @@ class Helper(OperationBase):
                 with open(i, 'rb') as in_f:
                     shutil.copyfileobj(in_f, out_f)
         return Error.success()
+
+    @exit_on_failure(catch_exception=True)
+    def cut_by_map(self, input_file:str, output_file:str, map_file:str, start_sym:str, end_sym:str) -> Error:
+        from op_cut import Cut
+
+        pad_start = parse_map_file(map_file, start_sym)
+        pad_end = parse_map_file(map_file, end_sym)
+
+        if not pad_start or not pad_end:
+            self.context.logger.error(f"Error: Symbols {start_sym} or {end_sym} missing in map file")
+            return Error(ErrorType.INVALID_INPUT)
+
+        pad_len = int(pad_end[0], 16) - int(pad_start[0], 16)
+
+        if pad_len > 0:
+            return Cut.execute(self.context, input_file, output_file, pad_len)
+        else:
+            shutil.copy(input_file, output_file)
+            return Error.success()

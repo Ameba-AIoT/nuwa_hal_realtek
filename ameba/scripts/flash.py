@@ -44,17 +44,30 @@ DEVICE_MAP = {
     "amebadplus": {
         "profile": "RTL8721Dx.rdev",
         "floader": "amebadplus/bin/floader_amebadplus.bin"
+    },
+    "amebasmart": {
+        "profile": "RTL8730E_NOR.rdev",
+        "floader": "amebasmart/bin/floader_amebasmart.bin"
     }
 }
 
 XIP_BASE: int = 0x08000000  # XIP base address
-FILE_TO_LABEL: Dict[str, str] = {
-    "amebagreen2_boot.bin": "bootloader",
-    "amebagreen2_km4ns.signed.bin": "image-2",
-    "amebagreen2_km4tz.signed.bin": "image-0",
-}
 EDT_DEFAULT_NAME: str = "edt.pickle"
 ZEPHYR_DIR_NAME: str = "zephyr"
+
+
+def _get_file_to_label(device: str) -> Dict[str, str]:
+    """
+    Return filename → partition-label mapping for the given device.
+
+    In a sysbuild + MCUBoot build the image directories contain:
+      - boot.bin : MCUBoot bootloader  (mcuboot_image.cmake)
+      - app.bin  : signed application  (primary_image.cmake)
+    """
+    return {
+        "boot.bin": "bootloader",
+        "app.bin":  "image-0",
+    }
 
 def resolve_edt_pickle_path(image_dir: str) -> str:
     """
@@ -102,20 +115,21 @@ def _safe_get_first_reg(node) -> Optional[Tuple[int, int]]:
         return None
     return int(addr), int(size)
 
-def collect_image_load_list(image_dir: str, images: List[List[str]]) -> None:
+def collect_image_load_list(image_dir: str, images: List[List[str]],
+                            file_to_label: Optional[Dict[str, str]] = None) -> None:
     """
-    Populate 'images' in-place with entries of [filename, start_hex, end_hex] for images present under image_dir.
-    The start/end addresses are computed from the partition's reg (offset/size) and XIP_BASE.
+    Append [filename, start_hex, end_hex] entries to 'images' for each image
+    file present under image_dir.  Addresses are derived from the partition's
+    reg (offset/size) in the domain-local edt.pickle plus XIP_BASE.
 
-    In a multi-domain compilation scenario, each domain will run the runner independently.
-    The image_dir passed in by each domain is the image directory under its own compilation directory,
-    and it will be processed independently according to its own image directory.
+    file_to_label maps each expected filename to its DTS partition label.
+    When omitted the caller must pass the correct mapping explicitly.
 
     Example result for one file:
-        [["amebagreen2_boot.bin", "0x08000000", "0x08014000"]]
+        [["boot.bin", "0x08000000", "0x08040000"]]
     """
-    # Reset the target list
-    images.clear()
+    if file_to_label is None:
+        raise ValueError("file_to_label must be provided")
 
     # Resolve edt.pickle
     edt_path = resolve_edt_pickle_path(image_dir)
@@ -125,7 +139,7 @@ def collect_image_load_list(image_dir: str, images: List[List[str]]) -> None:
         edt = pickle.load(f)
 
     # Build label -> (offset, size) for labels we care about
-    interested_labels = set(FILE_TO_LABEL.values())
+    interested_labels = set(file_to_label.values())
     label_to_reg: Dict[str, Tuple[int, int]] = {}
 
     for node in getattr(edt, "nodes", []):
@@ -137,9 +151,11 @@ def collect_image_load_list(image_dir: str, images: List[List[str]]) -> None:
             continue
         label_to_reg[label] = reg_pair
 
-    # Create entries for files that actually exist under image_dir
-    for filename, label in FILE_TO_LABEL.items():
-        file_path = os.path.join(image_dir, filename)
+    # Create entries for files that actually exist under image_dir.
+    # Store absolute paths so build_partition_table works regardless of which
+    # domain's directory each image lives in.
+    for filename, label in file_to_label.items():
+        file_path = os.path.abspath(os.path.join(image_dir, filename))
         if not os.path.isfile(file_path):
             continue
         if label not in label_to_reg:
@@ -149,7 +165,7 @@ def collect_image_load_list(image_dir: str, images: List[List[str]]) -> None:
         offset, size = label_to_reg[label]
         start = XIP_BASE + offset
         end = start + size
-        images.append([filename, f"0x{start:08x}", f"0x{end:08x}"])
+        images.append([file_path, f"0x{start:08x}", f"0x{end:08x}"])
 
 def prepare_flash_environment(device: str) -> str:
     """
@@ -233,7 +249,10 @@ def build_partition_table(image_dir: Path, images: list, memory_type_str: str) -
     mem_type_val = mem_type_map.get(memory_type_str, MemoryType.NOR)
 
     for img_name, start_addr_str, end_addr_str in images:
-        full_image_path = (image_dir / img_name).resolve()
+        # img_name may be an absolute path (from collect_image_load_list) or a
+        # relative name supplied by the user via --images (resolved against image_dir).
+        p = Path(img_name)
+        full_image_path = p.resolve() if p.is_absolute() else (image_dir / img_name).resolve()
 
         # Pre-check if file exists to provide friendlier error
         if not full_image_path.is_file():
@@ -279,21 +298,89 @@ def detect_multidomain(image_dir: str) -> bool:
     except Exception:
         return False
 
+
+def _is_last_flash_domain(image_dir: str) -> bool:
+    """
+    Return True when image_dir belongs to the last domain in domains.yaml's
+    flash_order.  This is the one domain that performs the actual combined
+    flash; all earlier domain invocations return early without flashing.
+
+    Returns True on any parse error so that flashing still proceeds.
+    """
+    # image_dir is <domain_build_dir>/images, so parent is the domain build dir.
+    # domains.yaml lives one level above that (the top-level build dir).
+    current_build_dir = Path(image_dir).resolve().parent
+    top_build_dir = current_build_dir.parent
+    domains_file = top_build_dir / "domains.yaml"
+    try:
+        import yaml
+        data = yaml.safe_load(domains_file.read_text()) or {}
+        flash_order = data.get("flash_order") or []
+        if not flash_order:
+            return True
+        domains = {d["name"]: d["build_dir"] for d in data.get("domains", [])}
+        last_build_dir = Path(domains.get(flash_order[-1], "")).resolve()
+        return current_build_dir == last_build_dir
+    except Exception:
+        return True
+
+
+def collect_all_domain_images(image_dir: str, images: List[List[str]],
+                               device: str) -> None:
+    """
+    In a multidomain build, collect flashable images from EVERY domain's
+    image directory and append them to 'images'.
+
+    Each domain's edt.pickle is used to resolve partition addresses for the
+    files found in that domain's image directory.  Domains whose EDT does not
+    contain the expected label, or whose image directory is missing, are
+    skipped with a warning.
+    """
+    images.clear()
+    file_to_label = _get_file_to_label(device)
+
+    build_dir = Path(image_dir).resolve().parent.parent
+    domains_file = build_dir / "domains.yaml"
+    try:
+        import yaml
+        data = yaml.safe_load(domains_file.read_text()) or {}
+    except Exception as e:
+        logger.warning(f"Could not parse domains.yaml: {e}; falling back to single-dir mode")
+        collect_image_load_list(image_dir, images, file_to_label)
+        return
+
+    for domain in data.get("domains", []):
+        domain_image_dir = (Path(domain["build_dir"]).resolve() / "images")
+        if not domain_image_dir.is_dir():
+            continue
+        try:
+            collect_image_load_list(str(domain_image_dir), images, file_to_label)
+        except Exception as e:
+            logger.warning(f"Domain '{domain['name']}': skipping images — {e}")
+
 def main(args):
-    # 1. Prepare environment (Profile & Floader)
     multidomain = detect_multidomain(args.image_dir)
 
+    # In a sysbuild (multidomain) build west flash invokes this runner once per
+    # domain.  We skip every domain except the last one in flash_order, then
+    # the last domain collects images from ALL domains and flashes once.
+    if multidomain:
+        if not _is_last_flash_domain(args.image_dir):
+            logger.info(
+                "Multidomain build: skipping flash for this domain "
+                "(will flash from last domain in flash_order)"
+            )
+            return
+        if args.images is None:
+            args.images = []
+            collect_all_domain_images(args.image_dir, args.images, args.device)
+
+    # 1. Prepare environment (Profile & Floader)
     try:
         profile_path = prepare_flash_environment(args.device)
     except Exception as e:
         logger.error(str(e))
         sys.exit(1)
-
-    if multidomain and args.images is None:
-        print("multidomain:",multidomain)
-        args.images = []
-        collect_image_load_list(args.image_dir,args.images)
-        print("args.images:",args.images)
 
     # 2. Determine tool path
     tool_path_str = args.tool_path if args.tool_path else str(DEFAULT_FLASH_TOOL)

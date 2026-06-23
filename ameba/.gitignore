@@ -2,3 +2,6 @@ __pycache__/
 # all bin files
 *.bin
 *.a
+
+# flash tool pulled from external git (managed by tools.yml)
+scripts/flash/

@@ -1,6 +1,6 @@
 {
-  "asdk-12.3.1-4568": {
-    "url_base": "https://github.com/Ameba-AIoT/ameba-toolchain/releases/download/12.3.1_v3/",
+  "asdk-12.3.1-4600": {
+    "url_base": "https://github.com/Ameba-AIoT/ameba-toolchain/releases/download/12.3.1_v4/",
     "aliyun_url_base": "https://aiot.realmcu.com/download/toolchain",
     "suffix": "-x86_64",
     "chips": [
@@ -10,17 +10,19 @@
       "rtl8721f_evb"
     ]
   },
-  "asdk-10.3.1-4523": {
-    "url_base": "https://github.com/Ameba-AIoT/ameba-toolchain/releases/download/10.3.1_v6/",
+  "asdk-10.3.1-4602": {
+    "url_base": "https://github.com/Ameba-AIoT/ameba-toolchain/releases/download/10.3.1_v7",
     "aliyun_url_base": "https://aiot.realmcu.com/download/toolchain",
     "suffix": "-x86_64_with_small_reent",
     "chips": [
       "AmebaDplus",
-      "AmebaD"
+      "AmebaD",
+      "AmebaSmart"
     ],
     "devices": [
       "rtl872xda_evb",
-      "rtl872xd_evb"
+      "rtl872xd_evb",
+      "rtl8730e_evb"
     ]
   }
 }

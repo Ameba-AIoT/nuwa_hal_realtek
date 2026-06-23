@@ -28,7 +28,7 @@ def plat():
     return "mingw32/newlib" if platform.system()=="Windows" else "linux/newlib"
 
 def guide(req_major,req_minor,rtkdir):
-    base=rtkdir.strip() if rtkdir else ("C:/rtk-toolchain" if platform.system()=="Windows" else "/opt/rtk-toolchain")
+    base=rtkdir.strip() if rtkdir else ("C:/rtk-toolchain" if platform.system()=="Windows" else str(Path.home()/"rtk-toolchain"))
     sdk=str(Path(base)/f"{req_major}-{req_minor}"/plat()).replace("\\","/")
     base_n=base.replace("\\","/")
     rid=f"{req_major}-{req_minor}"

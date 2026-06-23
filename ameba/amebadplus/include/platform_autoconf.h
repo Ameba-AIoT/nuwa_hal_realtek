@@ -25,10 +25,10 @@
 //#define CONFIG_LWIP_LAYER 1  // not set in zephyr
 #define CONFIG_LWIP_NETCONN_SEM_PER_THREAD_MENU 1
 #define CONFIG_LWIP_NETCONN_SEM_PER_THREAD 1
-#define CONFIG_MBEDTLS_ENABLED_MENU 1
-#define CONFIG_MBEDTLS_ENABLED 1
 #define CONFIG_LINK_ROM_SYMB 1
 #define CONFIG_CPU_HAS_FPU 1
 #define CONFIG_ARM_CORE_CM4 1
 #define CONFIG_AMEBADPLUS_B_CUT 1
+#ifdef __ZEPHYR__
 #include <zephyr/autoconf.h>
+#endif

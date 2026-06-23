@@ -7,6 +7,10 @@
 #ifndef _AMEBA_BOOTLOADER_H_
 #define _AMEBA_BOOTLOADER_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void BOOT_SOC_ClkChk(const SocClk_Info_TypeDef *pSocClk_Info);
 void BOOT_SOC_ClkSet(void);
 
@@ -25,4 +29,9 @@ void Peripheral_Reset(void);
 bool BOOT_RRAM_InfoValid(void);
 void BOOT_Log_Init(void);
 int BOOT_Data_Flash_Init(void);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif
