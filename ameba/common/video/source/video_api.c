@@ -1,7 +1,7 @@
 #include <video_api.h>
 #include <math.h>
 #define __voe_code_start__ 0x70000000
-
+#include <voe_array.h>
 #define SLICE_SIZE (2 * 1024 * 1024)
 
 static isp_info_t isp_info;
@@ -2401,6 +2401,7 @@ hal_video_adapter_t *video_init(int iq_start_addr, int sensor_start_addr)
 
 			hal_video_load_iq((voe_cpy_t)hal_voe_cpy, (int *)iq_addr, (int *)__voe_code_start__);
 			hal_video_load_sensor((voe_cpy_t)hal_voe_cpy, (int *)sensor_addr, (int *)__voe_code_start__);
+			hal_video_load_fw((voe_cpy_t)hal_voe_cpy, (int *)voe, (int *) __voe_code_start__);
 		}
 		if (voe_info_init == 0) {
 			memset(voe_info.ch_info, 0, sizeof(voe_info.ch_info));
