@@ -587,6 +587,10 @@ void video_init_test(unsigned char *buf, int size);
  */
 #define VIDEO_PIX_FMT_H264 VIDEO_FOURCC('H', '2', '6', '4')
 #define VIDEO_PIX_FMT_H265 VIDEO_FOURCC('H', '2', '6', '5')
+/**
+ * NV12 raw video: Y plane followed by interleaved U/V plane (4:2:0)
+ */
+#define VIDEO_PIX_FMT_NV12 VIDEO_FOURCC('N', 'V', '1', '2')
 
 /////////////EXTEND THE VIDEO CONTROL ID//////////////////
 #define VIDEO_CID_VENDOR_SET_PARAMS 		(VIDEO_CID_PRIVATE_BASE + 0x00)

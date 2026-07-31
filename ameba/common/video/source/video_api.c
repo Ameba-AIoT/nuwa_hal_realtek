@@ -860,7 +860,7 @@ int video_set_rc(int ch, rate_ctrl_s *rc_ctrl)
 	}
 	//video_dprintf(VIDEO_LOG_MSG, "[%s] rc fps = %d, isp_fps = %d, gop = %d, bps = %d\r\n", __FUNCTION__, voe_info.ch_info[ch].rc_info->temp_rc_ctrl.fps,
 	//		voe_info.ch_info[ch].rc_info->temp_rc_ctrl.isp_fps, voe_info.ch_info[ch].rc_info->temp_rc_ctrl.gop, voe_info.ch_info[ch].rc_info->temp_rc_ctrl.bps);
-	//atomic_store(&(voe_info.ch_info[ch].rc_info->update_flag), true);
+	atomic_store(&(voe_info.ch_info[ch].rc_info->update_flag), true);
 	return OK;
 }
 

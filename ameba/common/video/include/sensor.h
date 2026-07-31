@@ -190,9 +190,9 @@ static const video_buf_setup_t v_buf_cfg = {
 	.v2_bps = 2 * 1024 * 1024,
 	.v2_snapshot = 1,
 
-	.v3_enable = 0,
-	.v3_width = 0,
-	.v3_height = 0,
+	.v3_enable = 1,
+	.v3_width = 320,
+	.v3_height = 180,
 	.v3_bps = 0,
 	.v3_snapshot = 0,
 
