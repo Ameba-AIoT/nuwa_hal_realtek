@@ -4,36 +4,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifndef USBD_INIC_OTP_H
-#define USBD_INIC_OTP_H
+#ifndef USBH_UVC_CLASS_H
+#define USBH_UVC_CLASS_H
 
 /* Includes ------------------------------------------------------------------*/
 
-#include "usbd.h"
+#include "usbh_uvc.h"
 
 /* Exported defines ----------------------------------------------------------*/
 
-#define USBD_OTP_MAX_STR_LEN	58U
-#define USBD_INIC_MAX_STR_LEN	(USBD_OTP_MAX_STR_LEN * 2 + 2)
-
 /* Exported types ------------------------------------------------------------*/
-
-typedef struct {
-	u8 *mfg_str;
-	u8 *prod_str;
-	u8 *sn_str;
-	u8 *otp_map;
-	u16 vid;
-	u16 pid;
-	u8 otp_sn;
-	u8 otp_param;
-	u8 mfg_str_len;
-	u8 prod_str_len;
-	u8 sn_str_len;
-	u8 self_powered : 1;
-	u8 remote_wakeup_en : 1;
-	u8 bt_en : 1;
-} usbd_otp_t;
 
 /* Exported macros -----------------------------------------------------------*/
 
@@ -41,8 +21,7 @@ typedef struct {
 
 /* Exported functions --------------------------------------------------------*/
 
-int usbd_otp_init(usbd_otp_t *otp);
-void usbd_otp_deinit(usbd_otp_t *otp);
+int usbh_uvc_class_init(void);
+void usbh_uvc_class_deinit(void);
 
-#endif  /* USBD_INIC_OTP_H */
-
+#endif /* USBH_UVC_CLASS_H */

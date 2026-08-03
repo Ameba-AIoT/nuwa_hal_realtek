@@ -14,23 +14,25 @@
 /* Exported defines ----------------------------------------------------------*/
 
 #if defined(CONFIG_USBH_COMPOSITE_HID_UAC)
-#define USBH_COMPOSITE_HID_UAC_DEBUG             0
-
-#if USBH_COMPOSITE_HID_UAC_DEBUG && (USBH_TP_TRACE_DEBUG == 0)
-#error "Please set USBH_TP_TRACE_DEBUG in usbh.h"
-#endif
+#define USBH_COMPOSITE_HID_UAC_DEBUG              0
 
 #define USBH_COMPOSITE_HID_UAC_EVENT              BIT0
 #define USBH_COMPOSITE_HID_EVENT                  BIT1
 #define USBH_COMPOSITE_UAC_EVENT                  BIT2
 #elif defined(CONFIG_USBH_COMPOSITE_ACM_ECM)
 
-#define USB_4G_DONGLE_SUPPORT                     1
+#define USBH_COMPOSITE_4G_DONGLE_SUPPORT          1
 
-#define USB_EF_DONGLE_VID        0x2C7C
-#define EF_DONGLE_PID_EG915      0x0901
-#define EF_DONGLE_PID_EG91       0x0191
-#define USB_DEFAULT_VID          USB_VID
+/* Quectel CAT1 in ECM mode */
+#define USBH_COMPOSITE_QUECTEL_DONGLE_VID         (0x2C7C)
+#define USBH_COMPOSITE_QUECTEL_DONGLE_EG915_PID   (0x0901)
+#define USBH_COMPOSITE_QUECTEL_DONGLE_EG91_PID    (0x0191)
+
+/* Fibocom LE271 CAT1 in ECM mode */
+#define USBH_COMPOSITE_FIBOCOM_DONGLE_LE271_VID   (0x2CB7)
+#define USBH_COMPOSITE_FIBOCOM_DONGLE_LE271_PID   (0x0D01)
+
+#define USBH_COMPOSITE_DEVICE_VID                 (USB_VID)
 
 #else
 #error "No composite class configured"
@@ -49,11 +51,11 @@
  */
 typedef struct {
 	/**
-	 * @brief Called when USB attach status changes for application to support hot-plug events.
-	 * @param[in] old_status: The previous attach status.
-	 * @param[in] status: The new attach status.
+	 * @brief Callback invoked when a device is detached.
+	 *        Used to report the disconnection status to the application.
+	 * @return 0 on success, non-zero on failure.
 	 */
-	void (*status_changed)(u8 old_status, u8 status);
+	int(* detach)(void);
 } usbh_composite_cb_t;
 
 typedef struct {
@@ -64,11 +66,11 @@ typedef struct {
 	usbh_class_driver_t *acm;    /**< CDC ACM class. */
 	usbh_class_driver_t *ecm;    /**< CDC ECM class. */
 #endif
-	usbh_composite_cb_t *cb;      /**< Pointer to the user-defined callback structure. */
+	const usbh_composite_cb_t *cb;      /**< Pointer to the user-defined callback structure. */
 	usb_host_t *host;             /**< Pointer to the host structure. */
 } usbh_composite_host_t;
-/** @} End of Host_Composite_Types group*/
-/** @} End of USB_Host_Types group*/
+/** @} End of Host_Composite_Types group */
+/** @} End of USB_Host_Types group */
 /** @} End of USB_Host_API group */
 /* Exported macros -----------------------------------------------------------*/
 
@@ -76,4 +78,4 @@ typedef struct {
 
 /* Exported functions --------------------------------------------------------*/
 
-#endif // USBH_COMPOSITE_CONFIG_H
+#endif /* USBH_COMPOSITE_CONFIG_H */

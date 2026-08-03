@@ -34,7 +34,7 @@
 #define USBD_VENDOR_SELF_POWERED						1U						/**< Device is self-powered */
 #define USBD_VENDOR_REMOTE_WAKEUP_EN					1U						/**< Remote wakeup is enabled */
 #define USBD_VENDOR_CONFIG_DESC_SIZE					83U						/**< Total size (bytes) of the configuration descriptor */
-#define USBD_VENDOR_LANGID_STRING						0x0409U					/**< Language ID for string descriptors (0x0409 = English */
+#define USBD_VENDOR_LANGID_STRING						0x0409U					/**< Language ID for string descriptors (0x0409 = English) */
 #define USBD_VENDOR_MFG_STRING							"Realtek"				/**< Manufacturer string */
 #define USBD_VENDOR_PROD_HS_STRING						"Realtek Vendor (HS)"	/**< Product string for High-Speed mode */
 #define USBD_VENDOR_PROD_FS_STRING						"Realtek Vendor (FS)"	/**< Product string for Full-Speed mode */
@@ -76,12 +76,12 @@
 #define USBD_VENDOR_FS_INTR_IN_INTERVAL					2U    /**< Full speed INTR IN interval */
 #define USBD_VENDOR_FS_INTR_OUT_INTERVAL				2U    /**< Full speed INTR OUT interval */
 
-#define USBD_VENDOR_HS_ISOC_IN_INTERVAL					1U    /**< High speed ISOC IN interval */
-#define USBD_VENDOR_HS_ISOC_OUT_INTERVAL				1U    /**< High speed ISOC OUT interval */
+#define USBD_VENDOR_HS_ISOC_IN_INTERVAL					2U    /**< High speed ISOC IN interval */
+#define USBD_VENDOR_HS_ISOC_OUT_INTERVAL				2U    /**< High speed ISOC OUT interval */
 #define USBD_VENDOR_FS_ISOC_IN_INTERVAL					2U    /**< Full speed ISOC IN interval */
 #define USBD_VENDOR_FS_ISOC_OUT_INTERVAL				2U    /**< Full speed ISOC OUT interval */
-/** @} End of Device_Vendor_Constants group*/
-/** @} End of USB_Device_Constants group*/
+/** @} End of Device_Vendor_Constants group */
+/** @} End of USB_Device_Constants group */
 
 /* Exported types ------------------------------------------------------------*/
 
@@ -111,6 +111,8 @@ typedef struct {
 
 	/**
 	 * @brief Called to handle class-specific SETUP requests.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
 	 * @param[in] req Pointer to the setup request packet.
 	 * @param[out] buf Pointer to a buffer for data stage of control transfers.
 	 * @return 0 on success, non-zero on failure.
@@ -119,12 +121,16 @@ typedef struct {
 
 	/**
 	 * @brief Called when the USB device is configured.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
 	 * @return 0 on success, non-zero on failure.
 	 */
 	int(* set_config)(void);
 
 	/**
 	 * @brief Called when new data is received from the host on the BULK OUT endpoint.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
 	 * @param[in] buf: Pointer to the received data buffer.
 	 * @param[in] len: Length of the received data in bytes.
 	 * @return 0 on success, non-zero on failure.
@@ -133,6 +139,8 @@ typedef struct {
 
 	/**
 	 * @brief Called when new data is received from the host on the INTR OUT endpoint.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
 	 * @param[in] buf: Pointer to the received data buffer.
 	 * @param[in] len: Length of the received data in bytes.
 	 * @return 0 on success, non-zero on failure.
@@ -141,6 +149,8 @@ typedef struct {
 
 	/**
 	 * @brief Called when new data is received from the host on the ISOC OUT endpoint.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
 	 * @param[in] buf: Pointer to the received data buffer.
 	 * @param[in] len: Length of the received data in bytes.
 	 * @return 0 on success, non-zero on failure.
@@ -149,24 +159,32 @@ typedef struct {
 
 	/**
 	 * @brief Called when a data transmission to the host on the BULK IN endpoint is complete.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
 	 * @param[in] status: The status of the transmission.
 	 */
 	void(* bulk_transmitted)(u8 status);
 
 	/**
 	 * @brief Called when a data transmission to the host on the INTR IN endpoint is complete.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
 	 * @param[in] status: The status of the transmission.
 	 */
 	void(* intr_transmitted)(u8 status);
 
 	/**
 	 * @brief Called when a data transmission to the host on the ISOC IN endpoint is complete.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
 	 * @param[in] status: The status of the transmission.
 	 */
 	void(* isoc_transmitted)(u8 status);
 
 	/**
 	 * @brief Called when USB attach status changes for application to support hot-plug events.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
 	 * @param[in] old_status: The previous attach status.
 	 * @param[in] status: The new attach status.
 	 */
@@ -185,11 +203,11 @@ typedef struct {
 	usbd_ep_t ep_intr_in;		/**< INTR IN endpoint structure */
 	usbd_ep_t ep_intr_out;		/**< INTR OUT endpoint structure */
 	usb_dev_t *dev;				/**< Pointer to the USB device instance */
-	usbd_vendor_cb_t *cb;		/**< Pointer to the user-defined callback structure */
+	const usbd_vendor_cb_t *cb;		/**< Pointer to the user-defined callback structure */
 	u8 alt_setting;				/**< Alternate setting number of the current interface */
 } usbd_vendor_dev_t;
-/** @} End of Device_Vendor_Types group*/
-/** @} End of USB_Device_Types group*/
+/** @} End of Device_Vendor_Types group */
+/** @} End of USB_Device_Types group */
 
 /* Exported macros -----------------------------------------------------------*/
 
@@ -209,7 +227,7 @@ typedef struct {
  * @param[in] cb: Pointer to the user-defined callback structure.
  * @return 0 on success, non-zero on failure.
  */
-int usbd_vendor_init(usbd_vendor_cb_t *cb);
+int usbd_vendor_init(const usbd_vendor_cb_t *cb);
 
 /**
  * @brief De-initializes the Vendor class driver.
@@ -271,4 +289,3 @@ int usbd_vendor_receive_isoc_data(void);
 /** @} End of USB_Device_API group */
 
 #endif  /* USBD_VENDOR_H */
-

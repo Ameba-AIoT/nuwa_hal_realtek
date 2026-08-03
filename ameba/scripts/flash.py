@@ -56,14 +56,26 @@ EDT_DEFAULT_NAME: str = "edt.pickle"
 ZEPHYR_DIR_NAME: str = "zephyr"
 
 
-def _get_file_to_label(device: str) -> Dict[str, str]:
+def _get_file_to_label(device: str, image_dir: str = "") -> Dict[str, str]:
     """
     Return filename → partition-label mapping for the given device.
 
     In a sysbuild + MCUBoot build the image directories contain:
       - boot.bin : MCUBoot bootloader  (mcuboot_image.cmake)
-      - app.bin  : signed application  (primary_image.cmake)
+      - app.bin  : signed application  (mcuboot_app_image.cmake)
+
+    In a TFM BL2 build (tfm_s_signed.bin present) the mapping is:
+      - boot.bin           : BL2 bootloader   → "bootloader"
+      - tfm_s_signed.bin   : TFM-S image      → "image-0"
+      - app.bin            : NS application   → "image-0-ns"
     """
+    import os
+    if image_dir and os.path.isfile(os.path.join(image_dir, "tfm_s_signed.bin")):
+        return {
+            "boot.bin":         "bootloader",
+            "tfm_s_signed.bin": "image-0",
+            "app.bin":          "image-0-ns",
+        }
     return {
         "boot.bin": "bootloader",
         "app.bin":  "image-0",
@@ -337,7 +349,7 @@ def collect_all_domain_images(image_dir: str, images: List[List[str]],
     skipped with a warning.
     """
     images.clear()
-    file_to_label = _get_file_to_label(device)
+    file_to_label = _get_file_to_label(device, image_dir)
 
     build_dir = Path(image_dir).resolve().parent.parent
     domains_file = build_dir / "domains.yaml"
@@ -360,6 +372,18 @@ def collect_all_domain_images(image_dir: str, images: List[List[str]],
 
 def main(args):
     multidomain = detect_multidomain(args.image_dir)
+
+    # For TFM BL2 single-domain builds, auto-build the partition table from
+    # edt.pickle so that tfm_s_signed.bin is flashed at the correct slot.
+    if not multidomain and args.images is None:
+        file_to_label = _get_file_to_label(args.device, str(args.image_dir))
+        if "tfm_s_signed.bin" in file_to_label:
+            args.images = []
+            try:
+                collect_image_load_list(str(args.image_dir), args.images, file_to_label)
+            except Exception as e:
+                logger.warning(f"TFM partition table auto-build failed: {e}; falling back to simple mode")
+                args.images = None
 
     # In a sysbuild (multidomain) build west flash invokes this runner once per
     # domain.  We skip every domain except the last one in flash_order, then

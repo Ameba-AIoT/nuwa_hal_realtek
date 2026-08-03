@@ -21,6 +21,7 @@ try:
     from image_process.op_prepend_header import PrependHeader as op_prepend_header
     from image_process.op_pad import Pad as op_pad
     from image_process.utility import parse_map_file
+    from image_process.ameba_layout_addrs import parse_amebasmart_layout_addrs
 except ImportError as e:
     print(f"Error: Failed to import 'image_process' modules: {e}")
     sys.exit(1)
@@ -129,8 +130,7 @@ class FirmwarePacker:
 
     def axf2bin_run(self, mode, *args):
         cmd = [sys.executable, str(AXF2BIN_SCRIPT)]
-        if mode == 'fw_pack':
-             cmd.extend(['--post-build-dir', str(self.target_dir)])
+        cmd.extend(['--post-build-dir', str(self.target_dir)])
         cmd.append(mode)
         cmd.extend([str(a) for a in args])
         self.run_cmd(cmd)
@@ -521,13 +521,15 @@ def handle_amebasmart(p: FirmwarePacker):
     p.axf2bin_run('pad', '-i', bl1, '-l', 32)
     p.axf2bin_run('pad', '-i', fip, '-l', 32)
 
-    # 5. Generate synthetic map file with ATF layout symbols
+    # 5. Generate synthetic map file with ATF layout symbols.
+    layout_addr = parse_amebasmart_layout_addrs(
+        Path(__file__).resolve().parents[1] / 'amebasmart' / 'ameba_layout.ld')
     atf_map = td / 'atf_layout.map'
     with open(atf_map, 'w') as f:
-        f.write("0x0e000020  .xip_image2.text  __flash_text_start__\n")
-        f.write("0x3001fe00  .ca32_bl1_sram    __ca32_bl1_sram_start__\n")
-        f.write("0x70180020  .ca32_bl1_dram    __ca32_bl1_dram_start__\n")
-        f.write("0x70300000  .ca32_fip_dram    __ca32_fip_dram_start__\n")
+        f.write(f"{hex(layout_addr['xip'])}  .xip_image2.text  __flash_text_start__\n")
+        f.write(f"{hex(layout_addr['bl1_sram'])}  .ca32_bl1_sram    __ca32_bl1_sram_start__\n")
+        f.write(f"{hex(layout_addr['bl1_dram'])}  .ca32_bl1_dram    __ca32_bl1_dram_start__\n")
+        f.write(f"{hex(layout_addr['fip'])}  .ca32_fip_dram    __ca32_fip_dram_start__\n")
 
     # 6. Prepend headers
     xip_pre = td / 'xip_image2_prepend.bin'
@@ -575,12 +577,11 @@ def handle_amebasmart(p: FirmwarePacker):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--soc", required=True)
-    parser.add_argument("--bin-file", required=True)
+    parser.add_argument("--bin-file", default='', help="Zephyr binary")
     parser.add_argument("--out-dir", required=True)
     parser.add_argument("--module-dir", required=True)
     parser.add_argument("--bt-coexist", action="store_true")
     parser.add_argument("--mcuboot", action="store_true")
-    parser.add_argument("--sign-version")
     args = parser.parse_args()
 
     try:
@@ -596,6 +597,9 @@ def main():
                 handle_amebag2_mcuboot(packer)
             elif args.soc == "amebadplus":
                 handle_amebadplus_mcuboot(packer)
+            elif args.soc == "amebasmart":
+                logger.error("amebasmart MCUBoot app assembly is driven by mcuboot_app_image.cmake")
+                sys.exit(1)
             else:
                 logger.error(f"MCUBoot not supported for {args.soc}")
                 sys.exit(1)

@@ -24,9 +24,6 @@
 /** @addtogroup Host_Composite_HID_Constants Host Composite HID Constants
  * @{
  */
-#define USBH_COMPOSITE_HID_THREAD_PRIORITY     3U      /**< HID processing thread priority */
-#define USBH_COMPOSITE_HID_MST_COUNT           10U     /**< Maximum support touch count (if applicable) */
-#define USBH_COMPOSITE_HID_MSG_LENGTH          16U     /**< Message queue length */
 
 /* Audio Class Codes (Note: HID is 0x03, defined here for reference) */
 #define USBH_CLASS_HID                         0x03U   /**< USB HID Class Code */
@@ -64,8 +61,8 @@
 #define USBH_HID_CONSUMER_MUTE                 0xE2 /**< Mute */
 #define USBH_HID_CONSUMER_PLAY_PAUSE           0xCD /**< Play/Pause */
 #define USBH_HID_CONSUMER_STOP                 0xB7 /**< Stop */
-/** @} End of Host_Composite_HID_Constants group*/
-/** @} End of USB_Host_Constants group*/
+/** @} End of Host_Composite_HID_Constants group */
+/** @} End of USB_Host_Constants group */
 
 /* Exported types ------------------------------------------------------------*/
 /** @addtogroup USB_Host_Types USB Host Types
@@ -160,17 +157,15 @@ typedef struct {
  * Maintains the context while parsing the HID Report Descriptor.
  */
 typedef struct {
-	u32 usage_page;             /**< Current Usage Page */
+	usbh_composite_hid_ctrl_caps_t *device_info; /**< Pointer to capabilities struct to populate */
 	int logical_min;            /**< Current Logical Minimum */
 	int logical_max;            /**< Current Logical Maximum */
-	u32 report_size;            /**< Current Report Size (bits) */
-	u32 report_count;           /**< Current Report Count */
-	u32 report_id;              /**< Current Report ID */
-
-	int usage_stack_ptr;        /**< Stack pointer for Push/Pop items */
-	int collection_depth;       /**< Current depth of Collection nesting */
-
-	usbh_composite_hid_ctrl_caps_t *device_info; /**< Pointer to capabilities struct to populate */
+	u16 usage_page;             /**< Current Usage Page */
+	u16 report_size;            /**< Current Report Size (bits) */
+	u16 report_count;           /**< Current Report Count */
+	u8 report_id;               /**< Current Report ID */
+	u8 usage_stack_ptr;         /**< Stack pointer for Push/Pop items */
+	u8 collection_depth;        /**< Current depth of Collection nesting */
 } usbh_composite_hid_parse_state;
 
 /**
@@ -198,19 +193,20 @@ typedef struct {
 	__IO u32 event_cnt;                       /**< Debug: Event counter */
 #endif
 	usbh_composite_host_t *driver;            /**< Parent composite driver handle */
-	usbh_composite_hid_usr_cb_t *cb;          /**< User callback pointers */
-	u8 *report_desc;                          /**< Raw Report Descriptor buffer */
-	u8 *hid_ctrl_buf;                         /**< Buffer for control transfers */
+	const usbh_composite_hid_usr_cb_t *cb;    /**< User callback pointers */
+	u8 *report_desc;                          /**< Alias pointer into hid_ctrl_buf (zero-copy). */
+	u8 *hid_ctrl_buf;                         /**< General-purpose control transfer buffer (512 B); also backs report_desc.*/
 	u8 report_desc_status;                    /**< Status of report descriptor retrieval */
 	u8 itf_idx;                               /**< Interface Index */
 	u8 itf_alt_idx;                           /**< Interface Alternate Setting Index */
+	u8 alt_setting_count;                     /**< Number of alternate settings on this HID interface */
 	u8 next_xfer;                             /**< Flag to trigger the next transfer */
 	__IO u8 parse_task_alive;                 /**< Flag to indicate parse task is alive */
 	__IO u8 parse_task_exit;                  /**< Flag to indicate signal parse task is exit */
 	__IO u8 hid_ctrl;                         /**< HID control state */
 } usbh_composite_hid_t;
-/** @} End of Host_Composite_HID_Types group*/
-/** @} End of USB_Host_Types group*/
+/** @} End of Host_Composite_HID_Types group */
+/** @} End of USB_Host_Types group */
 
 /* Exported variables --------------------------------------------------------*/
 extern const usbh_class_driver_t usbh_composite_hid_driver;
@@ -228,7 +224,7 @@ extern const usbh_class_driver_t usbh_composite_hid_driver;
  * @param  cb: Pointer to user callback structure.
  * @return 0 on success, non-zero on failure.
  */
-int usbh_composite_hid_init(usbh_composite_host_t *chost, usbh_composite_hid_usr_cb_t *cb);
+int usbh_composite_hid_init(usbh_composite_host_t *chost, const usbh_composite_hid_usr_cb_t *cb);
 
 /**
  * @brief  De-Initialize the Composite HID class.
@@ -245,4 +241,4 @@ int usbh_composite_hid_handle_report_desc(usb_host_t *host);
 /** @} End of Host_Composite_HID_Functions group */
 /** @} End of USB_Host_Functions group */
 /** @} End of USB_Host_API group */
-#endif // USBH_COMPOSITE_HID_H
+#endif /* USBH_COMPOSITE_HID_H */

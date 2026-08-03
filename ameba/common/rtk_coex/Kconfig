@@ -6,9 +6,7 @@ if REALTEK_AMEBA_ZEPHYR_WIFI
 config BT_COEXIST
 	bool "Enable CoExist"
 	default y if !SOC_SERIES_AMEBAD && !SOC_SERIES_AMEBASMART
-
 	select COEXIST_HOST if !SINGLE_CORE_WIFI
-
 	select PLATFORM_ZEPHYR
 
 config COEXIST_HOST
@@ -18,99 +16,105 @@ config COEXIST_DEV
 config PLATFORM_ZEPHYR
 	bool
 
-if BT_COEXIST && !SOC_SERIES_AMEBAD
-	config COEXIST_EXT
-		bool "Enable Ext Coex Support"
-		default n
-		select COEX_EXT_CHIP_SUPPORT
+config COEXIST_EXT
+	bool "Enable Ext Coex Support"
+	depends on BT_COEXIST && !SOC_SERIES_AMEBAD
+	default n
+	select COEX_EXT_CHIP_SUPPORT
 
-	if COEXIST_EXT
-		choice
-			prompt "PTA Mode"
-			default EXT_PTA_MODE_SIMPLE
-			config EXT_PTA_MODE_SIMPLE
-				bool "PTA Mode Simple"
-			config EXT_PTA_MODE_MULTIPLE
-				bool "PTA Mode Multiple"
-		endchoice
+# PTA Mode
+config EXT_PTA_MODE_SIMPLE
+	bool "PTA Mode Simple"
+	depends on COEXIST_EXT
 
-		choice
-			prompt "Ext Protocol"
-			default EXT_PROTOCOL_WPAN
-			config EXT_PROTOCOL_WPAN
-				bool "Ext WPAN"
-			config EXT_PROTOCOL_BT
-				bool "Ext BT"
-			config EXT_PROTOCOL_BT_WPAN
-				bool "Ext BT&WPAN"
-		endchoice
+config EXT_PTA_MODE_MULTIPLE
+	bool "PTA Mode Multiple"
+	depends on COEXIST_EXT
 
-		choice
-			prompt "Priority Mode"
-			default EXT_PRIORITY_DIRECTIONAL
-			config EXT_PRIORITY_DIRECTIONAL
-				bool "Directional"
-			config EXT_PRIORITY_STATIC
-				depends on EXT_PTA_MODE_SIMPLE
-				bool "Static"
-		endchoice
-		choice
-			prompt "Request Polar"
-			default EXT_REQUEST_POLAR_HIGH
-			config EXT_REQUEST_POLAR_HIGH
-				bool "Request Active High"
-			config EXT_REQUEST_POLAR_LOW
-				depends on EXT_PTA_MODE_SIMPLE
-				bool "Request Active Low"
-		endchoice
-		choice
-			prompt "Gnt Polar"
-			default EXT_GNT_POLAR_LOW
-			config EXT_GNT_POLAR_LOW
-				bool "Gnt Active Low"
-			config EXT_GNT_POLAR_HIGH
-				depends on EXT_PTA_MODE_SIMPLE
-				bool "Gnt Active High"
-		endchoice
+# Ext Protocol
+config EXT_PROTOCOL_WPAN
+	bool "Ext WPAN"
+	depends on COEXIST_EXT
+	default y if COEXIST_EXT
 
-		config EXT_PRI_DET_TIME
-			int "Priority Det Time"
-			range 0 254
-			# 2 for RTL8771H; 0 for Silicon Thread RCP
-			default 2
+config EXT_PROTOCOL_BT
+	bool "Ext BT"
+	depends on COEXIST_EXT
 
-		config EXT_TRX_DET_TIME
-			int "TRX Det Time"
-			range 0 254
-			# 8 for RTL8771H; 20 for Silicon Thread RCP
-			default 8
+config EXT_PROTOCOL_BT_WPAN
+	bool "Ext BT&WPAN"
+	depends on COEXIST_EXT
 
-		# PTA PINMUX PIN set
-		config EXT_PTA_PIN_REQ
-			string "Pin PTA Request"
-			default "PB_0" if SOC_SERIES_AMEBADPLUS
-			default "PA_21" if SOC_SERIES_AMEBAG2
-			default "PA_26" if SOC_SERIES_AMEBAD
-			default "PA_10" if SOC_SERIES_AMEBASMART
+# Priority Mode
+config EXT_PRIORITY_DIRECTIONAL
+	bool "Priority Directional"
+	depends on COEXIST_EXT
+	default y if COEXIST_EXT
 
-		config EXT_PTA_PIN_PRI
-			string "Pin PTA Priority"
-			default "PB_2" if SOC_SERIES_AMEBADPLUS
-			default "PA_18" if SOC_SERIES_AMEBAG2
-			default "PB_1" if SOC_SERIES_AMEBAD
-			default "PA_6" if SOC_SERIES_AMEBASMART
+config EXT_PRIORITY_STATIC
+	bool "Priority Static"
+	depends on COEXIST_EXT && EXT_PTA_MODE_SIMPLE
 
-		config EXT_PTA_PIN_GNT
-			string "Pin PTA Gnt"
-			default "PB_1" if SOC_SERIES_AMEBADPLUS
-			default "PA_19" if SOC_SERIES_AMEBAG2
-			default "PA_27" if SOC_SERIES_AMEBAD
-			default "PA_9" if SOC_SERIES_AMEBASMART
+# Request Polar
+config EXT_REQUEST_POLAR_HIGH
+	bool "Request Active High"
+	depends on COEXIST_EXT
+	default y if COEXIST_EXT
 
-		config COEX_EXT_CHIP_SUPPORT
-			bool
+config EXT_REQUEST_POLAR_LOW
+	bool "Request Active Low"
+	depends on COEXIST_EXT && EXT_PTA_MODE_SIMPLE
 
-	endif
-endif
+# Gnt Polar
+config EXT_GNT_POLAR_LOW
+	bool "Gnt Active Low"
+	depends on COEXIST_EXT
+	default y if COEXIST_EXT
+
+config EXT_GNT_POLAR_HIGH
+	bool "Gnt Active High"
+	depends on COEXIST_EXT && EXT_PTA_MODE_SIMPLE
+
+config EXT_PRI_DET_TIME
+	int "Priority Det Time"
+	depends on COEXIST_EXT
+	range 0 254
+	# 2 for RTL8771H; 0 for Silicon Thread RCP
+	default 2
+
+config EXT_TRX_DET_TIME
+	int "TRX Det Time"
+	depends on COEXIST_EXT
+	range 0 254
+	# 8 for RTL8771H; 20 for Silicon Thread RCP
+	default 8
+
+# PTA PINMUX PIN set
+config EXT_PTA_PIN_REQ
+	string "Pin PTA Request"
+	depends on COEXIST_EXT
+	default "PB_0" if SOC_SERIES_AMEBADPLUS
+	default "PA_21" if SOC_SERIES_AMEBAG2
+	default "PA_26" if SOC_SERIES_AMEBAD
+	default "PA_10" if SOC_SERIES_AMEBASMART
+
+config EXT_PTA_PIN_PRI
+	string "Pin PTA Priority"
+	depends on COEXIST_EXT
+	default "PB_2" if SOC_SERIES_AMEBADPLUS
+	default "PA_18" if SOC_SERIES_AMEBAG2
+	default "PB_1" if SOC_SERIES_AMEBAD
+	default "PA_6" if SOC_SERIES_AMEBASMART
+
+config EXT_PTA_PIN_GNT
+	string "Pin PTA Gnt"
+	depends on COEXIST_EXT
+	default "PB_1" if SOC_SERIES_AMEBADPLUS
+	default "PA_19" if SOC_SERIES_AMEBAG2
+	default "PA_27" if SOC_SERIES_AMEBAD
+	default "PA_9" if SOC_SERIES_AMEBASMART
+
+config COEX_EXT_CHIP_SUPPORT
+	bool
 
 endif # REALTEK_AMEBA_ZEPHYR_WIFI

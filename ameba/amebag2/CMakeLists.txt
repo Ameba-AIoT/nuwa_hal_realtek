@@ -26,6 +26,8 @@ zephyr_link_libraries_ifdef(CONFIG_USB_HOST_AMEBA
   ${LIB_PATH}/lib_usbh.a
 )
 
+zephyr_library_sources_ifdef(CONFIG_USBH_UVC source/fwlib/ram_common/ameba_uvc.c)
+
 zephyr_link_libraries_ifdef(CONFIG_PM
   ${LIB_PATH}/lib_pmc.a
 )
@@ -44,6 +46,8 @@ zephyr_include_directories(
 zephyr_library_sources(
   source/fwlib/ram_common/ameba_reset.c
   source/fwlib/ram_common/ameba_clk.c
+  source/fwlib/ram_common/ameba_pll.c
+  source/fwlib/ram_common/ameba_gpio_ram.c
   source/fwlib/ram_common/ameba_rcc.c
   source/fwlib/ram_common/ameba_arch.c
   source/fwlib/ram_common/ameba_ipc_api.c
@@ -60,7 +64,6 @@ zephyr_library_sources_ifdef(CONFIG_AMEBA_LCDC source/fwlib/ram_common/ameba_lcd
 zephyr_library_sources_ifdef(CONFIG_MIPI_DBI_AMEBA_LCDC source/fwlib/ram_common/ameba_lcdc.c)
 zephyr_library_sources_ifdef(CONFIG_INPUT_CTC_AMEBA source/fwlib/ram_common/ameba_captouch.c)
 zephyr_library_sources_ifdef(CONFIG_I2S_AMEBA source/fwlib/ram_common/ameba_audio_clock.c)
-zephyr_library_sources_ifdef(CONFIG_I2S_AMEBA source/fwlib/ram_common/ameba_pll.c)
 zephyr_library_sources_ifdef(CONFIG_AUDIO_AMEBA_DMIC source/fwlib/ram_common/ameba_codec.c)
 zephyr_library_sources_ifdef(CONFIG_SOC_FLASH_AMEBA source/fwlib/ram_common/ameba_flash_ram.c)
 zephyr_library_sources_ifdef(CONFIG_DMA_AMEBA source/fwlib/ram_common/ameba_gdma_ram.c)
@@ -83,9 +86,7 @@ zephyr_library_sources_ifdef(CONFIG_PM
   source/fwlib/ram_common/ameba_pmu.c
   source/fwlib/ram_common/ameba_pmctimer.c
   source/fwlib/ram_common/ameba_psram.c
-  source/fwlib/ram_common/ameba_pll.c
   source/fwlib/ram_common/ameba_pmc_com.c
-  source/fwlib/ram_common/ameba_gpio_ram.c
   source/fwlib/ram_common/ameba_aontimer.c
   source/fwlib/ram_km4tz/ameba_pmc.c
 )
@@ -97,14 +98,7 @@ zephyr_library_sources_ifdef(CONFIG_MCUBOOT
   source/loader/mcuboot/boot_prepare.c
   source/fwlib/ram_common/ameba_psram.c
   source/fwlib/ram_common/ameba_ldo.c
-  source/fwlib/ram_common/ameba_pll.c
   source/fwlib/ram_km4tz/ameba_flashclk.c
-)
-
-#OPTIMIZE: Place these source file to a common place
-zephyr_library_sources_ifdef(CONFIG_MCUBOOT_HW_DOWNGRADE_PREVENTION
-  source/loader/mcuboot/ameba_security_counter_utils.c
-  source/loader/mcuboot/mcuboot_security_cnt.c
 )
 
 if(CONFIG_MCUBOOT)

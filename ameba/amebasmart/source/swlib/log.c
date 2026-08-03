@@ -200,7 +200,7 @@ void rtk_log_memory_dump_byte(uint8_t *src, uint32_t len)
 *           2. example:
 *           [0xe005263]   7c 03 f0 7f 03 23 74 cf  e7 07 25 cd e7 a1 69 30  ||....#t...%...i0|
 ***/
-extern int isprint(int c);
+#include <ctype.h>  /* isprint */
 void rtk_log_memory_dump2char(const char *src_buff, uint32_t buff_len)
 {
 	//If src_buff length is eaqul to zero, exit.

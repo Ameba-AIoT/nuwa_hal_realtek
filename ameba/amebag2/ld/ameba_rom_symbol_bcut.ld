@@ -206,11 +206,11 @@ SECTIONS
     PROVIDE(OTPGetCRC = 0x105fc5);
     PROVIDE(OTP_Read8 = 0x105fe1);
     PROVIDE(OTP_Read32 = 0x106025);
-    PROVIDE(otp_logical_remain = 0x1060a1);
-    PROVIDE(OTPSetCRC = 0x1060bb);
-    PROVIDE(OTP_LogicalMap_Read = 0x1061c9);
+    PROVIDE(OTP_LogicalGetRemain = 0x1060a1);
+    PROVIDE(OTP_SetCRC = 0x1060bb);
+    PROVIDE(OTP_LogicalRead = 0x1061c9);
     PROVIDE(OTP_Write8 = 0x1062c9);
-    PROVIDE(OTP_LogicalMap_Write = 0x106415);
+    PROVIDE(OTP_LogicalWrite = 0x106415);
     PROVIDE(shell_array_init = 0x1065d5);
     PROVIDE(shell_get_argc = 0x1065e3);
     PROVIDE(shell_get_argv = 0x10660f);

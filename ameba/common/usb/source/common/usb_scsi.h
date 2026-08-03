@@ -46,7 +46,8 @@
 #define READ_FORMAT_CAPACITY_DATA_LEN               12U
 #define MODE_SENSE10_DATA_LEN                       8U
 #define MODE_SENSE6_DATA_LEN                        4U
-#define PAGE00_INQUIRY_DATA_LEN	                    7U
+#define PAGE00_INQUIRY_DATA_LEN	                    6U
+#define PAGE80_INQUIRY_DATA_LEN                     8U
 
 #define CBW_CB_LENGTH                               16U
 #define CBW_LENGTH                                  10U
@@ -88,4 +89,4 @@
 #define SCSI_ASCQ_INITIALIZING_COMMAND_REQUIRED     0x02
 #define SCSI_ASCQ_OPERATION_IN_PROGRESS             0x07
 
-#endif // USB_SCSI_H
+#endif /* USB_SCSI_H */

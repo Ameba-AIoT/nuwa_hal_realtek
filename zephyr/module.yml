@@ -4,5 +4,5 @@ package-managers:
     requirement-files:
       - ameba/scripts/requirements.txt
 build:
-  cmake: .
-  kconfig: Kconfig
+  cmake-ext: True
+  kconfig-ext: True

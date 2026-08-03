@@ -26,6 +26,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'image_
 from image_process.utility import default_logger
 from image_process.context import Context
 
+from image_process.op_amebasmart_boot_assets import AmebasmartBootAssets as op_amebasmart_boot_assets
 from image_process.op_compress import Compress as op_compress
 from image_process.op_encrypt import Encrypt as op_encrypt
 from image_process.op_firmware_package import FirmwarePackage as op_fw_pack

@@ -35,8 +35,8 @@
 #define COMP_CDC_ACM_HS_INTR_IN_INTERVAL                 8U  /**< High-speed Interrupt IN endpoint polling interval. */
 #define COMP_CDC_ACM_FS_INTR_IN_INTERVAL                 8U  /**< Full-speed Interrupt IN endpoint polling interval. */
 
-/** @} End of Device_Composite_CDC_ACM_Constants group*/
-/** @} End of USB_Device_Constants group*/
+/** @} End of Device_Composite_CDC_ACM_Constants group */
+/** @} End of USB_Device_Constants group */
 
 /* Exported types ------------------------------------------------------------*/
 
@@ -54,9 +54,24 @@
 typedef struct {
 	int(* init)(void);                             /**< Called during class driver initialization for application resource setup. */
 	int(* deinit)(void);                           /**< Called during class driver deinitialization for resource cleanup. */
-	int(* setup)(usb_setup_req_t *req, u8 *buf);   /**< Called during control transfer SETUP/DATA phases to handle application-specific control requests. */
-	int(* received)(u8 *buf, u32 len);             /**< Called when new data is received on the Bulk OUT endpoint. */
-	void(* transmitted)(u8 status);                /**< Called after data transmission on the Bulk IN endpoint is complete. */
+	/**
+	 * @brief Called during control transfer SETUP/DATA phases to handle application-specific control requests.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
+	 */
+	int(* setup)(usb_setup_req_t *req, u8 *buf);
+	/**
+	 * @brief Called when new data is received on the Bulk OUT endpoint.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
+	 */
+	int(* received)(u8 *buf, u32 len);
+	/**
+	 * @brief Called after data transmission on the Bulk IN endpoint is complete.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
+	 */
+	void(* transmitted)(u8 status);
 } usbd_composite_cdc_acm_usr_cb_t;
 
 #if CONFIG_COMP_CDC_ACM_NOTIFY
@@ -81,7 +96,7 @@ typedef struct {
  */
 typedef struct {
 	usbd_composite_dev_t *cdev;           /**< Pointer to the parent composite device structure. */
-	usbd_composite_cdc_acm_usr_cb_t *cb;  /**< Pointer to the user-registered callback structure. */
+	const usbd_composite_cdc_acm_usr_cb_t *cb;  /**< Pointer to the user-registered callback structure. */
 	usbd_ep_t ep_bulk_in;                 /**< Bulk IN endpoint handler. */
 	usbd_ep_t ep_bulk_out;                /**< Bulk OUT endpoint handler. */
 #if CONFIG_COMP_CDC_ACM_NOTIFY
@@ -89,8 +104,8 @@ typedef struct {
 #endif
 } usbd_composite_cdc_acm_dev_t;
 
-/** @} End of Device_Composite_CDC_ACM_Types group*/
-/** @} End of USB_Device_Types group*/
+/** @} End of Device_Composite_CDC_ACM_Types group */
+/** @} End of USB_Device_Types group */
 
 /* Exported macros -----------------------------------------------------------*/
 
@@ -115,7 +130,7 @@ extern const usbd_class_driver_t usbd_composite_cdc_acm_driver;
  * @param[in] cb: Pointer to the user callback structure.
  * @return 0 on success, non-zero on failure.
  */
-int usbd_composite_cdc_acm_init(usbd_composite_dev_t *cdev, u16 bulk_out_xfer_size, u16 bulk_in_xfer_size, usbd_composite_cdc_acm_usr_cb_t *cb);
+int usbd_composite_cdc_acm_init(usbd_composite_dev_t *cdev, u16 bulk_out_xfer_size, u16 bulk_in_xfer_size, const usbd_composite_cdc_acm_usr_cb_t *cb);
 
 /**
  * @brief De-initializes the CDC ACM composite function.

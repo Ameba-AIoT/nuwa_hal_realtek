@@ -38,6 +38,7 @@ zephyr_library_sources(
   source/fwlib/ram_common/ameba_pll.c
   source/fwlib/ram_common/ameba_ipc_api.c
   source/fwlib/ram_common/ameba_arch.c
+  source/fwlib/ram_common/ameba_wdg.c
   source/swlib/log.c
   source/lib/chipinfo/ameba_rom_patch.c
   source/fwlib/ram_common/ameba_reset.c
@@ -56,7 +57,6 @@ zephyr_library_sources_ifdef(CONFIG_COUNTER_TMR_AMEBA source/fwlib/ram_common/am
 if(CONFIG_UART_AMEBA_LOGUART OR CONFIG_UART_AMEBA)
     zephyr_library_sources(source/fwlib/ram_common/ameba_uart.c)
 endif()
-zephyr_library_sources_ifdef(CONFIG_WDT_AMEBA source/fwlib/ram_common/ameba_wdg.c)
 zephyr_library_sources_ifdef(CONFIG_WIFI_AMEBA source/misc/ameba_freertos_pmu.c)
 zephyr_library_sources_ifdef(CONFIG_WIFI_AMEBA source/swlib/sscanf_minimal.c)
 

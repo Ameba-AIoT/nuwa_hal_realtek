@@ -7,6 +7,29 @@
 #include <ameba_soc.h>
 #include "ameba_security_counter_utils.h"
 
+/*
+ * OTP_USER_START (see ameba_otpc.h) is 0x380 on every Ameba SoC that has
+ * shipped this file so far (g2, dplus, smart) — the first word of the OTP
+ * user-programmable region. IMG0 and IMG1 currently alias the same word:
+ * there is one shared counter regardless of image_id, not one per image. A
+ * SoC that needs independent per-image counters can #define these three
+ * ahead of including this header to move IMG0/IMG1 to distinct OTP words.
+ */
+#ifndef SEC_COUNTER_IMG0
+#define SEC_COUNTER_IMG0 0x380 /* sysreg_sec 0x380 [31:0] */
+#pragma message "Using default SEC_COUNTER_IMG0 = 0x380"
+#endif
+
+#ifndef SEC_COUNTER_IMG1
+#define SEC_COUNTER_IMG1 0x380 /* sysreg_sec 0x380 [31:0] */
+#pragma message "Using default SEC_COUNTER_IMG1 = 0x380"
+#endif
+
+#ifndef SEC_COUNTER_NONE
+#define SEC_COUNTER_NONE 0x380
+#pragma message "Using default SEC_COUNTER_NONE = 0x380"
+#endif
+
 bool ameba_sec_counter_get_addr(uint32_t image_id, uint32_t *addr)
 {
 	if (addr == NULL) {
@@ -148,7 +171,7 @@ int32_t ameba_sec_counter_update(uint32_t image_id, uint32_t img_security_cnt)
 	ameba_sec_counter_build_target_words(img_security_cnt, target_value);
 	for (uint8_t i = 0; i < WORD_CNT; i++) {
 		if ((current_value[i] & target_value[i]) != target_value[i]) {
-			RTK_LOGE(NOTAG, "OTP violation: 0->1 attempt (current =0x%08x, target =0x%08x)",
+			RTK_LOGE(NOTAG, "OTP violation: 0->1 attempt (current=0x%08x, target=0x%08x)",
 					 current_value[i], target_value[i]);
 			return RTK_FAIL;
 		}
@@ -159,7 +182,7 @@ int32_t ameba_sec_counter_update(uint32_t image_id, uint32_t img_security_cnt)
 		return ret;
 	}
 
-	RTK_LOGI(NOTAG, "Update success - image_id=%u, current_counter=%u -> %u", image_id, current_counter,
+	RTK_LOGI(NOTAG, "Update success - image_id=%u, current=%u -> %u", image_id, current_counter,
 			 img_security_cnt);
 	return RTK_SUCCESS;
 }

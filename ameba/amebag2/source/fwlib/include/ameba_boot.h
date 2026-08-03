@@ -62,12 +62,14 @@ extern u8 __retrieve_ap_buffer_size__[];
 extern u8 __km4tz_tz_nsc_start__[];
 extern u8 __km4tz_tz_entry_start__[];
 extern u8 __km4tz_tz_entry_end__[];
+extern u8 __image3_entry_func__[];  /* used when CONFIG_TRUSTZONE */
 extern u8 __km4tz_bd_ram_start__[];
 
 extern u8 __km4tz_psram_tz_nsc_start__[];
 extern u8 __km4tz_psram_tz_entry_start__[];
 extern u8 __km4tz_psram_tz_entry_end__[];
 extern u8 __km4tz_bd_psram_start__[];
+extern u8 __non_secure_psram_start__[];  /* NS PSRAM base, used by ameba_boot_trustzonecfg.c */
 extern u8 __non_secure_psram_end__[]; /* if psram is 8MB, than write 0x60800000 will write 0x60000000 */
 
 #ifdef CONFIG_WIFI_HOST_CONTROL

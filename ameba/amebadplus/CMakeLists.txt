@@ -93,12 +93,6 @@ zephyr_library_sources_ifdef(CONFIG_MCUBOOT
   source/fwlib/ram_km4/ameba_flashclk.c
 )
 
-#OPTIMIZE: Place these source file to a common place
-zephyr_library_sources_ifdef(CONFIG_MCUBOOT_HW_DOWNGRADE_PREVENTION
-  source/loader/mcuboot/ameba_security_counter_utils.c
-  source/loader/mcuboot/mcuboot_security_cnt.c
-)
-
 if(CONFIG_MCUBOOT)
   zephyr_link_libraries(-T${CMAKE_CURRENT_SOURCE_DIR}/ld/ameba_rom_symbol_acut_s.ld)
 else()

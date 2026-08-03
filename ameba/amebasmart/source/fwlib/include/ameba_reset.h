@@ -81,13 +81,11 @@ enum CHIPEN_WORK_MODE {
 	CHIPEN_PULSE_RESET_MODE = 2,
 };
 
-
-enum CPU_ID {
+enum AMEBA_CPU_ID {
 	LP_CPU_ID = 0,
 	NP_CPU_ID = 1,
 	AP_CPU_ID = 2,
 };
-
 
 #define SYS_RESET_KEY 0x96969696
 #define SYS_RESET_TRIG 0x69696969

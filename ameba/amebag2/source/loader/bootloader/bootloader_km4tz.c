@@ -22,21 +22,6 @@ extern PSRAMINFO_TypeDef PsramInfo;
 		}                                                  \
 	} while (0)
 
-__NO_RETURN void BOOT_NsStart(u32 Addr)
-{
-#ifndef CONFIG_TRUSTZONE
-	FuncPtr pFunc = (FuncPtr)Addr;
-	pFunc();
-#endif
-
-	/* jump to ns world */
-	nsfunc *fp = (nsfunc *)cmse_nsfptr_create(Addr);
-	fp();
-
-	/* avoid compiler to pop stack when exit BOOT_NsStart */
-	while (1);
-}
-
 __NO_RETURN void BOOT_ClearMSP_NsStart(u32 Addr)
 {
 	// do not use bss section after, because fullmac pg loader will overlay bss section
@@ -59,7 +44,11 @@ __NO_RETURN void BOOT_ClearMSP_NsStart(u32 Addr)
 
 	DCache_CleanInvalidate(MSPLIM_RAM_HP, MSP_RAM_HP - MSPLIM_RAM_HP);
 
-	BOOT_NsStart(Addr);
+	FuncPtr pFunc = (FuncPtr)Addr;
+	pFunc();
+
+	/* avoid compiler to pop stack */
+	while (1);
 }
 
 /* open some always on functions in this function */
@@ -94,12 +83,6 @@ int BOOT_PSRAM_Init(void)
 {
 	u8 pinname;
 	PSPHY_InitTypeDef PSPHY_InitStruct;
-
-	/* return directly to save code size*/
-#if defined(CONFIG_DISABLE_PSRAM)
-	RTK_LOGI(TAG, "CONFIG_DISABLE_PSRAM\r\n");
-	return RTK_FAIL;
-#endif
 
 	if (meminfo.mem_type != MCM_TYPE_PSRAM) {
 		return RTK_FAIL;
@@ -158,7 +141,13 @@ void BOOT_SCBConfig_HP(void)
 
 void BOOT_ImgCopy(void *__restrict dst0, const void *__restrict src0, size_t len0)
 {
-	BOOT_ROM_Copy(dst0, src0, len0);
+	if (SYSCFG_OTP_BootFromNor()) {
+		BOOT_ROM_Copy(dst0, src0, len0);
+	} else {
+		u32 NandAddr = Nand_L2P_Table((u32)src0) + SPI_FLASH_BASE;
+		BOOT_ROM_Copy(dst0, (void *)NandAddr, len0);
+	}
+
 }
 
 u32 BOOT_LoadImages(void)
@@ -234,13 +223,14 @@ void BOOT_Share_Cache_To_TCM(void)
 	/* Set NP TCM share bit */
 	HAL_WRITE32(SYSTEM_CTRL_BASE_S, REG_LSYS_PLAT_STATUS, HAL_READ32(SYSTEM_CTRL_BASE_S, REG_LSYS_PLAT_STATUS) | LSYS_BIT_KM4NS_SHARE_CACHE_MEM);
 
-#ifdef CONFIG_FULLMAC_IN_SINGLE_DIE // When fullmac support XIP, need enable Cache and cannot share cache to TCM
-	/* Disable AP CPU cache */
-	Cache_Enable(DISABLE);
+	// // When fullmac support XIP, need enable Cache and cannot share cache to TCM
+	// if(MCM_SINGLE_DIE == ChipInfo_MemoryType()) {
+	// 	/* Disable AP CPU cache */
+	// 	Cache_Enable(DISABLE);
 
-	/* Set AP TCM share bit */
-	HAL_WRITE32(SYSTEM_CTRL_BASE_S, REG_LSYS_PLAT_STATUS, HAL_READ32(SYSTEM_CTRL_BASE_S, REG_LSYS_PLAT_STATUS) | LSYS_BIT_KM4TZ_SHARE_CACHE_MEM);
-#endif
+	// 	/* Set AP TCM share bit */
+	// 	HAL_WRITE32(SYSTEM_CTRL_BASE_S, REG_LSYS_PLAT_STATUS, HAL_READ32(SYSTEM_CTRL_BASE_S, REG_LSYS_PLAT_STATUS) | LSYS_BIT_KM4TZ_SHARE_CACHE_MEM);
+	// }
 }
 
 void BOOT_Config_PMC_Role(void)
@@ -255,7 +245,12 @@ void BOOT_Config_PMC_Role(void)
 
 void BOOT_WakeFromPG(void)
 {
-	PRAM_START_FUNCTION Image2EntryFun = (PRAM_START_FUNCTION)__image2_entry_func__;
+#ifndef CONFIG_TRUSTZONE
+	PRAM_START_FUNCTION ImageEntryFun = (PRAM_START_FUNCTION)__image2_entry_func__;
+#else
+	PRAM_START_FUNCTION ImageEntryFun = (PRAM_START_FUNCTION)__image3_entry_func__;
+#endif
+
 	FIH_DECLARE(fih_rc, FIH_FAILURE);
 
 	/* Config Non-Security World Registers Firstly in BOOT_WakeFromPG */
@@ -270,7 +265,7 @@ void BOOT_WakeFromPG(void)
 	/* Set PSPS Temp */
 	__set_PSP(MSP_RAM_HP_NS - 2048);
 
-	BOOT_NsStart((u32)Image2EntryFun->RamWakeupFun);
+	ImageEntryFun->RamWakeupFun();
 
 exit:
 	while (1);
@@ -299,23 +294,21 @@ void BOOT_SWD_SwCtrl(void)
 
 void BOOT_Log_Init(void)
 {
-	u32 ChipType;
-
 	/* close AGG function for auto test */
-	if (Boot_Agg_En) {
-		ChipType = SYSCFG_CHIPType_Get();
-		if (!(ChipType == CHIP_TYPE_PALADIUM)) {
-			/* open loguart agg function */
-			LOGUART_WaitTxComplete();
-			LOGUART_AGGPathCmd(LOGUART_DEV, LOGUART_PATH_INDEX_1, DISABLE);
-			LOGUART_AGGCmd(LOGUART_DEV, ENABLE);
-			LOGUART_AGGPathCmd(LOGUART_DEV, LOGUART_PATH_INDEX_1, ENABLE);
-		}
-	} else {
+#ifdef CONFIG_LOGUART_AGG_EN
+	u32 ChipType = SYSCFG_CHIPType_Get();
+	if (!(ChipType == CHIP_TYPE_PALADIUM)) {
+		/* open loguart agg function */
 		LOGUART_WaitTxComplete();
-		/* counter src is xtal40MHz when agg_en is 0 */
-		LOGUART_AGGSetTimeOut(LOGUART_DEV, 0x3FFF);
+		LOGUART_AGGPathCmd(LOGUART_DEV, LOGUART_PATH_INDEX_1, DISABLE);
+		LOGUART_AGGCmd(LOGUART_DEV, ENABLE);
+		LOGUART_AGGPathCmd(LOGUART_DEV, LOGUART_PATH_INDEX_1, ENABLE);
 	}
+#else
+	LOGUART_WaitTxComplete();
+	/* counter src is xtal40MHz when agg_en is 0 */
+	LOGUART_AGGSetTimeOut(LOGUART_DEV, 0x3FFF);
+#endif
 
 	/* open NP log */
 	LOGUART_AGGPathCmd(LOGUART_DEV, LOGUART_PATH_INDEX_2, ENABLE);
@@ -347,6 +340,10 @@ bool BOOT_RRAM_InfoValid(void)
 }
 
 // 3 Image 1
+/* Originally used in the FreeRTOS boot flow without weak linkage.
+ * Marked as weak for Zephyr code reuse, so it can be overridden by
+ * the Zephyr-specific redirection implementation.
+ */
 __weak void BOOT_Image1(void)
 {
 	PRAM_START_FUNCTION Image2EntryFun = (PRAM_START_FUNCTION)__image2_entry_func__;
@@ -373,6 +370,10 @@ __weak void BOOT_Image1(void)
 		RRAM_DEV->MAGIC_NUMBER = 0x6969A5A5;
 	}
 
+	/* Enable divide-by-zero fault for both S and NS worlds */
+	SCB->CCR    |= SCB_CCR_DIV_0_TRP_Msk;
+	SCB_NS->CCR |= SCB_CCR_DIV_0_TRP_Msk;
+
 	BOOT_VerCheck();
 
 	BOOT_SOC_ClkSet();
@@ -398,12 +399,13 @@ __weak void BOOT_Image1(void)
 		LDO_MemSetInSleep(MLDO_SLEEP);
 	}
 
-#if !(!defined (CONFIG_WHC_INTF_IPC) && defined (CONFIG_WHC_DEV))
-	BOOT_Data_Flash_Init();
+	u32 Temp = SYSCFG_OTP_BOOTSEL();
+	if ((Temp == BOOT_FROM_FLASH) || (Temp == BOOT_FROM_FLASH1)) {
+		BOOT_Data_Flash_Init();
 
-	flash_highspeed_setup();
-	BOOT_LoadImages();
-#endif
+		flash_highspeed_setup();
+		BOOT_LoadImages();
+	}
 
 	/* it will switch shell control to NP, disable loguart interrupt to avoid loguart irq not assigned in non-secure world.
 	 it should switch before BOOT_RAM_TZCfg to avoid crash when loguart intr occur but it has been set to ns intr. */
@@ -424,7 +426,10 @@ __weak void BOOT_Image1(void)
 	BOOT_Enable_NP();
 #else
 	BOOT_Share_Cache_To_TCM();
-	Boot_Fullmac_LoadIMGAll();
+	Temp = SYSCFG_OTP_BOOTSEL();
+	if ((Temp != BOOT_FROM_FLASH) && (Temp != BOOT_FROM_FLASH1)) {
+		Boot_Fullmac_LoadIMGAll();
+	}
 #endif
 
 	// vector_table = (u32 *)Image2EntryFun->VectorNS;
@@ -446,7 +451,12 @@ __weak void BOOT_Image1(void)
 	/* Set the depth of the stack to dump. */
 	crash_SetExStackDepth(MIN_DUMP_DEPTH);
 
+#ifndef CONFIG_TRUSTZONE
 	BOOT_ClearMSP_NsStart((u32)Image2EntryFun->RamStartFun);
+#else
+	PRAM_START_FUNCTION Image3EntryFun = (PRAM_START_FUNCTION)__image3_entry_func__;
+	BOOT_ClearMSP_NsStart((u32)Image3EntryFun->RamStartFun);
+#endif
 
 exit:
 	SBOOT_Validate_Fail_Stuck(FALSE);

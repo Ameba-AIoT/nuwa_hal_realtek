@@ -10,20 +10,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#ifndef SEC_COUNTER_IMG0
-#define SEC_COUNTER_IMG0 0x380 /* sysreg_sec 0x380 [31:0] for km4tz */
-#warning "Using default SEC_COUNTER_IMG0 = 0x380"
-#endif
-
-#ifndef SEC_COUNTER_IMG1
-#define SEC_COUNTER_IMG1 0x380 /* sysreg_sec 0x380 [31:0] for km4ns */
-#warning "Using default SEC_COUNTER_IMG1 = 0x380"
-#endif
-
-#ifndef SEC_COUNTER_NONE
-#define SEC_COUNTER_NONE 0x380
-#endif
-
 #define MAX_SEC_COUNTER_BITS 32u
 #define WORD_BITS            32u
 #define WORD_CNT             (MAX_SEC_COUNTER_BITS / WORD_BITS)

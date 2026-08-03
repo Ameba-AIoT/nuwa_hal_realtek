@@ -79,6 +79,13 @@ void BOOT_SOC_ClkSet(void)
 	}
 
 	/* 6. set cpu to pll */
+	/* No semaphore needed: KM4NS has not started yet at this point */
+	RRAM_DEV->clk_info_bk.USBPLL_CLK = pSocClk_Info->USBPLL_CLK;
+	RRAM_DEV->clk_info_bk.SYSPLL_CLK = pSocClk_Info->SYSPLL_CLK;
+	RRAM_DEV->clk_info_bk.Vol_Type = pSocClk_Info->Vol_Type;
+	RRAM_DEV->clk_info_bk.CPU_CKD = pSocClk_Info->CPU_CKD;
+
+	/* 6. set cpu to pll */
 	if (pSocClk_Info->CPU_CKD & IS_SYS_PLL) {
 		RCC_PeriphClockDividerSet(SYS_PLL_HP, GET_CLK_DIV(pSocClk_Info->CPU_CKD));
 		RCC_PeriphClockSourceSet(HP, SYS_PLL);
@@ -146,10 +153,6 @@ void BOOT_SOC_ClkSet(void)
 
 	/* 8. save clock info ro retention memory */
 	IPC_SEMTake(IPC_SEM_RRAM, 0xffffffff);
-	RRAM_DEV->clk_info_bk.USBPLL_CLK = pSocClk_Info->USBPLL_CLK;
-	RRAM_DEV->clk_info_bk.SYSPLL_CLK = pSocClk_Info->SYSPLL_CLK;
-	RRAM_DEV->clk_info_bk.Vol_Type = pSocClk_Info->Vol_Type;
-	RRAM_DEV->clk_info_bk.CPU_CKD = pSocClk_Info->CPU_CKD;
 	RRAM_DEV->clk_info_bk.shperi_ckd = shperi_ckd;
 	RRAM_DEV->clk_info_bk.hperi_ckd = hperi_ckd;
 	RRAM_DEV->clk_info_bk.psramc_ckd = psramc_ckd;

@@ -63,6 +63,12 @@
 /* AUTO_GEN_END */
 
 /* MANUAL_GEN_START */
+/* Same include guard as MCUboot's own bootutil/fault_injection_hardening.h;
+ * skip it under Zephyr so bootutil's richer fih_ret definition wins. */
+#ifndef __ZEPHYR__
+#include "fault_injection_hardening.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -89,6 +95,12 @@ typedef struct {
 	u32 End;
 	u32 NSC;
 } TZ_CFG_TypeDef;
+
+typedef struct {
+	u32 Start;
+	u32 End;
+	u32 NSC;
+} SAU_CFG_TypeDef;
 
 typedef enum {
 	SECFG_WIFI_CFG = 0,
@@ -167,6 +179,7 @@ typedef enum {
 #define MPC_CNT					2
 
 void BOOT_RAM_TZCfg(void);
+void BOOT_CPU_TZCfg(const SAU_CFG_TypeDef *sau_config);
 void TZ_ConfigSlaveSecurity(PPC_PeripheralId Perip, u32 Status);
 
 

@@ -72,8 +72,8 @@
 
 
 
-/** @} End of Device_Composite_UAC_Constants group*/
-/** @} End of USB_Device_Constants group*/
+/** @} End of Device_Composite_UAC_Constants group */
+/** @} End of USB_Device_Constants group */
 
 /* Exported types ------------------------------------------------------------*/
 /** @addtogroup USB_Device_Types USB Device Types
@@ -108,6 +108,8 @@ typedef struct {
 
 	/**
 	 * @brief Called during control transfer SETUP/DATA phases to handle class-specific SETUP requests.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
 	 * @param[in] req: Pointer to the setup request packet.
 	 * @param[out] buf: Pointer to a buffer for data stage of control transfers.
 	 * @return 0 on success, non-zero on failure.
@@ -116,12 +118,16 @@ typedef struct {
 
 	/**
 	 * @brief Notifies application layer when UAC driver becomes operational.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
 	 * @return 0 on success, non-zero on failure.
 	 */
 	int(* set_config)(void);
 
 	/**
 	 * @brief Called when USB attach status changes for application to support hot-plug events.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
 	 * @param[in] old_status: The previous attach status.
 	 * @param[in] status: The new attach status.
 	 */
@@ -129,18 +135,24 @@ typedef struct {
 
 	/**
 	 * @brief Handles mute setting updates from USB host.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
 	 * @param[in] mute: Mute value, 0 unmute, 1 mute
 	 */
 	int(* mute_changed)(u8 mute);
 
 	/**
 	 * @brief Adjusts playback volume according to host-side volume changes.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
 	 * @param[in] volume: Volume value, from 0~100
 	 */
 	int(* volume_changed)(u8 volume);
 
 	/**
 	 * @brief Called when the audio parameters(sample rate/channels) are modified by host.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
 	 * @param[in] sampling_freq: New sample frequency.
 	 * @param[in] ch_cnt: New channel count. such as 2,4,6,8...
 	 * @param[in] byte_width: New byte width, such as 1,2,3,4.
@@ -149,11 +161,13 @@ typedef struct {
 
 	/**
 	 * @brief Called upon SOF interrupt for clock synchronization.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
 	 */
 	int(* sof)(void);
 } usbd_composite_uac_usr_cb_t;
-/** @} End of Device_Composite_UAC_Types group*/
-/** @} End of USB_Device_Types group*/
+/** @} End of Device_Composite_UAC_Types group */
+/** @} End of USB_Device_Types group */
 
 typedef struct {
 	usbd_audio_cfg_t audio_config;  /* Audio config */
@@ -182,13 +196,32 @@ typedef struct {
 
 	__IO u32 timeout_cnt;
 	__IO u32 overwrite_cnt;
+	__IO u32 append_overwrite_cnt;
 #endif
 
 	__IO u16 written;        /* Part write data length */
 
 	__IO u16 mps;
-	__IO u8 sema_valid;      /* Sema is valid */
-	__IO u8 wait_sema;       /* Wait sema */
+	/*
+	 * sema_active_status: runtime "activation window" of isoc_sema.
+	 *   1 -> reader may sema_take; ISR / other givers may sema_give.
+	 *   0 -> semaphore is being torn down or not yet armed; readers must
+	 *        break out (with sema_wait_status cleared) and givers must skip.
+	 *
+	 * This is DIFFERENT from "isoc_sema != NULL" (physical existence): the
+	 * semaphore object is kept alive across hot-plug cycles to avoid a
+	 * use-after-free in the reader thread, so the pointer stays non-NULL
+	 * while sema_active_status toggles 1 -> 0 on every unplug and 0 -> 1 on every
+	 * fresh init.
+	 */
+	__IO u8 sema_active_status;
+	/*
+	 * sema_wait_status: set to 1 by the reader immediately before entering
+	 * sema_take, cleared right after it returns. ep_buf_ctrl_deinit uses
+	 * this to know a reader is parked and must be woken (sema_give) before
+	 * the semaphore can be safely torn down.
+	 */
+	__IO u8 sema_wait_status;
 	__IO u8 xfer_continue;   /* Audio control xfer_continue flag */
 } usbd_composite_uac_buf_ctrl_t;
 
@@ -198,7 +231,7 @@ typedef struct {
 
 	usb_setup_req_t ctrl_req;                    /**< Stores the current control request. */
 	usbd_composite_dev_t *cdev;                  /**< Pointer to the USB composite device instance. */
-	usbd_composite_uac_usr_cb_t *cb;             /**< Pointer to the USB composite device user-defined callback structure. */
+	const usbd_composite_uac_usr_cb_t *cb;       /**< Pointer to the USB composite device user-defined callback structure. */
 
 #if USBD_COMPOSITE_UAC_DEBUG
 	rtos_task_t uac_dump_task;
@@ -225,7 +258,7 @@ extern const usbd_class_driver_t usbd_composite_uac_driver;
  * @param[in] cb: Pointer to the user callback structure passed by the upper layer.
  * @return 0 on success, non-zero on failure.
  */
-int usbd_composite_uac_init(usbd_composite_dev_t *cdev, usbd_composite_uac_usr_cb_t *cb);
+int usbd_composite_uac_init(usbd_composite_dev_t *cdev, const usbd_composite_uac_usr_cb_t *cb);
 
 /**
  * @brief De-initializes the UAC composite function.
@@ -274,13 +307,13 @@ u32 usbd_composite_uac_read(u8 *buffer, u32 size, u32 time_out_ms, u32 *zero_pkt
  * @brief Gets the number of available audio frames count ready for reading.
  * @return The number of queued audio frames.
  */
-u32  usbd_composite_uac_get_read_frame_cnt(void);
+u8  usbd_composite_uac_get_read_frame_cnt(void);
 
 /**
  * @brief Gets the time duration of available audio frames.
  * @return return the time duration for the queued audio frames duration in us
  */
-u32  usbd_composite_uac_get_read_frame_time_in_us(void);
+u8  usbd_composite_uac_get_read_frame_time_in_us(void);
 
 /**
  * @brief Starts the audio record, get audio data from ring buffer, and will send to USB bus.
@@ -307,4 +340,4 @@ u32 usbd_composite_uac_write(u8 *buffer, u32 size, u32 timeout_ms);
 /** @} End of USB_Device_Functions group */
 /** @} End of USB_Device_API group */
 
-#endif // USBD_COMPOSITE_UAC_H
+#endif /* USBD_COMPOSITE_UAC_H */

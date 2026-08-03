@@ -25,6 +25,7 @@
  */
 #define USBD_MSC_TX_THREAD_PRIORITY                 5U                 /**< TX thread priority */
 #define USBD_MSC_RX_THREAD_PRIORITY                 5U                 /**< RX thread priority */
+#define USBD_MSC_TRX_THREAD_STACK_SIZE              1024U              /**< TX/RX thread tack size */
 
 /* Defines configuration constants like VID/PID, USB strings, and power settings. */
 #define USBD_MSC_VID                                USB_VID            /**< Vendor ID. */
@@ -54,16 +55,16 @@
 /* MSC configurations */
 #define USBD_MSC_FIX_CV_TEST_ISSUE                  0                  /* Enable for CV test */
 
+/* Defines storage-related parameters like block size and buffer length. */
+#define USBD_MSC_BLK_BITS                           9                        /**< Number of bits per block (log2(512)). */
+#define USBD_MSC_BLK_SIZE                           (1 << USBD_MSC_BLK_BITS) /**< Block size in bytes (512). */
+#define USBD_MSC_BUFLEN                             (16 * 1024)              /**< Default size of the internal data buffer. */
+
 /* RAM disk configurations */
 #if CONFIG_USBD_MSC_RAM_DISK && !CONFIG_USBD_MSC_RAM_DISK_ZEPHYR_FATFS
 #define USBD_MSC_RAM_DISK_SIZE                      (USBD_MSC_BUFLEN * 8) /**< Total size of the RAM disk. Should be > 64KB to support ATTO benchmark test. */
 #define USBD_MSC_RAM_DISK_SECTORS                   (USBD_MSC_RAM_DISK_SIZE >> USBD_MSC_BLK_BITS) /**< Total number of sectors in RAM disk. */
 #endif
-
-/* Defines storage-related parameters like block size and buffer length. */
-#define USBD_MSC_BLK_BITS                           9                        /**< Number of bits per block (log2(512)). */
-#define USBD_MSC_BLK_SIZE                           (1 << USBD_MSC_BLK_BITS) /**< Block size in bytes (512). */
-#define USBD_MSC_BUFLEN                             (16 * 1024)              /**< Default size of the internal data buffer. */
 
 /* BOT state */
 #define USBD_MSC_IDLE                               0U          /**< Idle state */
@@ -71,7 +72,6 @@
 #define USBD_MSC_DATA_IN                            2U          /**< Data In state */
 #define USBD_MSC_LAST_DATA_IN                       3U          /**< Last Data In state */
 #define USBD_MSC_SEND_DATA                          4U          /**< Send Immediate data */
-#define USBD_MSC_NO_DATA                            5U          /**< No data Stage */
 
 /* BOT status */
 #define USBD_MSC_STATUS_NORMAL                      0U          /**< Normal working status */
@@ -80,8 +80,8 @@
 
 #define USBD_MSC_SENSE_LIST_DEPTH                   4U          /**< Depth of the SCSI sense data list. */
 
-/** @} End of Device_MSC_Constants group*/
-/** @} End of USB_Device_Constants group*/
+/** @} End of Device_MSC_Constants group */
+/** @} End of USB_Device_Constants group */
 
 /* Exported types ------------------------------------------------------------*/
 
@@ -132,13 +132,15 @@ typedef struct {
 typedef struct {
 	/**
 	 * @brief Called when the USB device status changes for application to support USB hot-plug events.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
 	 * @param[in] old_status: The previous USB device status.
 	 * @param[in] status: The new USB device status.
 	 */
 	void (*status_changed)(u8 old_status, u8 status);
 } usbd_msc_cb_t;
-/** @} End of Device_MSC_Types group*/
-/** @} End of USB_Device_Types group*/
+/** @} End of Device_MSC_Types group */
+/** @} End of USB_Device_Types group */
 
 #if CONFIG_USBD_MSC_RAM_DISK_ZEPHYR_FATFS
 struct usbd_msc_lun {
@@ -161,10 +163,10 @@ struct usbd_msc_lun {
  */
 #define USBD_DEFINE_MSC_LUN(id, disk_name, t10_vendor, t10_product, t10_revision)	\
 	static const STRUCT_SECTION_ITERABLE(usbd_msc_lun, usbd_msc_lun_##id) = {	\
-		.disk = disk_name,							\
-		.vendor = t10_vendor,							\
-		.product = t10_product,							\
-		.revision = t10_revision,						\
+		.disk = disk_name,								\
+		.vendor = t10_vendor,								\
+		.product = t10_product,								\
+		.revision = t10_revision,							\
 	}
 #endif
 
@@ -179,7 +181,7 @@ typedef struct {
 	usb_msc_bot_cbw_t *cbw;                         /**< Pointer to the Command Block Wrapper. */
 	usb_msc_bot_csw_t *csw;                         /**< Pointer to the Command Status Wrapper. */
 	usbd_msc_disk_ops_t disk_ops;                   /**< Structure with disk operation function pointers. */
-	usbd_msc_cb_t *cb;                              /**< Pointer to the user callback structure. */
+	const usbd_msc_cb_t *cb;                              /**< Pointer to the user callback structure. */
 	usb_dev_t *dev;                                 /**< Pointer to the USB device structure. */
 	rtos_task_t rx_task;                            /**< RTOS task handle for data reception. */
 	rtos_sema_t rx_sema;                            /**< RTOS semaphore to signal data reception. */
@@ -189,23 +191,21 @@ typedef struct {
 #if CONFIG_USBD_MSC_RAM_DISK_ZEPHYR_FATFS
 	const char *disk;
 #endif
-	u8 *ctrl_buf;                                   /**< Pointer to the control transfer buffer. */
 	u8 *data;                                       /**< Pointer to the data buffer for transfers. */
 	u32 data_length;                                /**< Transfer data length. */
 	u32 num_sectors;                                /**< Total number of sectors on the disk. */
 	u32 lba;                                        /**< Current logical block address for operations. */
-	u32 blkbits;                                    /**< Number of bits per block. */
-	u32 blksize;                                    /**< Block size in bytes. */
 	u32 blklen;                                     /**< The data length requested by the host. */
 	u16 rx_data_length;                             /**< BULK Received data length. */
 	u8 tx_status;                                   /**< BULK Transmitted status. */
-	u8 ro;                                          /**< Flag for media is write-protected. */
 	u8 bot_state;                                   /**< BOT state. */
 	u8 bot_status;                                  /**< BOT status. */
 	u8 scsi_sense_head;                             /**< Head index of SCSI sense data list. */
 	u8 scsi_sense_tail;                             /**< Tail index of SCSI sense data list. */
 	u8 is_open : 1;                                 /**< MSC is ready for data transfer. */
 	u8 phase_error : 1;                             /**< SCSI check status. */
+	u8 ro : 1;                                      /**< Flag for media is write-protected. */
+	u8 bot_reset_pending : 1;                       /**< Set after BOT Reset; triggers one-time OUT EP reinit in send_csw. */
 } usbd_msc_dev_t;
 
 /* Exported functions --------------------------------------------------------*/
@@ -221,7 +221,7 @@ typedef struct {
  * @param[in] cb: Pointer to the user callback structure.
  * @return 0 on success, non-zero on failure.
  */
-int usbd_msc_init(usbd_msc_cb_t *cb);
+int usbd_msc_init(const usbd_msc_cb_t *cb);
 
 /**
  * @brief De-initializes the MSC device class driver.
@@ -243,4 +243,4 @@ int usbd_msc_disk_deinit(void);
 /** @} End of USB_Device_Functions group */
 /** @} End of USB_Device_API group */
 
-#endif // USBD_MSC_H
+#endif /* USBD_MSC_H */

@@ -54,8 +54,12 @@ typedef void (*Fault_Patch)(uint32_t *MSP, uint32_t *PSP, uint32_t lr, uint32_t 
   * @{
   */
 extern _LONG_CALL_ void irq_table_init(u32 StackP);
+#ifndef irq_enable
 extern _LONG_CALL_ void irq_enable(IRQn_Type   IrqNum);
+#endif
+#ifndef irq_disable
 extern _LONG_CALL_ void irq_disable(IRQn_Type   IrqNum);
+#endif
 extern _LONG_CALL_ void irq_set_priority(IRQn_Type irqn, uint32_t priority);
 extern _LONG_CALL_ uint32_t irq_get_priority(IRQn_Type irqn);
 extern _LONG_CALL_ void irq_set_pending(IRQn_Type irqn);
@@ -96,11 +100,6 @@ extern HAL_VECTOR_FUN  NewVectorTable[];
 #define MAX_NVIC_IPR_NUM				((MAX_PERIPHERAL_IRQ_NUM + 3) >> 2)
 #define MAX_IRQ_PRIORITY_VALUE			3
 #endif
-
-#define MSP_RAM_LP			0x23001FFC
-#define MSPLIM_RAM_HP		0x30001000
-#define MSP_RAM_HP			0x30002FFC
-#define MSP_RAM_HP_NS		0x2001C000
 
 #define BIT_EXCRETURN_S			BIT(6)	/* Indicates whether a Secure or Non-secure stack is used to restore stack frame on exception return. 0: Non-secure, 1: Secure*/
 #define BIT_EXCRETURN_MODE		BIT(3)	/* Indicates the Mode that was stacked from. 0: Handler mode, 1: Thread mode */

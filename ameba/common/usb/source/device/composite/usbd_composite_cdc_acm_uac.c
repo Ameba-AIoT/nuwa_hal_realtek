@@ -34,9 +34,9 @@ static const u8 usbd_composite_dev_desc[USB_LEN_DEV_DESC] = {
 	USB_LEN_DEV_DESC,                                                /* bLength */
 	USB_DESC_TYPE_DEVICE,                                            /* bDescriptorType */
 	0x00, 0x02,                                                        /* bcdUSB */
-	0x00,                                                            /* bDeviceClass: Miscellaneous */
-	0x00,                                                            /* bDeviceSubClass: Common Class */
-	0x00,                                                            /* bDeviceProtocol: Interface Association Descriptor */
+	0xEF,                                                            /* bDeviceClass: Miscellaneous */
+	0x02,                                                            /* bDeviceSubClass: Common Class */
+	0x01,                                                            /* bDeviceProtocol: Interface Association Descriptor */
 	USB_MAX_EP0_SIZE,                                                /* bMaxPacketSize */
 	USB_LOW_BYTE(USBD_COMP_VID), USB_HIGH_BYTE(USBD_COMP_VID),       /* idVendor */
 	USB_LOW_BYTE(USBD_COMP_PID), USB_HIGH_BYTE(USBD_COMP_PID),       /* idProduct */
@@ -54,7 +54,7 @@ static const u8 usbd_composite_lang_id_desc[USB_LEN_LANGID_STR_DESC] = {
 	USB_LOW_BYTE(USBD_COMP_LANGID), USB_HIGH_BYTE(USBD_COMP_LANGID)  /* wLANGID */
 };  /* usbd_composite_lang_id_desc */
 
-#if !defined(CONFIG_USBD_COMPOSITE_CDC_ACM_UAC1)
+#if !defined(CONFIG_USBD_COMPOSITE_CDC_ACM_UAC1) && !defined(CONFIG_USB_FS)
 /* USB Standard Device Qualifier Descriptor */
 static const u8 usbd_composite_device_qualifier_desc[USB_LEN_DEV_QUALIFIER_DESC] = {
 	USB_LEN_DEV_QUALIFIER_DESC,                                      /* bLength */
@@ -106,6 +106,8 @@ static usbd_composite_dev_t usbd_composite_dev;
 
 /**
   * @brief  Set CDC class configuration
+  * @note   This function is called within an interrupt service routine (ISR) context;
+  *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
   * @param  dev: USB device instance
   * @param  config: USB configuration index
   * @retval Status
@@ -125,6 +127,8 @@ static int usbd_composite_set_config(usb_dev_t *dev, u8 config)
 
 /**
   * @brief  Clear CDC ACM configuration
+  * @note   This function is called within an interrupt service routine (ISR) context;
+  *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
   * @param  dev: USB device instance
   * @param  config: USB configuration index
   * @retval Status
@@ -151,11 +155,13 @@ static int usbd_composite_is_uac_class_request(int entityId, usb_setup_req_t *re
 	int ret = 0U;
 #if defined(CONFIG_USBD_COMPOSITE_CDC_ACM_UAC1)
 	ret = (entityId == USBD_COMP_UAC_AC_HEADSET) ||
+		  (entityId == USBD_COMP_UAC_AS_HEADSET_MICROPHONE) ||
 		  (entityId == USBD_COMP_UAC_AS_HEADSET_HEADPHONES) ||
 		  ((req->bmRequestType & 0x1FU) == USB_REQ_RECIPIENT_ENDPOINT);
 #else/* CONFIG_USBD_COMPOSITE_CDC_ACM_UAC2 */
 	UNUSED(req);
 	ret = (entityId == USBD_COMP_UAC_AC_HEADSET) ||
+		  (entityId == USBD_COMP_UAC_AS_HEADSET_MICROPHONE) ||
 		  (entityId == USBD_COMP_UAC_AS_HEADSET_HEADPHONES);
 #endif
 	return ret;
@@ -163,6 +169,8 @@ static int usbd_composite_is_uac_class_request(int entityId, usb_setup_req_t *re
 
 /**
   * @brief  Handle CDC specific CTRL requests
+  * @note   This function is called within an interrupt service routine (ISR) context;
+  *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
   * @param  dev: USB device instance
   * @param  req: USB CTRL requests
   * @retval Status
@@ -190,7 +198,8 @@ static int usbd_composite_setup(usb_dev_t *dev, usb_setup_req_t *req)
 
 		default:
 			entityId = USB_LOW_BYTE(req->wIndex);
-			if ((entityId == USBD_COMP_UAC_AC_HEADSET) || (entityId == USBD_COMP_UAC_AS_HEADSET_HEADPHONES)) {
+			if ((entityId == USBD_COMP_UAC_AC_HEADSET) || (entityId == USBD_COMP_UAC_AS_HEADSET_MICROPHONE) ||
+				(entityId == USBD_COMP_UAC_AS_HEADSET_HEADPHONES)) {
 				ret = cdev->uac->setup(dev, req);
 			}
 			break;
@@ -203,7 +212,7 @@ static int usbd_composite_setup(usb_dev_t *dev, usb_setup_req_t *req)
 		} else if (usbd_composite_is_uac_class_request(entityId, req)) {
 			ret = cdev->uac->setup(dev, req);
 		} else {
-			RTK_LOGS(TAG, RTK_LOG_WARN, "Invalid class req\n");
+			USB_DIAG(USB_LAYER_CLASS, USB_EVT_ERR_SETUP, 0);
 		}
 		break;
 	default:
@@ -216,6 +225,8 @@ static int usbd_composite_setup(usb_dev_t *dev, usb_setup_req_t *req)
 
 /**
   * @brief  Data sent on non-control IN endpoint
+  * @note   This function is called within an interrupt service routine (ISR) context;
+  *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
   * @param  dev: USB device instance
   * @param  ep_addr: endpoint address
   * @retval Status
@@ -235,6 +246,8 @@ static int usbd_composite_handle_ep_data_in(usb_dev_t *dev, u8 ep_addr, u8 statu
 
 /**
   * @brief  Data received on non-control Out endpoint
+  * @note   This function is called within an interrupt service routine (ISR) context;
+  *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
   * @param  dev: USB device instance
   * @param  ep_addr: endpoint address
   * @retval Status
@@ -260,6 +273,8 @@ static int usbd_composite_handle_ep_data_out(usb_dev_t *dev, u8 ep_addr, u32 len
 /**
   * @brief  usbd_composite_handle_ep0_data_out
   *         Handle EP0 Rx Ready event
+  * @note   This function is called within an interrupt service routine (ISR) context;
+  *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
   * @param  dev: USB device instance
   * @retval Status
   */
@@ -268,14 +283,20 @@ static int usbd_composite_handle_ep0_data_out(usb_dev_t *dev)
 	int ret = HAL_OK;
 	usbd_composite_dev_t *cdev = &usbd_composite_dev;
 
-	cdev->cdc->ep0_data_out(dev);
-	cdev->uac->ep0_data_out(dev);
+	if (cdev->cdc->ep0_data_out != NULL) {
+		cdev->cdc->ep0_data_out(dev);
+	}
+	if (cdev->uac->ep0_data_out != NULL) {
+		cdev->uac->ep0_data_out(dev);
+	}
 
 	return ret;
 }
 
 /**
   * @brief  USB attach status change
+  * @note   This function is called within an interrupt service routine (ISR) context;
+  *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
   * @param  dev: USB device instance
   * @param  old_status: USB old attach status
   * @param  status: USB attach status
@@ -294,6 +315,8 @@ static void usbd_composite_status_changed(usb_dev_t *dev, u8 old_status, u8 stat
 
 /**
   * @brief  Get descriptor callback
+  * @note   This function is called within an interrupt service routine (ISR) context;
+  *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
   * @param  dev: USB device instance
   * @param  req: Setup request handle
   * @param  buf: Poniter to Buffer
@@ -318,7 +341,7 @@ static u16 usbd_composite_get_descriptor(usb_dev_t *dev, usb_setup_req_t *req, u
 		break;
 
 	case USB_DESC_TYPE_CONFIGURATION:
-#if !defined(CONFIG_USBD_COMPOSITE_CDC_ACM_UAC1)
+#if !defined(CONFIG_USBD_COMPOSITE_CDC_ACM_UAC1) && !defined(CONFIG_USB_FS)
 	case USB_DESC_TYPE_OTHER_SPEED_CONFIGURATION:
 #endif
 		usb_os_memcpy((void *)buf, (void *)usbd_composite_config_desc, USB_LEN_CFG_DESC);
@@ -334,7 +357,7 @@ static u16 usbd_composite_get_descriptor(usb_dev_t *dev, usb_setup_req_t *req, u
 		total_len += desc_len;
 
 		buf = dev->ep0_in.xfer_buf;
-#if !defined(CONFIG_USBD_COMPOSITE_CDC_ACM_UAC1)
+#if !defined(CONFIG_USBD_COMPOSITE_CDC_ACM_UAC1) && !defined(CONFIG_USB_FS)
 		if (USB_HIGH_BYTE(req->wValue) == USB_DESC_TYPE_OTHER_SPEED_CONFIGURATION) {
 			buf[USB_CFG_DESC_OFFSET_TYPE] = USB_DESC_TYPE_OTHER_SPEED_CONFIGURATION;
 		}
@@ -344,7 +367,7 @@ static u16 usbd_composite_get_descriptor(usb_dev_t *dev, usb_setup_req_t *req, u
 		len = total_len;
 		break;
 
-#if !defined(CONFIG_USBD_COMPOSITE_CDC_ACM_UAC1)
+#if !defined(CONFIG_USBD_COMPOSITE_CDC_ACM_UAC1) && !defined(CONFIG_USB_FS)
 	case USB_DESC_TYPE_DEVICE_QUALIFIER:
 		len = sizeof(usbd_composite_device_qualifier_desc);
 		usb_os_memcpy((void *)buf, (void *)usbd_composite_device_qualifier_desc, len);
@@ -385,7 +408,7 @@ static u16 usbd_composite_get_descriptor(usb_dev_t *dev, usb_setup_req_t *req, u
 			break;
 		/* Add customer string here */
 		default:
-			//RTK_LOGS(TAG, RTK_LOG_WARN, "Invalid str idx %d\n", USB_LOW_BYTE(req->wValue));
+			USB_DIAG(USB_LAYER_CLASS, USB_EVT_ERR_GET_DESC, 0);
 			break;
 		}
 		break;
@@ -404,21 +427,17 @@ static u16 usbd_composite_get_descriptor(usb_dev_t *dev, usb_setup_req_t *req, u
   * @param  cb: CDC ACM user callback
   * @retval Status
   */
-int usbd_composite_init(u32 cdc_bulk_out_xfer_size, u32 cdc_bulk_in_xfer_size, usbd_composite_cdc_acm_usr_cb_t *cdc_cb,
-						usbd_composite_uac_usr_cb_t *uac_cb, usbd_composite_cb_t *cb)
+int usbd_composite_init(u32 cdc_bulk_out_xfer_size, u32 cdc_bulk_in_xfer_size, const usbd_composite_cdc_acm_usr_cb_t *cdc_cb,
+						const usbd_composite_uac_usr_cb_t *uac_cb, const usbd_composite_cb_t *cb)
 {
 	int ret;
 	usbd_composite_dev_t *cdev = &usbd_composite_dev;
 
-	if ((cdc_cb == NULL) || (uac_cb == NULL)) {
-		ret = HAL_ERR_PARA;
+	if ((cdc_cb == NULL) || (uac_cb == NULL) || (cb == NULL)) {
 		RTK_LOGS(TAG, RTK_LOG_ERROR, "Invalid user CB\n");
-		return ret;
+		return HAL_ERR_PARA;
 	}
-
-	if (cb != NULL) {
-		cdev->cb = cb;
-	}
+	cdev->cb = cb;
 
 	ret = usbd_composite_cdc_acm_init(cdev, cdc_bulk_out_xfer_size, cdc_bulk_in_xfer_size, cdc_cb);
 	if (ret != HAL_OK) {
@@ -453,4 +472,3 @@ void usbd_composite_deinit(void)
 	usbd_composite_uac_deinit();
 	usbd_composite_cdc_acm_deinit();
 }
-

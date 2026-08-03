@@ -65,8 +65,14 @@ void ADC_Init(ADC_InitTypeDef *ADC_InitStruct)
 	assert_param(IS_ADC_SAMPLE_CLK(ADC_InitStruct->ADC_ClkDiv));
 	assert_param(ADC_InitStruct->ADC_CvlistLen < 16);
 
-	for (i = 0; i < ADC_InitStruct->ADC_CvlistLen + 1; i++) {
-		assert_param(ADC_InitStruct->ADC_Cvlist[i] != ADC_CH8);
+	/* CH8 is a special internal channel that cannot be put in the conversion
+	 * list under trigger modes; in auto mode the list is reconfigured at read
+	 * time (see ADC_SetChList), so skip the check there.
+	 */
+	if (ADC_InitStruct->ADC_OpMode != ADC_AUTO_MODE) {
+		for (i = 0; i < ADC_InitStruct->ADC_CvlistLen + 1; i++) {
+			assert_param(ADC_InitStruct->ADC_Cvlist[i] != ADC_CH8);
+		}
 	}
 
 	/* Disable ADC, clear pending interrupt, clear FIFO */
@@ -397,6 +403,46 @@ void ADC_ResetCSwList(void)
 
 	adc->ADC_RST_LIST = ADC_BIT_RST_LIST;
 	adc->ADC_RST_LIST = 0;
+}
+
+/**
+  * @brief  Set the ADC conversion channel switch list.
+  * @param  ChanIdBuf: pointer to the channel ID list to be converted.
+  * @param  ChanLen: the number of channels in the list, which can be 1 ~ 16.
+  * @retval  None
+  */
+void ADC_SetChList(u8 *ChanIdBuf, u8 ChanLen)
+{
+	ADC_TypeDef	*adc = ADC;
+	u32 value;
+	u8 i, len;
+
+	assert_param(ChanLen >= 1 && ChanLen <= 16);
+
+	/* Set channel switch list length */
+	value = adc->ADC_CONF;
+	value &= ~ADC_MASK_CVLIST_LEN;
+	value |= ADC_CVLIST_LEN(ChanLen - 1);
+	adc->ADC_CONF = value;
+
+	/* Set channel switch list 0 (entries 0 ~ 7) */
+	value = adc->ADC_CHSW_LIST_0;
+	len = (ChanLen > 8) ? 8 : ChanLen;
+	for (i = 0; i < len; i++) {
+		value &= ~((u32)0x0000000F << ADC_SHIFT_CHSW0(i));
+		value |= (u32)(ChanIdBuf[i] & 0x0F) << ADC_SHIFT_CHSW0(i);
+	}
+	adc->ADC_CHSW_LIST_0 = value;
+
+	/* Set channel switch list 1 (entries 8 ~ 15) */
+	if (ChanLen > 8) {
+		value = adc->ADC_CHSW_LIST_1;
+		for (i = 8; i < ChanLen; i++) {
+			value &= ~((u32)0x0000000F << ADC_SHIFT_CHSW1(i));
+			value |= (u32)(ChanIdBuf[i] & 0x0F) << ADC_SHIFT_CHSW1(i);
+		}
+		adc->ADC_CHSW_LIST_1 = value;
+	}
 }
 
 /**

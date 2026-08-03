@@ -43,10 +43,30 @@
 typedef struct {
 	int(* init)(void);                             /**< Called during class driver initialization for application resource setup. */
 	int(* deinit)(void);                           /**< Called during class driver deinitialization for resource cleanup. */
-	int(* setup)(usb_setup_req_t *req, u8 *buf);   /**< Called during control transfer SETUP/DATA phases to handle application-specific control requests. */
-	int(* set_config)(void);                       /**< Notifies application layer that the class driver becomes operational. */
-	int(* sof)(void);                              /**< Called upon SOF interrupt (GINTSTS.Sof) for timing-sensitive operations. */
-	int(* transmitted)(u8 status);                 /**< Called when interrupt IN transfer done, for asynchronous interrupt IN transfer status notification . */
+	/**
+	 * @brief Called during control transfer SETUP/DATA phases to handle application-specific control requests.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
+	 */
+	int(* setup)(usb_setup_req_t *req, u8 *buf);
+	/**
+	 * @brief Notifies application layer that the class driver becomes operational.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
+	 */
+	int(* set_config)(void);
+	/**
+	 * @brief Called upon SOF interrupt (GINTSTS.Sof) for timing-sensitive operations.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
+	 */
+	int(* sof)(void);
+	/**
+	 * @brief Called when interrupt IN transfer done, for asynchronous interrupt IN transfer status notification.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
+	 */
+	int(* transmitted)(u8 status);
 } usbd_composite_hid_usr_cb_t;
 
 typedef struct {
@@ -60,7 +80,7 @@ typedef struct {
 	u8 *hid_buf;
 
 	u16 buf_array_cnt;
-	u16 hid_mps; //mps
+	u16 hid_mps; /* mps */
 
 	u8 hid_sema_valid;
 	__IO u8 read_wait_sema;
@@ -74,7 +94,7 @@ typedef struct {
 	usbd_ep_t ep_hid_priv_in;
 	usbd_ep_t ep_hid_in;
 	usbd_ep_t ep_intr_out;
-	usbd_composite_hid_usr_cb_t *cb;
+	const usbd_composite_hid_usr_cb_t *cb;
 	usbd_composite_dev_t *cdev;
 
 	/*
@@ -92,7 +112,7 @@ extern const usbd_class_driver_t usbd_composite_hid_driver;
 
 /* Exported functions --------------------------------------------------------*/
 
-int usbd_composite_hid_init(usbd_composite_dev_t *cdev, usbd_composite_hid_usr_cb_t *cb);
+int usbd_composite_hid_init(usbd_composite_dev_t *cdev, const usbd_composite_hid_usr_cb_t *cb);
 int usbd_composite_hid_deinit(void);
 
 /**
@@ -136,4 +156,4 @@ u32 usbd_composite_hid_get_read_buf_cnt(void);
   * @retval 1 if the ring buf is full, else 0
  */
 u32 usbd_composite_hid_ring_buf_is_full(void);
-#endif // USBD_COMPOSITE_HID_BI_DIR_H
+#endif /* USBD_COMPOSITE_HID_BI_DIR_H */

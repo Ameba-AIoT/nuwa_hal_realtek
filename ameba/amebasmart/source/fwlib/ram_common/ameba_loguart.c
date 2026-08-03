@@ -6,27 +6,25 @@
 
 #include "ameba_soc.h"
 
-/* TX path 4 is the CA32 (CPU_AP, ARMv8-A AArch32) path.  KM0 uses path 1
- * and KM4 uses path 3.  Catch accidental cross-core compilation with a
- * portable architecture check that works in both Zephyr and ameba-rtos SDK.
- * __ARM_ARCH_8A__ is defined by GCC/LLVM for Cortex-A32 (-mcpu=cortex-a32)
- * but not for Cortex-M33 (__ARM_ARCH_8M_MAIN__) or Cortex-M23 (__ARM_ARCH_8M_BASE__).
+/* TX path NOT_FULL bits indexed by SYS_CPUID(): 0=KM0(TP2), 1=KM4(TP1), 2=CA32(TP4).
+ * Mirrors LOG_UART_IDX_FLAG[] in ROM (ameba_loguart_rom.c).
  */
-#ifndef __ARM_ARCH_8A__
-#error "ameba_loguart.c: TX path 4 is CA32-only. Port via LOG_UART_IDX_FLAG for KM0/KM4."
-#endif
+static const u32 loguart_not_full_bits[] = {
+	LOGUART_BIT_TP2F_NOT_FULL,	/* CPUID 0: KM0 */
+	LOGUART_BIT_TP1F_NOT_FULL,	/* CPUID 1: KM4 */
+	LOGUART_BIT_TP4F_NOT_FULL,	/* CPUID 2: CA32 */
+};
 
 /**
- * @brief  Check if there is space in the LOGUART TX path FIFO.
- * @retval 1 if TX path FIFO is not full (writable), 0 if full.
- * @note   On AmebaSmart the CA32 (CPU_AP) always uses TX path 4.
- *         Unlike amebadplus which dispatches via LOG_UART_IDX_FLAG[CPUID],
- *         amebasmart has no such table in its HAL; the path assignment is
- *         fixed: KM0=path1, KM4=path3, CA32=path4.
- */
+  * @brief  Check if there is space in loguart TX path FIFO.
+  * @return TX path FIFO is writable or not:
+  *        - 1: TX path FIFO is not full
+  *        - 0: TX path FIFO is full
+  */
 u8 LOGUART_Writable(void)
 {
 	LOGUART_TypeDef *UARTLOG = LOGUART_DEV;
+	u32 CPUID = SYS_CPUID();
 
-	return (UARTLOG->LOGUART_UART_LSR & LOGUART_BIT_TP4F_NOT_FULL) ? 1U : 0U;
+	return (UARTLOG->LOGUART_UART_LSR & loguart_not_full_bits[CPUID]) ? 1U : 0U;
 }

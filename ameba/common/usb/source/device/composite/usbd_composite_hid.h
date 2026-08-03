@@ -33,10 +33,10 @@
 #define COMP_HID_ITF_DESC_ITEM_LENGTH_OFFSET		16
 
 /* Mouse buttons */
-#define COMP_HID_MOUSE_BUTTON_LEFT					0x01	// left button. 0: release, 1: press
-#define COMP_HID_MOUSE_BUTTON_RIGHT					0x02	// right button. 0: release, 1: press
-#define COMP_HID_MOUSE_BUTTON_MIDDLE				0x04	// wheel button. 0: release, 1: press
-#define COMP_HID_MOUSE_BUTTON_RESERVED				0xF8	// reserved. all bit should set to 1.
+#define COMP_HID_MOUSE_BUTTON_LEFT					0x01	/* left button. 0: release, 1: press */
+#define COMP_HID_MOUSE_BUTTON_RIGHT					0x02	/* right button. 0: release, 1: press */
+#define COMP_HID_MOUSE_BUTTON_MIDDLE				0x04	/* wheel button. 0: release, 1: press */
+#define COMP_HID_MOUSE_BUTTON_RESERVED				0xF8	/* reserved. all bit should set to 1. */
 
 /* Exported types ------------------------------------------------------------*/
 
@@ -47,13 +47,23 @@
 typedef struct {
 	int(* init)(void);                             /**< Called during class driver initialization for application resource setup. */
 	void(* deinit)(void);                          /**< Called during class driver deinitialization for resource cleanup. */
-	int(* setup)(usb_setup_req_t *req, u8 *buf);   /**< Called during control transfer SETUP/DATA phases to handle application-specific control requests. */
-	void(* transmitted)(u8 status);                /**< Called when interrupt IN transfer done, for asynchronous interrupt IN transfer status notification . */
+	/**
+	 * @brief Called during control transfer SETUP/DATA phases to handle application-specific control requests.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
+	 */
+	int(* setup)(usb_setup_req_t *req, u8 *buf);
+	/**
+	 * @brief Called when interrupt IN transfer done, for asynchronous interrupt IN transfer status notification.
+	 * @note   This function is called within an interrupt service routine (ISR) context;
+	 *         time-consuming operations (e.g., `malloc`, `rtos_sema_take`) are not permitted.
+	 */
+	void(* transmitted)(u8 status);
 } usbd_composite_hid_usr_cb_t;
 
 typedef struct {
 	usbd_ep_t ep_intr_in;
-	usbd_composite_hid_usr_cb_t *cb;
+	const usbd_composite_hid_usr_cb_t *cb;
 	usbd_composite_dev_t *cdev;
 } usbd_composite_hid_device_t;
 
@@ -65,7 +75,7 @@ extern const usbd_class_driver_t usbd_composite_hid_driver;
 
 /* Exported functions --------------------------------------------------------*/
 
-int usbd_composite_hid_init(usbd_composite_dev_t *cdev, u16 tx_buf_len, usbd_composite_hid_usr_cb_t *cb);
+int usbd_composite_hid_init(usbd_composite_dev_t *cdev, u16 tx_buf_len, const usbd_composite_hid_usr_cb_t *cb);
 int usbd_composite_hid_deinit(void);
 
 /**
@@ -76,4 +86,4 @@ int usbd_composite_hid_deinit(void);
  */
 int usbd_composite_hid_send_data(u8 *data, u16 len);
 
-#endif // USBD_COMPOSITE_HID_H
+#endif /* USBD_COMPOSITE_HID_H */

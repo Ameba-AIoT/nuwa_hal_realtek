@@ -7,3 +7,4 @@ zephyr_library_sources_ifdef(CONFIG_MCUBOOT
 	ameba_flashcfg.c
 )
 zephyr_library_sources_ifdef(CONFIG_PM ameba_sleepcfg.c)
+zephyr_library_sources_ifdef(CONFIG_SDHC_AMEBA ameba_intfcfg.c)

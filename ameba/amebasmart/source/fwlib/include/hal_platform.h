@@ -574,17 +574,25 @@ typedef struct {
 
 /** @} End of group AmebaD_Peripheral_Declaration */
 
-#define HS_SRAM_S_ADDR_START		0x30000000 /* rom used, can not change */
-#define HS_SRAM_S_ADDR_END			0x30FFFFFF /* rom used, can not change */
-
-#define HS_BOOT_ADDR_START			(HS_SRAM_S_ADDR_START +  0x00003000)	/* rom used, can not change */
-#define HS_BOOT_ADDR_END			(HS_SRAM_S_ADDR_START + 0x0001AFFF)	/* rom used, can not change */
-
 #define LS_SRAM_ADDR_START			LP_SRAM_BASE
 #define LS_SRAM_ADDR_END			(LP_SRAM_BASE + 0x00FFFFFF)
 #endif
 
 #define CA32_FIP_MAX_SIZE				(0x00200000)  /* 2MB */
+
+/* Pure integer constants -- kept outside the __ASSEMBLER__ block above (unlike
+ * LS_SRAM_ADDR_START/END) so linker scripts can use them directly. */
+#define HS_SRAM_S_ADDR_START		0x30000000 /* rom used, can not change */
+#define HS_SRAM_S_ADDR_END			0x30FFFFFF /* rom used, can not change */
+#define HS_BOOT_ADDR_START			(HS_SRAM_S_ADDR_START +  0x00003000)	/* rom used, can not change */
+#define HS_BOOT_ADDR_END			(HS_SRAM_S_ADDR_START + 0x0001AFFF)	/* rom used, can not change */
+
+#define MSP_RAM_LP			    0x23001FFC
+#define MSPLIM_RAM_LP			  (u32)__km0_msp_ram_limit__
+#define MSPLIM_RAM_HP		    0x30001000
+#define MSP_RAM_HP			    0x30002FFC
+#define MSP_RAM_HP_NS		    0x2001C000
+#define MSPLIM_RAM_HP_NS    (u32)__km4_msp_ram_ns_limit__
 
 /*BT share mem with system*/
 #define SHARE_MEM_BT_ADDRESS			 HP_SRAM_EXT_BASE /*Size: 272KB*/

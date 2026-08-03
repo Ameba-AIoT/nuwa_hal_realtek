@@ -29,6 +29,7 @@
 #define CONFIG_CPU_HAS_FPU 1
 #define CONFIG_ARM_CORE_CM4 1
 #define CONFIG_AMEBADPLUS_B_CUT 1
+#define CONFIG_SUPPORT_USB_SHARED_DFIFO 1
 #ifdef __ZEPHYR__
 #include <zephyr/autoconf.h>
 #endif
