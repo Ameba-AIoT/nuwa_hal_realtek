@@ -1043,11 +1043,7 @@ IMAGE1_ENTRY_SECTION
 RAM_FUNCTION_START_TABLE RamStartTable = {
 	.RamStartFun = NULL,
 	.RamWakeupFun = NULL,
-#ifdef __ZEPHYR__
-	.RamPatchFun0 = NULL,
-#else
 	.RamPatchFun0 = BOOT_WakeFromPG,
-#endif
 	.RamPatchFun1 = NULL,
 	.RamPatchFun2 = NULL,
 	.FlashStartFun = BOOT_Image1,

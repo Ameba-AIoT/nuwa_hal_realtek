@@ -429,3 +429,12 @@ void BOOT_Image1(void)
 	extern void z_arm_reset(void);
 	z_arm_reset();
 }
+
+/* BOOT_WakeFromPG (PG warm-boot handler) calls Fault_Hanlder_Redirect(NULL) to
+ * re-point the fault vector.  That machinery isn't part of the MCUboot image1;
+ * provide a no-op so BOOT_WakeFromPG links — the NP image2's own handlers take
+ * over after resume. */
+void Fault_Hanlder_Redirect(void *crash_on_task_func)
+{
+	ARG_UNUSED(crash_on_task_func);
+}

@@ -5,7 +5,7 @@ if REALTEK_AMEBA_ZEPHYR_WIFI
 
 config BT_COEXIST
 	bool "Enable CoExist"
-	default y if !SOC_SERIES_AMEBAD && !SOC_SERIES_AMEBASMART
+	default y if !SOC_SERIES_AMEBAD
 	select COEXIST_HOST if !SINGLE_CORE_WIFI
 	select PLATFORM_ZEPHYR
 

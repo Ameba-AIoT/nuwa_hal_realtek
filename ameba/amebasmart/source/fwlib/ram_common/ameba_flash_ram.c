@@ -8,7 +8,8 @@
 #include "os_wrapper.h"
 #include "os_wrapper_specific.h"
 
-uint32_t PrevIrqStatus;
+/* static: prevent linker conflicts with same-named vars in other SDK libs. */
+static uint32_t PrevIrqStatus;
 
 #ifdef CONFIG_ARM_CORE_CM4
 SRAMDRAM_ONLY_TEXT_SECTION
