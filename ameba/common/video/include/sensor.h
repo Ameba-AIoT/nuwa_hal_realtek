@@ -107,6 +107,7 @@ typedef struct video_buf_setup_t {
 #define SENSOR_FIXP_5M        0x3B  //  |   v    |   -    |   -    |   -    |
 #define SENSOR_FIXP_2K        0x3C  //  |   v    |   -    |   -    |   -    |
 #define SENSOR_SC5356_2M      0x3D  //  |   v    |   v    |   v    |   -    |
+#define SENSOR_IMX775         0x3E  //  |   v    |   -    |   v    |   -    |    -   |
 
 static const struct sensor_params_t sensor_params[] = {
 	[SENSOR_DUMMY]        = {1920, 1080, 30},
@@ -170,10 +171,28 @@ static const struct sensor_params_t sensor_params[] = {
 	[SENSOR_IMX681_12M_SEQ]   = {2032, 3008, 4}, //width = 2008 + 24(overlap)
 	[SENSOR_FIXP_5M]        = {2592, 1944, 30}, //fix pattern
 	[SENSOR_FIXP_2K]        = {2560, 1440, 30},
-	[SENSOR_SC5356_2M]       = {1088, 1944, 30},
+	[SENSOR_SC5356_2M]      = {1088, 1944, 30},
+	[SENSOR_IMX775]         = {2592, 1944, 15},
 };
 
-#define USE_SENSOR      	SENSOR_GC2053
+#define USE_SENSOR      	SENSOR_IMX775
+
+extern const unsigned char sensor_gc2053[];
+extern const unsigned int sensor_gc2053_len;
+extern const unsigned char iq_gc2053[];
+extern const unsigned int iq_gc2053_len;
+extern const unsigned char sensor_imx775[];
+extern const unsigned int sensor_imx775_len;
+extern const unsigned char iq_imx775[];
+extern const unsigned int iq_imx775_len;
+
+#if USE_SENSOR == SENSOR_IMX775
+#define sensor_data sensor_imx775
+#define iq_data     iq_imx775
+#else
+#define sensor_data sensor_gc2053
+#define iq_data     iq_gc2053
+#endif
 
 /*Prepare the channel buffer at the init flow*/
 /*It can't be changed*/
@@ -185,10 +204,10 @@ static const video_buf_setup_t v_buf_cfg = {
 	.v1_snapshot = 1,
 
 	.v2_enable = 1,
-	.v2_width = sensor_params[USE_SENSOR].sensor_width,
-	.v2_height = sensor_params[USE_SENSOR].sensor_height,
+	.v2_width = 1920,
+	.v2_height = 1080,
 	.v2_bps = 2 * 1024 * 1024,
-	.v2_snapshot = 1,
+	.v2_snapshot = 0,
 
 	.v3_enable = 1,
 	.v3_width = 320,
@@ -196,9 +215,9 @@ static const video_buf_setup_t v_buf_cfg = {
 	.v3_bps = 0,
 	.v3_snapshot = 0,
 
-	.v4_enable = 0,
-	.v4_width = 0,
-	.v4_height = 0,
+	.v4_enable = 1,
+	.v4_width = 416,
+	.v4_height = 416,
 };
 
 #ifdef __cplusplus
