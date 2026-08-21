@@ -185,13 +185,20 @@ extern const unsigned char sensor_imx775[];
 extern const unsigned int sensor_imx775_len;
 extern const unsigned char iq_imx775[];
 extern const unsigned int iq_imx775_len;
+extern const unsigned char sensor_fixp_5m[];
+extern const unsigned int sensor_fixp_5m_len;
 
 #if USE_SENSOR == SENSOR_IMX775
 #define sensor_data sensor_imx775
 #define iq_data     iq_imx775
-#else
+#elif USE_SENSOR == SENSOR_GC2053
 #define sensor_data sensor_gc2053
 #define iq_data     iq_gc2053
+#elif USE_SENSOR == SENSOR_FIXP_5M
+#define sensor_data sensor_fixp_5m
+#define iq_data     iq_imx775
+#else
+#error "Unsupported sensor type"
 #endif
 
 /*Prepare the channel buffer at the init flow*/
