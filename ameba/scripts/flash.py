@@ -67,14 +67,14 @@ def _get_file_to_label(device: str, image_dir: str = "") -> Dict[str, str]:
     In a TFM BL2 build (tfm_s_signed.bin present) the mapping is:
       - boot.bin           : BL2 bootloader   → "bootloader"
       - tfm_s_signed.bin   : TFM-S image      → "image-0"
-      - app.bin            : NS application   → "image-0-ns"
+      - app.bin            : NS application   → "image-0-nonsecure"
     """
     import os
     if image_dir and os.path.isfile(os.path.join(image_dir, "tfm_s_signed.bin")):
         return {
             "boot.bin":         "bootloader",
             "tfm_s_signed.bin": "image-0",
-            "app.bin":          "image-0-ns",
+            "app.bin":          "image-0-nonsecure",
         }
     return {
         "boot.bin": "bootloader",

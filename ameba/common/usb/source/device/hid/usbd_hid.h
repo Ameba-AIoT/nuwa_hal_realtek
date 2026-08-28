@@ -61,11 +61,11 @@
 #endif
 
 #define USBD_HID_HS_INT_MAX_PACKET_SIZE                64 /**< High speed INTR maximum packet size */
-#define USBD_HID_FS_INT_MAX_PACKET_SIZE                64 /**< High speed INTR OUT maximum packet size */
+#define USBD_HID_FS_INT_MAX_PACKET_SIZE                64 /**< Full speed INTR maximum packet size */
 
 #define USBD_HID_DESC_SIZE						9       /**< HID descriptor size. */
-#define USBD_HID_DESC_ITEM_LENGTH_OFFSET		7       /**< Mouse Reserved. all bit should set to 1. */
-#define USBD_HID_CFG_DESC_ITEM_LENGTH_OFFSET	25      /**< Mouse Reserved. all bit should set to 1. */
+#define USBD_HID_DESC_ITEM_LENGTH_OFFSET		7       /**< Offset of report desc wItemLength in the HID descriptor. */
+#define USBD_HID_CFG_DESC_ITEM_LENGTH_OFFSET	25      /**< Offset of report desc wItemLength in the config descriptor. */
 
 /* Mouse button definition  */
 #define USBD_HID_MOUSE_BUTTON_LEFT				0x01    /**< Mouse Left button. 0: release, 1: press. */
