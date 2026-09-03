@@ -172,7 +172,7 @@ static const struct sensor_params_t sensor_params[] = {
 	[SENSOR_FIXP_5M]        = {2592, 1944, 30}, //fix pattern
 	[SENSOR_FIXP_2K]        = {2560, 1440, 30},
 	[SENSOR_SC5356_2M]      = {1088, 1944, 30},
-	[SENSOR_IMX775]         = {2592, 1944, 15},
+	[SENSOR_IMX775]         = {2592, 1944, 30},
 };
 
 #define USE_SENSOR      	SENSOR_IMX775
