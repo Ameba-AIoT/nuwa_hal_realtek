@@ -1,8 +1,45 @@
-Important Information About This Repository
-*******************************************
+hal_realtek — Ameba HAL for Zephyr
+####################################
 
-HAL Realtek (or `hal_realtek`) is a collection of tools, low-level APIs, and hardware access functions for Realtek Devices.
+Peripheral driver library for Realtek Ameba SoCs, part of the
+`Nuwa Zephyr SDK <https://github.com/Ameba-AIoT/nuwa>`_.
 
-This repository is a copy (not a fork) of the [ameba-rtos repository](https://github.com/Ameba-AIoT/ameba-rtos) that contains Ameba SoCs.
+``hal_realtek`` is a Zephyr HAL module containing peripheral drivers,
+Wi-Fi, Bluetooth, and USB stacks for Realtek Ameba series SoCs. It is
+periodically synced from `ameba-rtos <https://github.com/Ameba-AIoT/ameba-rtos>`_.
 
-After following the standard Zephyr guide for compilation, both app and bootloader images tailored for Ameba SoCs will be generated. [Refer to this tutorial](https://github.com/Ameba-AIoT/ameba-rtos/) for Flashing these images and running on Ameba SoCs.
+Supported Chips
+***************
+
+- RTL872xD
+- RTL8721Dx
+- RTL8721F
+- RTL8730E
+
+Structure
+*********
+
+.. code-block:: text
+
+   hal_realtek/
+   ├── ameba/
+   │   ├── <chip>/         SoC-specific peripheral drivers (GPIO, SPI, I2C, UART, …)
+   │   ├── common/
+   │   │   ├── wifi/       Wi-Fi protocol stack
+   │   │   ├── bluetooth/  Bluetooth LE / Classic stack
+   │   │   ├── usb/        USB device stack
+   │   │   ├── rtk_coex/   Wi-Fi / Bluetooth coexistence
+   │   │   └── os_wrapper/ OS abstraction layer
+   │   └── scripts/        Toolchain and binary blob update scripts
+   └── zephyr/             Zephyr module descriptor (module.yml, binary blobs)
+
+Usage
+*****
+
+This repository is fetched automatically when initializing the Nuwa SDK:
+
+.. code-block:: bash
+
+   west init -m https://github.com/Ameba-AIoT/nuwa.git && west update
+
+See the `Nuwa SDK <https://github.com/Ameba-AIoT/nuwa>`_ for build and usage documentation.
