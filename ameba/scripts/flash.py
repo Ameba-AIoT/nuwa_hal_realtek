@@ -10,6 +10,7 @@ import base64
 import json
 import subprocess
 import shutil
+import tempfile
 import logging
 from enum import IntEnum
 from pathlib import Path
@@ -204,10 +205,29 @@ def prepare_flash_environment(device: str) -> str:
         raise FileNotFoundError(f"Floader file for {key} not found at: {floader_src}")
 
     FLOADERS_DEST.mkdir(parents=True, exist_ok=True)
+    floader_dest = FLOADERS_DEST / floader_src.name
 
-    # Copy file (overwrite to ensure correctness)
+    # Keep the existing file unless blobs is newer; skip if up to date.
     try:
-        shutil.copy2(floader_src, FLOADERS_DEST)
+        if floader_dest.exists() and floader_dest.stat().st_mtime >= floader_src.stat().st_mtime:
+            logger.info(f"Floader: using existing {floader_dest}")
+            return str(profile_path)
+
+        fd, tmp_path = tempfile.mkstemp(dir=str(FLOADERS_DEST), prefix=floader_dest.name + ".")
+        try:
+            with os.fdopen(fd, "wb") as dst, open(floader_src, "rb") as src:
+                shutil.copyfileobj(src, dst)
+            os.chmod(tmp_path, 0o644)
+            st = floader_src.stat()
+            os.utime(tmp_path, ns=(st.st_atime_ns, st.st_mtime_ns))
+            os.replace(tmp_path, floader_dest)
+        except BaseException:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+            raise
+        logger.info(f"Floader: copied from blobs {floader_dest}")
     except Exception as e:
         logger.error(f"Failed to copy floader: {e}")
         raise

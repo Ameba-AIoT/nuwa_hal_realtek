@@ -8,6 +8,12 @@
 
 static const char *const TAG = "SDH";
 
+/**
+ * @brief  Check whether the elapsed time since start_us has exceeded timeout_us.
+ * @param  start_us Timestamp in microseconds at the start of the operation.
+ * @param  timeout_us Timeout duration in microseconds.
+ * @return 1 if timed out, 0 otherwise.
+ */
 static u8 is_timeout(u32 start_us, u32 timeout_us)
 {
 	u32 now_us = DTimestamp_Get();
@@ -27,11 +33,37 @@ static u8 is_timeout(u32 start_us, u32 timeout_us)
 	}
 }
 
+/* Exported functions --------------------------------------------------------*/
+/** @addtogroup SDHOST_Exported_Functions
+  * @{
+  */
+
 /**
- * @brief  Initializes the SDMMC according to the specified
- *         parameters in the SDMMC_InitTypeDef and create the associated handle.
- * @param  SDIOx Pointer to SDIO host
- * @retval HAL status
+ * @brief  Route the SD host to its clock source. Call before touching any SD
+ *         host register, as the register block is only reachable once the
+ *         peripheral is fed from a running clock.
+ */
+void SDIO_ClockSourceInit(void)
+{
+	RCC_PeriphClockSourceSet(SDH, SYS_PLL);
+	RCC_PeriphClockDividerFENSet(SYS_PLL_SDH, 1);
+}
+
+/**
+ * @brief  Host-init entry for the shared Zephyr SDHC driver; thin alias for
+ *         SDIOH_Init(). Native firmware keeps calling SDIOH_Init() directly.
+ */
+u32 SDIO_HostInit(SDIOHOST_TypeDef *SDIOx)
+{
+	return SDIOH_Init(SDIOx);
+}
+
+/**
+ * @brief  Initialize the SD host controller and enable the SD clock.
+ * @param  SDIOx Pointer to SD host controller.
+ * @return HAL status:
+ *           - HAL_OK: Success.
+ *           - Others: Failure.
  */
 u32 SDIOH_Init(SDIOHOST_TypeDef *SDIOx)
 {
@@ -85,9 +117,11 @@ u32 SDIOH_Init(SDIOHOST_TypeDef *SDIOx)
 }
 
 /**
- * @brief  Perform software reset.
- * @param  SDIOx Pointer to SDIO host
- * @return SD result.
+ * @brief  Perform a full software reset of the SD host controller.
+ * @param  SDIOx Pointer to SD host controller.
+ * @return HAL status:
+ *           - HAL_OK: Success.
+ *           - Others: Failure.
  */
 u32 SDIO_ResetAll(SDIOHOST_TypeDef *SDIOx)
 {
@@ -110,31 +144,79 @@ u32 SDIO_ResetAll(SDIOHOST_TypeDef *SDIOx)
 	return HAL_OK;
 }
 
+/**
+ * @brief  Reset the CMD and DAT state machines.
+ *         Used to clear inhibit-stuck conditions without disturbing host configuration.
+ * @param  SDIOx Pointer to SD host controller.
+ * @return HAL status:
+ *           - HAL_OK: Success.
+ *           - HAL_TIMEOUT: Failure.
+ */
+u32 SDIO_ResetCmdDat(SDIOHOST_TypeDef *SDIOx)
+{
+	u32 start_us;
+	u32 timeout_us = SDIO_CMD_TIMEOUT_US;
+	u32 mask = SDIOHOST_BIT_SW_RST_CMD | SDIOHOST_BIT_SW_RST_DAT;
+
+	SDIOx->SDIOHOST_SW_RST |= mask;
+
+	start_us = DTimestamp_Get();
+	while (SDIOx->SDIOHOST_SW_RST & mask) {
+		if (is_timeout(start_us, timeout_us)) {
+			RTK_LOGE(TAG, "%s: timeout\n", __func__);
+			return HAL_TIMEOUT;
+		}
+	}
+
+	return HAL_OK;
+}
+
+/**
+ * @brief  Poll until the specified inhibit bits in PRESENT_STATE are clear.
+ *         Polls every 1 ms for up to 10 attempts (10 ms total).
+ * @param  SDIOx  Pointer to SD host controller.
+ * @param  mask   Bitmask of inhibit bits to wait for
+ *                (SDIOHOST_BIT_CMD_INHIBIT_CMD and/or SDIOHOST_BIT_CMD_INHIBIT_DAT).
+ * @return HAL status:
+ *           - HAL_OK: Success.
+ *           - HAL_BUSY: Failure.
+ */
+static u32 SDIO_WaitInhibit(SDIOHOST_TypeDef *SDIOx, u32 mask)
+{
+	u8 retries = 10;
+
+	while (retries-- != 0) {
+		if (!(SDIO_GetStatus(SDIOx) & mask)) {
+			return HAL_OK;
+		}
+		DelayMs(1);
+	}
+
+	RTK_LOGE(TAG, "inhibit timeout, present_state=0x%08x\n", SDIO_GetStatus(SDIOx));
+	return HAL_BUSY;
+}
+
+/**
+ * @brief  Check that the SDIO bus and state machine are idle and the card is inserted.
+ * @param  SDIOx Pointer to SD host controller.
+ * @return HAL status:
+ *           - HAL_OK: Success.
+ *           - Others: Failure.
+ */
 u32 SDIO_CheckState(SDIOHOST_TypeDef *SDIOx)
 {
-	u32 status = SDIO_GetStatus(SDIOx);
+	u32 status;
+	u32 ret;
 
-	// check the SDIO bus status
-	/* CMD line + DATA(4) line level */
-	if ((status & (SDIOHOST_BIT_CMD_LINE_SIG_LVL | SDIOHOST_MASK_DAT_LINE_SIG_LVL)) !=
-		(SDIOHOST_BIT_CMD_LINE_SIG_LVL | SDIOHOST_MASK_DAT_LINE_SIG_LVL)) {
-		RTK_LOGE(TAG, "SDIO bus isn't in the idle state!!\n");
-		RTK_LOGE(TAG, "SDIOHOST_PRESENT_STATE:0x%x\n", status);
-		return HAL_BUSY;
+	ret = SDIO_WaitInhibit(SDIOx, SDIOHOST_BIT_CMD_INHIBIT_CMD | SDIOHOST_BIT_CMD_INHIBIT_DAT);
+	if (ret != HAL_OK) {
+		RTK_LOGE(TAG, "CMD/DAT state machine isn't in the idle state!!\n");
+		return ret;
 	}
 
-	// check the CMD & DATA state machine
-	if (status & SDIOHOST_BIT_CMD_INHIBIT_CMD) {
-		RTK_LOGE(TAG, "CMD state machine isn't in the idle state!!\n");
-		return HAL_BUSY;
-	}
+	status = SDIO_GetStatus(SDIOx);
 
-	if (status & SDIOHOST_BIT_CMD_INHIBIT_DAT) {
-		RTK_LOGE(TAG, "DATA state machine isn't in the idle state!!\n");
-		return HAL_BUSY;
-	}
-
-	// check the SDIO card module state machine
+	/* check the SDIO card module state machine */
 	if (status & (SDIOHOST_BIT_WRITE_XFER_ACTIVE | SDIOHOST_BIT_READ_XFER_ACTIVE)) {
 		RTK_LOGW(TAG, "SDIO card module state machine isn't in the idle state !!\n");
 		return HAL_BUSY;
@@ -156,9 +238,9 @@ u32 SDIO_CheckState(SDIOHOST_TypeDef *SDIOx)
 }
 
 /**
- * @brief  Read data (word) from Rx FIFO in blocking mode (polling)
- * @param  SDIOx Pointer to SDIO host
- * @retval HAL status
+ * @brief  Read one word (32 bits) from the Rx FIFO.
+ * @param  SDIOx Pointer to SD host controller.
+ * @return The data read from the Rx FIFO.
  */
 u32 SDIO_ReadFIFO(SDIOHOST_TypeDef *SDIOx)
 {
@@ -167,10 +249,9 @@ u32 SDIO_ReadFIFO(SDIOHOST_TypeDef *SDIOx)
 }
 
 /**
- * @brief  Write data (word) to Tx FIFO in blocking mode (polling)
- * @param  SDIOx Pointer to SDIO host
- * @param  pWriteData: pointer to data to write
- * @retval HAL status
+ * @brief  Write one word (32 bits) to the Tx FIFO.
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  pWriteData Pointer to the 32-bit word to write.
  */
 void SDIO_WriteFIFO(SDIOHOST_TypeDef *SDIOx, u32 *pWriteData)
 {
@@ -179,9 +260,8 @@ void SDIO_WriteFIFO(SDIOHOST_TypeDef *SDIOx, u32 *pWriteData)
 }
 
 /**
- * @brief  Set SDMMC Power state to ON.
- * @param  SDIOx Pointer to SDIO host
- * @return NULL
+ * @brief  Set the SD host power state to ON.
+ * @param  SDIOx Pointer to SD host controller.
  */
 void SDIO_PowerState_ON(SDIOHOST_TypeDef *SDIOx)
 {
@@ -190,9 +270,8 @@ void SDIO_PowerState_ON(SDIOHOST_TypeDef *SDIOx)
 }
 
 /**
- * @brief  Set SDMMC Power state to OFF.
- * @param  SDIOx Pointer to SDIO host
- * @retval HAL status
+ * @brief  Set the SD host power state to OFF.
+ * @param  SDIOx Pointer to SD host controller.
  */
 void SDIO_PowerState_OFF(SDIOHOST_TypeDef *SDIOx)
 {
@@ -201,18 +280,25 @@ void SDIO_PowerState_OFF(SDIOHOST_TypeDef *SDIOx)
 }
 
 /**
- * @brief  Get SDMMC Power state.
- * @param  SDIOx Pointer to SDIO host
- * @retval Power status of the controller. The returned value can be one of the
- *         following values:
- *            - 0x00: Power OFF
- *            - 0x01: Power ON
+ * @brief  Get the SD host power state.
+ * @param  SDIOx Pointer to SD host controller.
+ * @return Power status of the controller:
+ *         - 0x00: Power OFF.
+ *         - 0x01: Power ON.
  */
 u8 SDIO_GetPowerState(SDIOHOST_TypeDef *SDIOx)
 {
 	return (SDIOx->SDIOHOST_PWR_CTL & SDIOHOST_BIT_SD_BUS_PWR);
 }
 
+/**
+ * @brief  Configure the SD host clock frequency and enable the SD clock.
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  ClkKHz Target clock frequency in kHz.
+ * @return HAL status:
+ *           - HAL_OK: Success.
+ *           - Others: Failure.
+ */
 u32 SDIO_ConfigClock(SDIOHOST_TypeDef *SDIOx, u32 ClkKHz)
 {
 	u32 BaseClk;
@@ -263,6 +349,14 @@ u32 SDIO_ConfigClock(SDIOHOST_TypeDef *SDIOx, u32 ClkKHz)
 	return HAL_OK;
 }
 
+/**
+ * @brief  Configure the SD host data bus width.
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  BusWidth Bus width to configure: SDIOH_BUS_WIDTH_1BIT or SDIOH_BUS_WIDTH_4BIT.
+ * @return HAL status:
+ *           - HAL_OK: Success.
+ *           - Others: Failure.
+ */
 u32 SDIO_ConfigBusWidth(SDIOHOST_TypeDef *SDIOx, u8 BusWidth)
 {
 	assert_param(IS_SD_BUS_WIDTH(BusWidth));
@@ -278,6 +372,15 @@ u32 SDIO_ConfigBusWidth(SDIOHOST_TypeDef *SDIOx, u8 BusWidth)
 	return HAL_OK;
 }
 
+/**
+ * @brief  Configure the DMA mode and set the DMA system address.
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  DmaMode DMA mode: SDIO_SDMA_MODE (SDIO_ADMA2_32B_MODE and SDIO_ADMA2_64B_MODE are not supported).
+ * @param  DmaAddr System memory address for the DMA transfer.
+ * @return HAL status:
+ *           - HAL_OK: Success.
+ *           - Others: Failure.
+ */
 u32 SDIO_ConfigDMA(SDIOHOST_TypeDef *SDIOx, u8 DmaMode, u32 DmaAddr)
 {
 	u32 tmp0, tmp1;
@@ -325,10 +428,9 @@ u32 SDIO_ConfigDMA(SDIOHOST_TypeDef *SDIOx, u8 DmaMode, u32 DmaAddr)
 /**
  * @brief  Configure the SDMMC data path according to the specified
  *         parameters in the SDIO_DataInitTypeDef.
- * @param  SDIOx: Pointer to SDIO register base
- * @param  Data : pointer to a SDIO_DataInitTypeDef structure
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  Data Pointer to an @ref SDIO_DataInitTypeDef structure
  *         that contains the configuration information for the SDMMC data.
- * @retval HAL status
  */
 void SDIO_ConfigData(SDIOHOST_TypeDef *SDIOx, SDIO_DataInitTypeDef *Data)
 {
@@ -368,21 +470,39 @@ void SDIO_ConfigData(SDIOHOST_TypeDef *SDIOx, SDIO_DataInitTypeDef *Data)
 
 /**
  * @brief  Configure the SDMMC command path according to the specified
- * parameters in SDIO_CmdInitTypeDef structure and send the command
- * @param  SDIOx Pointer to SDIO host
- * @param  Command: pointer to a SDIO_CmdInitTypeDef structure that contains
- *         the configuration information for the SDMMC command
- * @retval HAL status
+ * parameters in @ref SDIO_CmdInitTypeDef structure and send the command.
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  Command Pointer to an @ref SDIO_CmdInitTypeDef structure that contains
+ *         the configuration information for the SDMMC command.
  */
 void SDIO_SendCommand(SDIOHOST_TypeDef *SDIOx, SDIO_CmdInitTypeDef *Command)
 {
 	u32 tmp = 0;
+	u32 mask;
 
 	/* Check the parameters */
 	assert_param(IS_SD_CMD_INDEX(Command->CmdIndex));
 	assert_param(IS_SD_CMD_TYPE(Command->CmdType));
 	assert_param(IS_SD_RESP_TYPE(Command->RespType));
 	assert_param(IS_SD_DATA_TYPE(Command->DataPresent));
+
+	/* Data commands and R1b/R5b responses both occupy the DAT line (card pulls DAT0
+	 * low to signal busy), so wait for DAT_INHIBIT to clear before issuing them.
+	 * Exception: CMD12 (stop transfer) must bypass the DAT_INHIBIT check because it
+	 * is used to end the very transfer that is currently holding the DAT line. */
+	mask = SDIOHOST_BIT_CMD_INHIBIT_CMD;
+	if (Command->DataPresent == SDIO_TRANS_WITH_DATA ||
+		Command->RespType == SDMMC_RSP_R1B ||
+		Command->RespType == SDMMC_RSP_R5B) {
+		mask |= SDIOHOST_BIT_CMD_INHIBIT_DAT;
+	}
+	if (Command->CmdIndex == SDMMC_STOP_TRANSMISSION) {
+		mask &= ~SDIOHOST_BIT_CMD_INHIBIT_DAT;
+	}
+	if (SDIO_WaitInhibit(SDIOx, mask) != HAL_OK) {
+		RTK_LOGE(TAG, "cmd%d: inhibit not cleared, command dropped\n", Command->CmdIndex);
+		return;
+	}
 
 	/* Set the SDMMC Argument value */
 	SDIOx->SDIOHOST_CMD_ARG1 = Command->Argument;
@@ -440,15 +560,15 @@ void SDIO_SendCommand(SDIOHOST_TypeDef *SDIOx, SDIO_CmdInitTypeDef *Command)
 }
 
 /**
- * @brief  Return the response received from the card for the last command
- * @param  SDIOx Pointer to SDIO host
- * @param  Response: Specifies the SDMMC response register.
+ * @brief  Return the response received from the card for the last command.
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  Response Specifies the SDMMC response register.
  *          This parameter can be one of the following values:
  *            @arg SDIO_RESP0: Response Register 0
  *            @arg SDIO_RESP1: Response Register 1
  *            @arg SDIO_RESP2: Response Register 2
  *            @arg SDIO_RESP3: Response Register 3
- * @retval The Corresponding response register value
+ * @return The corresponding response register value.
  */
 u32 SDIO_GetResponse(SDIOHOST_TypeDef *SDIOx, u8 Response)
 {
@@ -463,6 +583,14 @@ u32 SDIO_GetResponse(SDIOHOST_TypeDef *SDIOx, u8 Response)
 	return (*(u32 *)tmp);
 }
 
+/**
+ * @brief  Send the SDIO operation condition command (CMD5).
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  Ocr Operation condition register value to send.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
+ */
 u32 SDIO_CmdSendOpCond(SDIOHOST_TypeDef *SDIOx, u32 Ocr)
 {
 	SDIO_CmdInitTypeDef sdmmc_cmdinit;
@@ -481,6 +609,14 @@ u32 SDIO_CmdSendOpCond(SDIOHOST_TypeDef *SDIOx, u32 Ocr)
 	return errorstate;
 }
 
+/**
+ * @brief  Send the SDIO direct read/write command (CMD52).
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  Argument CMD52 argument encoding function number, address, direction, and data.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
+ */
 u32 SDIO_CmdRWDirect(SDIOHOST_TypeDef *SDIOx, u32 Argument)
 {
 	SDIO_CmdInitTypeDef sdmmc_cmdinit;
@@ -499,6 +635,14 @@ u32 SDIO_CmdRWDirect(SDIOHOST_TypeDef *SDIOx, u32 Argument)
 	return errorstate;
 }
 
+/**
+ * @brief  Send the SDIO extended read/write command (CMD53).
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  Argument CMD53 argument encoding function number, address, direction, block/byte mode, and count.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
+ */
 u32 SDIO_CmdRWExtended(SDIOHOST_TypeDef *SDIOx, u32 Argument)
 {
 	SDIO_CmdInitTypeDef sdmmc_cmdinit;
@@ -519,7 +663,7 @@ u32 SDIO_CmdRWExtended(SDIOHOST_TypeDef *SDIOx, u32 Argument)
 
 /**
  * @brief Get SDIOx present status.
- * @param SDIOx Pointer to SDIO host.
+ * @param SDIOx Pointer to SD host controller.
  * @return SDIOx present status.
  */
 u32 SDIO_GetStatus(SDIOHOST_TypeDef *SDIOx)
@@ -529,11 +673,10 @@ u32 SDIO_GetStatus(SDIOHOST_TypeDef *SDIOx)
 
 /**
  * @brief Enable or disable specified SDIOx normal interrupt signal.
- * @param SDIOx Pointer to SDIO host.
+ * @param SDIOx Pointer to SD host controller.
  * @param SDIO_IT Specified SDIOx normal interrupt sources to be enabled or disabled.
  * @param NewState New state of the specified SDIOx normal interrupt signal.
- * 		This parameter can be ENABLE or DISABLE.
- * @return None
+ *         This parameter can be ENABLE or DISABLE.
  */
 void SDIO_ConfigNormIntSig(SDIOHOST_TypeDef *SDIOx, u32 SDIO_IT, u32 NewState)
 {
@@ -548,11 +691,10 @@ void SDIO_ConfigNormIntSig(SDIOHOST_TypeDef *SDIOx, u32 SDIO_IT, u32 NewState)
 
 /**
  * @brief Enable or disable specified SDIOx error interrupt signal.
- * @param SDIOx Pointer to SDIO host.
+ * @param SDIOx Pointer to SD host controller.
  * @param SDIO_IT Specified SDIOx error interrupt sources to be enabled or disabled.
  * @param NewState New state of the specified SDIOx error interrupt signal.
- * 		This parameter can be ENABLE or DISABLE.
- * @return None
+ *         This parameter can be ENABLE or DISABLE.
  */
 void SDIO_ConfigErrIntSig(SDIOHOST_TypeDef *SDIOx, u32 SDIO_IT, u32 NewState)
 {
@@ -567,11 +709,10 @@ void SDIO_ConfigErrIntSig(SDIOHOST_TypeDef *SDIOx, u32 SDIO_IT, u32 NewState)
 
 /**
  * @brief Enable or disable specified SDIOx normal interrupt status.
- * @param SDIOx Pointer to SDIO host.
+ * @param SDIOx Pointer to SD host controller.
  * @param SDIO_IT Specified SDIOx normal interrupt sources to be enabled or disabled.
  * @param NewState New state of the specified SDIOx normal interrupt status.
- * 		This parameter can be ENABLE or DISABLE.
- * @return None
+ *         This parameter can be ENABLE or DISABLE.
  */
 void SDIO_ConfigNormIntSts(SDIOHOST_TypeDef *SDIOx, u32 SDIO_IT, u32 NewState)
 {
@@ -586,11 +727,10 @@ void SDIO_ConfigNormIntSts(SDIOHOST_TypeDef *SDIOx, u32 SDIO_IT, u32 NewState)
 
 /**
  * @brief Enable or disable specified SDIOx error interrupt status.
- * @param SDIOx Pointer to SDIO host.
+ * @param SDIOx Pointer to SD host controller.
  * @param SDIO_IT Specified SDIOx error interrupt sources to be enabled or disabled.
  * @param NewState New state of the specified SDIOx error interrupt status.
- * 		This parameter can be ENABLE or DISABLE.
- * @return None
+ *         This parameter can be ENABLE or DISABLE.
  */
 void SDIO_ConfigErrIntSts(SDIOHOST_TypeDef *SDIOx, u32 SDIO_IT, u32 NewState)
 {
@@ -605,7 +745,7 @@ void SDIO_ConfigErrIntSts(SDIOHOST_TypeDef *SDIOx, u32 SDIO_IT, u32 NewState)
 
 /**
  * @brief Get SDIOx normal status.
- * @param SDIOx Pointer to SDIO host.
+ * @param SDIOx Pointer to SD host controller.
  * @return SDIOx normal status.
  */
 u32 SDIO_GetNormSts(SDIOHOST_TypeDef *SDIOx)
@@ -615,7 +755,7 @@ u32 SDIO_GetNormSts(SDIOHOST_TypeDef *SDIOx)
 
 /**
  * @brief Get SDIOx error status.
- * @param SDIOx Pointer to SDIO host.
+ * @param SDIOx Pointer to SD host controller.
  * @return SDIOx error status.
  */
 u32 SDIO_GetErrSts(SDIOHOST_TypeDef *SDIOx)
@@ -625,7 +765,7 @@ u32 SDIO_GetErrSts(SDIOHOST_TypeDef *SDIOx)
 
 /**
  * @brief Clear SDIOx normal status.
- * @param SDIOx Pointer to SDIO host.
+ * @param SDIOx Pointer to SD host controller.
  * @param SDIO_IT Specified SDIOx normal status to be cleared.
  */
 void SDIO_ClearNormSts(SDIOHOST_TypeDef *SDIOx, u32 SDIO_IT)
@@ -635,7 +775,7 @@ void SDIO_ClearNormSts(SDIOHOST_TypeDef *SDIOx, u32 SDIO_IT)
 
 /**
  * @brief Clear SDIOx error status.
- * @param SDIOx Pointer to SDIO host.
+ * @param SDIOx Pointer to SD host controller.
  * @param SDIO_IT Specified SDIOx error status to be cleared.
  */
 void SDIO_ClearErrSts(SDIOHOST_TypeDef *SDIOx, u32 SDIO_IT)
@@ -644,9 +784,12 @@ void SDIO_ClearErrSts(SDIOHOST_TypeDef *SDIOx, u32 SDIO_IT)
 }
 
 /**
- * @brief  Send the Data Block Length command and check the response
- * @param  SDIOx: Pointer to SDIO register base
- * @retval HAL status
+ * @brief  Send CMD16 (SET_BLOCKLEN) to set the data block length and check the response.
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  BlockSize Block length to be set.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CmdBlockLength(SDIOHOST_TypeDef *SDIOx, u32 BlockSize)
 {
@@ -671,9 +814,12 @@ u32 SDMMC_CmdBlockLength(SDIOHOST_TypeDef *SDIOx, u32 BlockSize)
 }
 
 /**
- * @brief  Send the Read Single Block command and check the response
- * @param  SDIOx: Pointer to SDIO register base
- * @retval HAL status
+ * @brief  Send the Read Single Block command and check the response.
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  ReadAdd Read start address.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CmdReadSingleBlock(SDIOHOST_TypeDef *SDIOx, u32 ReadAdd)
 {
@@ -695,9 +841,12 @@ u32 SDMMC_CmdReadSingleBlock(SDIOHOST_TypeDef *SDIOx, u32 ReadAdd)
 }
 
 /**
- * @brief  Send the Read Multi Block command and check the response
- * @param  SDIOx: Pointer to SDIO register base
- * @retval HAL status
+ * @brief  Send the Read Multi Block command and check the response.
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  ReadAdd Read start address.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CmdReadMultiBlock(SDIOHOST_TypeDef *SDIOx, u32 ReadAdd)
 {
@@ -719,9 +868,12 @@ u32 SDMMC_CmdReadMultiBlock(SDIOHOST_TypeDef *SDIOx, u32 ReadAdd)
 }
 
 /**
- * @brief  Send the Write Single Block command and check the response
- * @param  SDIOx: Pointer to SDIO register base
- * @retval HAL status
+ * @brief  Send the Write Single Block command and check the response.
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  WriteAdd Write start address.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CmdWriteSingleBlock(SDIOHOST_TypeDef *SDIOx, u32 WriteAdd)
 {
@@ -743,9 +895,12 @@ u32 SDMMC_CmdWriteSingleBlock(SDIOHOST_TypeDef *SDIOx, u32 WriteAdd)
 }
 
 /**
- * @brief  Send the Write Multi Block command and check the response
- * @param  SDIOx: Pointer to SDIO register base
- * @retval HAL status
+ * @brief  Send the Write Multi Block command and check the response.
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  WriteAdd Write start address.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CmdWriteMultiBlock(SDIOHOST_TypeDef *SDIOx, u32 WriteAdd)
 {
@@ -767,9 +922,12 @@ u32 SDMMC_CmdWriteMultiBlock(SDIOHOST_TypeDef *SDIOx, u32 WriteAdd)
 }
 
 /**
- * @brief  Send the Start Address Erase command for SD and check the response
- * @param  SDIOx: Pointer to SDIO register base
- * @retval HAL status
+ * @brief  Send the Start Address Erase command for SD and check the response.
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  StartAdd Start address of erase range.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CmdSDEraseStartAdd(SDIOHOST_TypeDef *SDIOx, u32 StartAdd)
 {
@@ -791,9 +949,12 @@ u32 SDMMC_CmdSDEraseStartAdd(SDIOHOST_TypeDef *SDIOx, u32 StartAdd)
 }
 
 /**
- * @brief  Send the End Address Erase command for SD and check the response
- * @param  SDIOx: Pointer to SDIO register base
- * @retval HAL status
+ * @brief  Send the End Address Erase command for SD and check the response.
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  EndAdd End address of erase range.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CmdSDEraseEndAdd(SDIOHOST_TypeDef *SDIOx, u32 EndAdd)
 {
@@ -815,10 +976,12 @@ u32 SDMMC_CmdSDEraseEndAdd(SDIOHOST_TypeDef *SDIOx, u32 EndAdd)
 }
 
 /**
- * @brief  Send the Erase command and check the response
- * @param  SDIOx: Pointer to SDIO register base
- * @param  BlockCnt: Count of blocks to be erased.
- * @retval HAL status
+ * @brief  Send the Erase command and check the response.
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  BlockCnt Count of blocks to be erased.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CmdErase(SDIOHOST_TypeDef *SDIOx, u32 BlockCnt)
 {
@@ -841,8 +1004,10 @@ u32 SDMMC_CmdErase(SDIOHOST_TypeDef *SDIOx, u32 BlockCnt)
 
 /**
  * @brief  Send the Stop Transfer command and check the response.
- * @param  SDIOx: Pointer to SDIO register base
- * @retval HAL status
+ * @param  SDIOx Pointer to SD host controller.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CmdStopTransfer(SDIOHOST_TypeDef *SDIOx)
 {
@@ -865,9 +1030,11 @@ u32 SDMMC_CmdStopTransfer(SDIOHOST_TypeDef *SDIOx)
 
 /**
  * @brief  Send the Select Deselect command and check the response.
- * @param  SDIOx: Pointer to SDIO register base
- * @param  addr: Address of the card to be selected
- * @retval HAL status
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  Addr Address of the card to be selected.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CmdSelDesel(SDIOHOST_TypeDef *SDIOx, u32 Addr)
 {
@@ -895,8 +1062,10 @@ u32 SDMMC_CmdSelDesel(SDIOHOST_TypeDef *SDIOx, u32 Addr)
 
 /**
  * @brief  Send the Go Idle State command and check the response.
- * @param  SDIOx: Pointer to SDIO register base
- * @retval HAL status
+ * @param  SDIOx Pointer to SD host controller.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CmdGoIdleState(SDIOHOST_TypeDef *SDIOx)
 {
@@ -918,8 +1087,10 @@ u32 SDMMC_CmdGoIdleState(SDIOHOST_TypeDef *SDIOx)
 
 /**
  * @brief  Send the Operating Condition command and check the response.
- * @param  SDIOx: Pointer to SDIO register base
- * @retval HAL status
+ * @param  SDIOx Pointer to SD host controller.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CmdOperCond(SDIOHOST_TypeDef *SDIOx)
 {
@@ -945,12 +1116,13 @@ u32 SDMMC_CmdOperCond(SDIOHOST_TypeDef *SDIOx)
 }
 
 /**
- * @brief  Send the Application command to verify that that the next command
- *         is an application specific com-mand rather than a standard command
- *         and check the response.
- * @param  SDIOx: Pointer to SDIO register base
- * @param  Argument: Command Argument
- * @retval HAL status
+ * @brief  Send the Application command to verify that the next command is an
+ *         application-specific command rather than a standard command.
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  Argument Card RCA shifted to bits [31:16], or 0 for a broadcast.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CmdAppCommand(SDIOHOST_TypeDef *SDIOx, u32 Argument)
 {
@@ -966,7 +1138,7 @@ u32 SDMMC_CmdAppCommand(SDIOHOST_TypeDef *SDIOx, u32 Argument)
 
 	/* Check for error conditions */
 	/* If there is a HAL_ERR_PARA, it is a MMC card, else
-	it is a SD card: SD card 2.0 (voltage range mismatch)
+	it is an SD card: SD card 2.0 (voltage range mismatch)
 	   or SD card 1.x */
 	errorstate = SDIO_WaitResp(SDIOx, sdmmc_cmdinit.RespType, SDMMC_CMD_TIMEOUT);
 
@@ -975,10 +1147,12 @@ u32 SDMMC_CmdAppCommand(SDIOHOST_TypeDef *SDIOx, u32 Argument)
 
 /**
  * @brief  Send the command asking the accessed card to send its operating
- *         condition register (OCR)
- * @param  SDIOx: Pointer to SDIO register base
- * @param  Argument: Command Argument
- * @retval HAL status
+ *         condition register (OCR).
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  Argument Command Argument.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CmdAppOperCommand(SDIOHOST_TypeDef *SDIOx, u32 Argument)
 {
@@ -1000,9 +1174,11 @@ u32 SDMMC_CmdAppOperCommand(SDIOHOST_TypeDef *SDIOx, u32 Argument)
 
 /**
  * @brief  Send the Bus Width command and check the response.
- * @param  SDIOx: Pointer to SDIO register base
- * @param  BusWidth: BusWidth
- * @retval HAL status
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  BusWidth Bus width argument: 0 for 1-bit mode, 2 for 4-bit mode.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CmdBusWidth(SDIOHOST_TypeDef *SDIOx, u32 BusWidth)
 {
@@ -1024,9 +1200,11 @@ u32 SDMMC_CmdBusWidth(SDIOHOST_TypeDef *SDIOx, u32 BusWidth)
 
 /**
  * @brief  Send the set write block erase count command and check the response.
- * @param  SDIOx: Pointer to SDIO register base
- * @param  BlockCnt: Number of write blocks to be pre-erased before writing.
- * @retval HAL status
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  BlockCnt Number of write blocks to be pre-erased before writing.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CmdSetWrBlkEraseCnt(SDIOHOST_TypeDef *SDIOx, u32 BlockCnt)
 {
@@ -1048,8 +1226,10 @@ u32 SDMMC_CmdSetWrBlkEraseCnt(SDIOHOST_TypeDef *SDIOx, u32 BlockCnt)
 
 /**
  * @brief  Send the Send SCR command and check the response.
- * @param  SDIOx: Pointer to SDIO register base
- * @retval HAL status
+ * @param  SDIOx Pointer to SD host controller.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CmdSendSCR(SDIOHOST_TypeDef *SDIOx)
 {
@@ -1072,8 +1252,10 @@ u32 SDMMC_CmdSendSCR(SDIOHOST_TypeDef *SDIOx)
 
 /**
  * @brief  Send the Send CID command and check the response.
- * @param  SDIOx: Pointer to SDIO register base
- * @retval HAL status
+ * @param  SDIOx Pointer to SD host controller.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CmdSendCID(SDIOHOST_TypeDef *SDIOx)
 {
@@ -1095,10 +1277,12 @@ u32 SDMMC_CmdSendCID(SDIOHOST_TypeDef *SDIOx)
 }
 
 /**
- * @brief  Send the Send CSD command and check the response.
- * @param  SDIOx: Pointer to SDIO register base
- * @param  Argument: Command Argument
- * @retval HAL status
+ * @brief  Send the CSD command and check the response.
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  Argument Card RCA shifted to bits [31:16].
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CmdSendCSD(SDIOHOST_TypeDef *SDIOx, u32 Argument)
 {
@@ -1120,10 +1304,11 @@ u32 SDMMC_CmdSendCSD(SDIOHOST_TypeDef *SDIOx, u32 Argument)
 }
 
 /**
- * @brief  Send the Send CSD command and check the response.
- * @param  SDIOx: Pointer to SDIO register base
- * @param  pRCA: Card RCA
- * @retval HAL status
+ * @brief  Send the Set Relative Address command (CMD3) and check the response.
+ * @param  SDIOx Pointer to SD host controller.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CmdSetRelAdd(SDIOHOST_TypeDef *SDIOx)
 {
@@ -1146,9 +1331,11 @@ u32 SDMMC_CmdSetRelAdd(SDIOHOST_TypeDef *SDIOx)
 
 /**
  * @brief  Send the Status command and check the response.
- * @param  SDIOx: Pointer to SDIO register base
- * @param  Argument: Command Argument
- * @retval HAL status
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  Argument Card RCA shifted to bits [31:16].
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CmdSendStatus(SDIOHOST_TypeDef *SDIOx, u32 Argument)
 {
@@ -1170,8 +1357,10 @@ u32 SDMMC_CmdSendStatus(SDIOHOST_TypeDef *SDIOx, u32 Argument)
 
 /**
  * @brief  Send the Status register command and check the response.
- * @param  SDIOx: Pointer to SDIO register base
- * @retval HAL status
+ * @param  SDIOx Pointer to SD host controller.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CmdStatusRegister(SDIOHOST_TypeDef *SDIOx)
 {
@@ -1192,11 +1381,12 @@ u32 SDMMC_CmdStatusRegister(SDIOHOST_TypeDef *SDIOx)
 }
 
 /**
- * @brief  Checks switchable function and switch card function.
- * MMC_SWITCH command
- * @param  SDIOx: Pointer to SDIO register base
- * @parame Argument: Argument used for the command
- * @retval HAL status
+ * @brief  Send the SD switch function command (CMD6) to check or switch card function.
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  Argument CMD6 argument encoding mode, function group, and function value.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CmdSwitch(SDIOHOST_TypeDef *SDIOx, u32 Argument)
 {
@@ -1219,11 +1409,13 @@ u32 SDMMC_CmdSwitch(SDIOHOST_TypeDef *SDIOx, u32 Argument)
 }
 
 /**
- * @brief  Checks for error conditions after sending CMD.
- * @param  SDIOx Pointer to SDIO host
- * @param  RespType Response type, which can be a value of @ref SDIO_LL_Response_Type.
- * @param  TimeOutUs Timeout value in us.
- * @retval SD Card error state
+ * @brief  Wait for command completion and check for error conditions.
+ * @param  SDIOx Pointer to SD host controller.
+ * @param  RespType Response type, which can be a value of @ref SDHOST_Response_Type.
+ * @param  TimeOutUs Timeout value in microseconds.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDIO_WaitResp(SDIOHOST_TypeDef *SDIOx, u8 RespType, u32 TimeOutUs)
 {
@@ -1358,9 +1550,11 @@ u32 SDIO_WaitResp(SDIOHOST_TypeDef *SDIOx, u8 RespType, u32 TimeOutUs)
 }
 
 /**
- * @brief  Checks for error conditions for R1 response.
+ * @brief  Check for error conditions for R1 response.
  * @param  resp R1 Response of CMD.
- * @retval SD Card error state.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CheckErrResp1(u32 resp)
 {
@@ -1408,9 +1602,11 @@ u32 SDMMC_CheckErrResp1(u32 resp)
 }
 
 /**
- * @brief  Checks for error conditions for R5 response.
+ * @brief  Check for error conditions for R5 response.
  * @param  resp R5 Response of CMD.
- * @retval SD Card error state.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CheckErrResp5(u32 resp)
 {
@@ -1428,9 +1624,11 @@ u32 SDMMC_CheckErrResp5(u32 resp)
 }
 
 /**
- * @brief  Checks for error conditions for R6 response.
+ * @brief  Check for error conditions for R6 response.
  * @param  resp R6 Response of CMD.
- * @retval SD Card error state.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 u32 SDMMC_CheckErrResp6(u32 resp)
 {
@@ -1445,3 +1643,7 @@ u32 SDMMC_CheckErrResp6(u32 resp)
 		return SD_ERROR_GENERAL_UNKNOWN_ERR;
 	}
 }
+
+/**
+  * @}
+  */

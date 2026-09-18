@@ -12,14 +12,11 @@ SD_HdlTypeDef hsd0;
 
 static u32 wait_for_sema = 0;
 
-/* 32-Byte aligned for cache maintenance */
-static u8 scratch[SD_BLOCK_SIZE]__attribute__((aligned(32))) = {0};
-
 int (*sd_sema_take_fn)(u32);
 int (*sd_sema_give_isr_fn)(u32);
+static void (*cd_cb)(SD_RESULT);
 
 static SD_RESULT SD_PowerON(SD_HdlTypeDef *hsd);
-static SD_RESULT SD_InitCard(SD_HdlTypeDef *hsd);
 static SD_RESULT SD_SendSDStatus(SD_HdlTypeDef *hsd, u32 *pSDstatus);
 static u32 SD_SendCardStatus(SD_HdlTypeDef *hsd, u32 *pCardStatus);
 static u32 SD_WideBus_Enable(SD_HdlTypeDef *hsd);
@@ -28,6 +25,62 @@ static u32 SD_GetCardSCR(SD_HdlTypeDef *hsd);
 static void SD_Write_IT(SD_HdlTypeDef *hsd);
 static void SD_Read_IT(SD_HdlTypeDef *hsd);
 
+/** @addtogroup Ameba_Periph_Driver
+  * @{
+  */
+
+/** @addtogroup SDHOST
+  * @{
+  */
+
+/**
+ * @brief  Check parameters and prepare the SD controller state before a data transfer.
+ * @param  hsd Pointer to SD handle.
+ * @param  pData Pointer to the data buffer.
+ * @param  BlockAdd Block address for the transfer.
+ * @param  NumberOfBlocks Number of blocks to transfer.
+ * @return SD operation result:
+ *           - SD_OK: All checks pass.
+ *           - SD_ERROR: Parameter or state check failed.
+ */
+SD_RESULT SD_TransPreCheck(SD_HdlTypeDef *hsd, u8 *pData, u32 BlockAdd, u32 NumberOfBlocks)
+{
+	SDIOHOST_TypeDef *SDIOx = hsd->Instance;
+
+	if (NULL == pData) {
+		hsd->ErrorCode |= SD_ERROR_INVALID_PARAMETER;
+		return SD_ERROR;
+	}
+
+	if ((BlockAdd + NumberOfBlocks) > (hsd->Card.LogBlockNbr)) {
+		hsd->ErrorCode |= SD_ERROR_ADDR_OUT_OF_RANGE;
+		return SD_ERROR;
+	}
+
+	SDIO_ConfigNormIntSig(SDIOx, 0xFFFFFFFF, DISABLE); // disable all the normal int without err int
+	SDIO_ClearNormSts(SDIOx, SDIO_GetNormSts(SDIOx)); // clear old flags
+
+	hsd->ErrorCode = SD_ERROR_NONE;
+	hsd->State = SD_STATE_BUSY;
+
+	return SD_OK;
+}
+
+/**
+ * @brief  Weak callback invoked when an SD/SDIO card interrupt signal is received.
+ * @note   Users can override this function to handle SDIO card interrupt events.
+ */
+__weak void SD_IRQ_Notify(void)
+{
+	return;
+}
+
+/**
+ * @brief  Check whether a timeout has occurred since a given start time.
+ * @param  start_us Start timestamp in microseconds.
+ * @param  timeout_us Timeout duration in microseconds.
+ * @return 1 if timeout has occurred, 0 otherwise.
+ */
 static u8 is_timeout(u32 start_us, u32 timeout_us)
 {
 	u32 now_us = DTimestamp_Get();
@@ -47,31 +100,35 @@ static u8 is_timeout(u32 start_us, u32 timeout_us)
 	}
 }
 
-int SD_CheckStatusTO(SD_HdlTypeDef *hsd, u32 timeout_us)
-{
-	u32 start_us = DTimestamp_Get();
-
-	while (!is_timeout(start_us, timeout_us)) {
-		if (SD_GetCardState(hsd) == SD_CARD_TRANSFER) {
-			return 0;
-		}
-	}
-
-	return -1;
-}
-
+/**
+ * @brief  GPIO interrupt handler for SD card detection.
+ * @param  id GPIO pin identifier (unused).
+ * @param  event Interrupt event carrying the edge direction.
+ */
 static void SD_CardDetectHdl(u32 id, u32 event)
 {
 	(void)id;
 	u32 level = event & 0x3;
+	u32 sd_status;
 
 	if (level == HAL_IRQ_FALL) { // high->low
 		RTK_LOGI(TAG, "Card Detected!\n");
+		sd_status = SD_INSERT;
 	} else if (level == HAL_IRQ_RISE) { // low->high
 		RTK_LOGI(TAG, "Card Removed!\n");
+		sd_status = SD_NODISK;
+	} else {
+		return;
+	}
+
+	if (cd_cb != NULL) {
+		cd_cb(sd_status);
 	}
 }
 
+/**
+ * @brief  Configure the pinmux and GPIO settings for the SD host controller.
+ */
 static void SDIOH_Pinmux(void)
 {
 	GPIO_InitTypeDef GPIO_InitStruct_CD;
@@ -111,6 +168,7 @@ static void SDIOH_Pinmux(void)
 		GPIO_InitStruct_CD.GPIO_Mode = GPIO_Mode_INT;
 		GPIO_InitStruct_CD.GPIO_PuPd = GPIO_PuPd_UP;
 		GPIO_InitStruct_CD.GPIO_ITTrigger = GPIO_INT_Trigger_BOTHEDGE;
+		GPIO_InitStruct_CD.GPIO_ITDebounce = GPIO_INT_DEBOUNCE_ENABLE;
 		GPIO_Init(&GPIO_InitStruct_CD);
 
 		InterruptRegister((IRQ_FUN)GPIO_INTHandler, GPIO_IRQ[port_num], (u32)GPIO_PORTx[port_num], INT_PRI_MIDDLE);
@@ -127,6 +185,34 @@ static void SDIOH_Pinmux(void)
 	}
 }
 
+/* Exported functions --------------------------------------------------------*/
+/** @addtogroup SDHOST_Exported_Functions
+  * @{
+  */
+
+/**
+ * @brief  Poll the SD card until it reaches the Transfer state or a timeout occurs.
+ * @param  hsd Pointer to SD handle.
+ * @param  timeout_us Timeout duration in microseconds.
+ * @return 0 if the card reached the Transfer state, -1 on timeout.
+ */
+int SD_CheckStatusTO(SD_HdlTypeDef *hsd, u32 timeout_us)
+{
+	u32 start_us = DTimestamp_Get();
+
+	while (!is_timeout(start_us, timeout_us)) {
+		if (SD_GetCardState(hsd) == SD_CARD_TRANSFER) {
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+/**
+ * @brief  Prepare for a DMA-based SD transfer by enabling semaphore waiting when the scheduler is running.
+ * @param  hsd Pointer to SD handle.
+ */
 void SD_PreDMATrans(SD_HdlTypeDef *hsd)
 {
 	if ((CPU_InInterrupt() == 0) && (rtos_sched_get_state() == RTOS_SCHED_RUNNING) && (sd_sema_take_fn != NULL)) {
@@ -136,19 +222,17 @@ void SD_PreDMATrans(SD_HdlTypeDef *hsd)
 }
 
 /**
-  * @brief  Initialize SDIO host and card and create the associated handle.
-  * @param  hsd: Pointer to the SD handle
-  * @retval Result
-  */
+ * @brief  Initialize the SD host controller and connected device.
+ * @return SD operation result:
+ *           - SD_OK: Success.
+ *           - Others: Failure.
+ */
 SD_RESULT SD_Init(void)
 {
 	SD_RESULT ret;
 	u32 status;
-	u32 errorstate;
-	u8 val;
-	u32 cnt = 0;
-
 	SD_HdlTypeDef *hsd = &hsd0;
+	u8 retries = 3;
 
 	if (hsd == NULL) {
 		return SD_ERROR;
@@ -177,7 +261,20 @@ SD_RESULT SD_Init(void)
 
 	status = SDIO_CheckState(hsd->Instance);
 	if (status != HAL_OK) {
-		return SD_ERROR;
+		/* inhibit stuck: reset CMD+DAT then retry, up to 3 times */
+		while (retries-- != 0) {
+			status = SDIO_ResetCmdDat(hsd->Instance);
+			if (status != HAL_OK) {
+				break;
+			}
+			status = SDIO_CheckState(hsd->Instance);
+			if (status == HAL_OK) {
+				break;
+			}
+		}
+		if (status != HAL_OK) {
+			return SD_ERROR;
+		}
 	}
 
 	/* Initialize SDIO peripheral interface with default configuration */
@@ -193,8 +290,14 @@ SD_RESULT SD_Init(void)
 	/* Required power up waiting time before starting the SD initialization sequence */
 	DelayUs(2);
 
+	/* cd pin is configured and cd signal is high */
+	if ((sdioh_config.sdioh_cd_pin != _PNC) && (GPIO_ReadDataBit(sdioh_config.sdioh_cd_pin) == 1)) {
+		RTK_LOGE(TAG, "Card is removed or not inserted!\n");
+		return SD_NODISK;
+	}
+
 	/* Initialize the Card parameters */
-	/* CMD0->CMD8->CMD5->ACMD41)->(CMD2->)CMD3->(CMD9->)CMD7(->CMD16) */
+	/* CMD0->CMD8->CMD5(->ACMD41)->(CMD2->)CMD3->(CMD9->)CMD7(->CMD16) */
 
 	/* Identify card operating voltage */
 	ret = SD_PowerON(hsd); // CMD0->CMD8->CMD5(->ACMD41)
@@ -204,115 +307,22 @@ SD_RESULT SD_Init(void)
 	}
 
 	/* Card initialization */
-	ret = SD_InitCard(hsd); // (CMD2->)CMD3->(CMD9->)CMD7
+	ret = SD_CardInit(); // (CMD2->)CMD3->(CMD9->)CMD7(->CMD16)
 	if (ret != SD_OK) {
 		hsd->State = SD_STATE_READY;
 		return ret;
 	}
 
-	/*  Set block size */
-	if (hsd->Card.CardType != CARD_SDIO_ONLY) {
-		/* CMD16: Set Block Size for Card */
-		errorstate = SDMMC_CmdBlockLength(hsd->Instance, SD_BLOCK_SIZE); // CMD16
-		if (errorstate != SD_ERROR_NONE) {
-			/* Clear all the static flags */
-			SDIO_ClearErrSts(hsd->Instance, SDIO_ERR_FLAG);
-
-			hsd->ErrorCode |= errorstate;
-			hsd->State = SD_STATE_READY;
-			return SD_INITERR;
-		}
-	} else {
-		/* CMD52: set func0 blocksize */
-		ret = SD_IO_RW_Direct(hsd, BUS_WRITE, SDIO_FUNC0, SDIOD_CCCR_BLKSIZE_0, SD_BLOCK_SIZE & 0xFF, NULL);
-		if (ret != SD_OK) {
-			return ret;
-		}
-
-		/* CMD52: set func0 blocksize */
-		ret = SD_IO_RW_Direct(hsd, BUS_WRITE, SDIO_FUNC0, SDIOD_CCCR_BLKSIZE_1, (SD_BLOCK_SIZE >> 8) & 0xFF, NULL);
-		if (ret != SD_OK) {
-			return ret;
-		}
-
-		/* CMD52: set func1 blocksize */
-		ret = SD_IO_RW_Direct(hsd, BUS_WRITE, SDIO_FUNC0, SDIOD_CCCR_F1BLKSIZE_0, SD_BLOCK_SIZE & 0xFF, NULL);
-		if (ret != SD_OK) {
-			return ret;
-		}
-
-		/* CMD52: set func1 blocksize */
-		ret = SD_IO_RW_Direct(hsd, BUS_WRITE, SDIO_FUNC0, SDIOD_CCCR_F1BLKSIZE_1, (SD_BLOCK_SIZE >> 8) & 0xFF, NULL);
-		if (ret != SD_OK) {
-			return ret;
-		}
-	}
-
-	/* Set bus width */
-	ret = SD_ConfigBusWidth(hsd, sdioh_config.sdioh_bus_width);
-	if (ret != SD_OK) {
-		return ret;
-	}
-
-	/* Set bus speed */
-	ret = SD_ConfigBusSpeed(hsd, sdioh_config.sdioh_bus_speed);
-	if (ret != SD_OK) {
-		return ret;
-	}
-
-	if (hsd->Card.CardType != CARD_SDIO_ONLY) {
-		if (SD_GetCardState(hsd) != SD_CARD_TRANSFER) {
-			return SD_ERROR;
-		}
-	} else {
-		/* Enable func1 */
-		ret = SD_IO_RW_Direct(hsd, BUS_WRITE, SDIO_FUNC0, SDIOD_CCCR_IOEN, SDIO_FUNC_ENABLE_1, NULL);
-		if (ret != SD_OK) {
-			return SD_ERROR;
-		}
-
-		/* Wait until func1 is ready */
-		while (1) {
-			ret = SD_IO_RW_Direct(hsd, BUS_READ, SDIO_FUNC0, SDIOD_CCCR_IORDY, (u8)0x0, &val);
-			if (ret != SD_OK) {
-				return SD_ERROR;
-			}
-
-			if ((val & SDIO_FUNC_READY_1) != 0) {
-				break;
-			}
-			DelayMs(1);
-
-			if (cnt++ >= 500) {
-				return SD_ERROR;
-			}
-		}
-
-		/* Enable func1 interrupt */
-		ret = SD_IO_RW_Direct(hsd, BUS_WRITE, SDIO_FUNC0, SDIOD_CCCR_INTEN, INTR_CTL_MASTER_EN | INTR_CTL_FUNC1_EN, NULL);
-		if (ret != SD_OK) {
-			return SD_ERROR;
-		}
-	}
-
-	/* Initialize the error code */
-	hsd->ErrorCode = SD_ERROR_NONE;
-
-	/* Initialize the SD operation */
-	hsd->Context = SD_CONTEXT_NONE;
-
-	/* Initialize the SD state */
-	hsd->State = SD_STATE_READY;
-
 	return SD_OK;
 }
 
 /**
- * @brief  Enquires cards about their operating voltage and configures clock
- *         controls and stores SD information that will be needed in future
- *         in the SD handle.
- * @param  hsd: Pointer to SD handle
- * @retval error state
+ * @brief  Query cards about their operating voltage, configure the clock,
+ *         and store SD card information in the SD handle.
+ * @param  hsd Pointer to SD handle.
+ * @return SD operation result:
+ *           - SD_OK: Success.
+ *           - Others: Failure.
  */
 static SD_RESULT SD_PowerON(SD_HdlTypeDef *hsd)
 {
@@ -421,7 +431,7 @@ static SD_RESULT SD_PowerON(SD_HdlTypeDef *hsd)
 		RTK_LOGI(TAG, "This is a SDHC/SDXC card...\n");
 		hsd->Card.CardType = CARD_SDHC_SDXC;
 	} else {
-		RTK_LOGI(TAG, "This is a SDSC card...\n");
+		RTK_LOGI(TAG, "This is an SDSC card...\n");
 		hsd->Card.CardType = CARD_SDSC;
 	}
 
@@ -429,18 +439,22 @@ static SD_RESULT SD_PowerON(SD_HdlTypeDef *hsd)
 }
 
 /**
- * @brief  Initializes the sd card.
- * @param  hsd: Pointer to SD handle
- * @retval SD Card error state
+ * @brief  Initialize the connected device.
+ * @return SD operation result:
+ *           - SD_OK: Success.
+ *           - Others: Failure.
  */
-static SD_RESULT SD_InitCard(SD_HdlTypeDef *hsd)
+SD_RESULT SD_CardInit(void)
 {
+	SD_HdlTypeDef *hsd = &hsd0;
 	SDIOHOST_TypeDef *SDIOx = hsd->Instance;
 	SD_CardCIDTypeDef CID;
 	SD_CardCSDTypeDef CSD;
 	u32 errorstate;
 	SD_RESULT ret;
 	u16 sd_rca = 1U;
+	u8 val;
+	u32 cnt = 0;
 
 	/* Check the power State */
 	if (SDIO_GetPowerState(SDIOx) == 0U) {
@@ -467,8 +481,7 @@ static SD_RESULT SD_InitCard(SD_HdlTypeDef *hsd)
 		SD_GetCardCID(hsd, &CID);
 	}
 
-	/* Send CMD3 SET_REL_ADDR with argument 0 */
-	/* CMD3: SD Card publishes its RCA. */
+	/* Send CMD3 (SET_REL_ADDR): SD card publishes its Relative Card Address (RCA). */
 	errorstate = SDMMC_CmdSetRelAdd(SDIOx);
 	if (errorstate != SD_ERROR_NONE) {
 		hsd->ErrorCode |= errorstate;
@@ -514,14 +527,109 @@ static SD_RESULT SD_InitCard(SD_HdlTypeDef *hsd)
 		return SD_ERROR;
 	}
 
+	/*  Set block size */
+	if (hsd->Card.CardType != CARD_SDIO_ONLY) {
+		/* CMD16: Set Block Size for Card */
+		errorstate = SDMMC_CmdBlockLength(hsd->Instance, SD_BLOCK_SIZE); // CMD16
+		if (errorstate != SD_ERROR_NONE) {
+			/* Clear all the static flags */
+			SDIO_ClearErrSts(hsd->Instance, SDIO_ERR_FLAG);
+
+			hsd->ErrorCode |= errorstate;
+			hsd->State = SD_STATE_READY;
+			return SD_INITERR;
+		}
+	} else {
+		/* CMD52: set func0 blocksize */
+		ret = SD_IO_RW_Direct(hsd, BUS_WRITE, SDIO_FUNC0, SDIOD_CCCR_BLKSIZE_0, SD_BLOCK_SIZE & 0xFF, NULL);
+		if (ret != SD_OK) {
+			return ret;
+		}
+
+		/* CMD52: set func0 blocksize */
+		ret = SD_IO_RW_Direct(hsd, BUS_WRITE, SDIO_FUNC0, SDIOD_CCCR_BLKSIZE_1, (SD_BLOCK_SIZE >> 8) & 0xFF, NULL);
+		if (ret != SD_OK) {
+			return ret;
+		}
+
+		/* CMD52: set func1 blocksize */
+		ret = SD_IO_RW_Direct(hsd, BUS_WRITE, SDIO_FUNC0, SDIOD_CCCR_F1BLKSIZE_0, SD_BLOCK_SIZE & 0xFF, NULL);
+		if (ret != SD_OK) {
+			return ret;
+		}
+
+		/* CMD52: set func1 blocksize */
+		ret = SD_IO_RW_Direct(hsd, BUS_WRITE, SDIO_FUNC0, SDIOD_CCCR_F1BLKSIZE_1, (SD_BLOCK_SIZE >> 8) & 0xFF, NULL);
+		if (ret != SD_OK) {
+			return ret;
+		}
+	}
+
+	/* Set bus width */
+	ret = SD_ConfigBusWidth(hsd, sdioh_config.sdioh_bus_width);
+	if (ret != SD_OK) {
+		return ret;
+	}
+
+	/* Set bus speed */
+	ret = SD_ConfigBusSpeed(hsd, sdioh_config.sdioh_bus_speed);
+	if (ret != SD_OK) {
+		return ret;
+	}
+
+	if (hsd->Card.CardType != CARD_SDIO_ONLY) {
+		if (SD_GetCardState(hsd) != SD_CARD_TRANSFER) {
+			return SD_ERROR;
+		}
+	} else {
+		/* Enable func1 */
+		ret = SD_IO_RW_Direct(hsd, BUS_WRITE, SDIO_FUNC0, SDIOD_CCCR_IOEN, SDIO_FUNC_ENABLE_1, NULL);
+		if (ret != SD_OK) {
+			return SD_ERROR;
+		}
+
+		/* Wait until func1 is ready */
+		while (1) {
+			ret = SD_IO_RW_Direct(hsd, BUS_READ, SDIO_FUNC0, SDIOD_CCCR_IORDY, (u8)0x0, &val);
+			if (ret != SD_OK) {
+				return SD_ERROR;
+			}
+
+			if ((val & SDIO_FUNC_READY_1) != 0) {
+				break;
+			}
+			DelayMs(1);
+
+			if (cnt++ >= 500) {
+				return SD_ERROR;
+			}
+		}
+
+		/* Enable func1 interrupt */
+		ret = SD_IO_RW_Direct(hsd, BUS_WRITE, SDIO_FUNC0, SDIOD_CCCR_INTEN, INTR_CTL_MASTER_EN | INTR_CTL_FUNC1_EN, NULL);
+		if (ret != SD_OK) {
+			return SD_ERROR;
+		}
+	}
+
+	/* Initialize the error code */
+	hsd->ErrorCode = SD_ERROR_NONE;
+
+	/* Initialize the SD operation */
+	hsd->Context = SD_CONTEXT_NONE;
+
+	/* Initialize the SD state */
+	hsd->State = SD_STATE_READY;
+
 	/* All cards are initialized */
 	return SD_OK;
 }
 
 /**
- * @brief  De-Initializes the SD card.
- * @param  hsd: Pointer to SD handle
- * @retval HAL status
+ * @brief  De-initialize the SD host controller and connected device.
+ * @return SD operation result:
+ *           - SD_OK: Success.
+ *           - Others: Failure.
  */
 SD_RESULT SD_DeInit(void)
 {
@@ -550,29 +658,20 @@ SD_RESULT SD_DeInit(void)
 	return SD_OK;
 }
 
-SD_RESULT SD_TransPreCheck(SD_HdlTypeDef *hsd, u8 *pData, u32 BlockAdd, u32 NumberOfBlocks)
-{
-	SDIOHOST_TypeDef *SDIOx = hsd->Instance;
 
-	if (NULL == pData) {
-		hsd->ErrorCode |= SD_ERROR_INVALID_PARAMETER;
-		return SD_ERROR;
-	}
-
-	if ((BlockAdd + NumberOfBlocks) > (hsd->Card.LogBlockNbr)) {
-		hsd->ErrorCode |= SD_ERROR_ADDR_OUT_OF_RANGE;
-		return SD_ERROR;
-	}
-
-	SDIO_ConfigNormIntSig(SDIOx, 0xFFFFFFFF, DISABLE); // disable all the normal int without err int
-	SDIO_ClearNormSts(SDIOx, SDIO_GetNormSts(SDIOx)); // clear old flags
-
-	hsd->ErrorCode = SD_ERROR_NONE;
-	hsd->State = SD_STATE_BUSY;
-
-	return SD_OK;
-}
-
+/**
+ * @brief  Perform a CMD52 direct read or write on the SDIO card.
+ * @param  hsd Pointer to SD handle.
+ * @param  RWFlag Transfer direction: BUS_READ or BUS_WRITE.
+ * @param  Func SDIO function number.
+ * @param  Addr Register address to access.
+ * @param  In Data byte to write (used when RWFlag is BUS_WRITE).
+ * @param  Out Pointer to store the read-back byte.
+ * @note   Out must not be NULL when RWFlag is BUS_READ and may be NULL when RWFlag is BUS_WRITE.
+ * @return SD operation result:
+ *           - SD_OK: Success.
+ *           - SD_ERROR: Failure.
+ */
 SD_RESULT SD_IO_RW_Direct(SD_HdlTypeDef *hsd, u8 RWFlag, u8 Func, u32 Addr, u8 In, u8 *Out)
 {
 	SDIOHOST_TypeDef *SDIOx = hsd->Instance;
@@ -637,6 +736,20 @@ SD_RESULT SD_IO_RW_Direct(SD_HdlTypeDef *hsd, u8 RWFlag, u8 Func, u32 Addr, u8 I
 	}
 }
 
+/**
+ * @brief  Perform a CMD53 extended read or write on the SDIO card using DMA.
+ * @param  hsd Pointer to SD handle.
+ * @param  RWFlag Transfer direction: BUS_READ or BUS_WRITE.
+ * @param  Func SDIO function number.
+ * @param  OpCode Address increment mode: 1 for incrementing address, 0 for fixed address.
+ * @param  Addr Access address.
+ * @param  pData Pointer to the data buffer.
+ * @param  IsBlock 1 for block mode, 0 for byte mode.
+ * @param  Cnt Number of bytes or blocks to transfer.
+ * @return SD operation result:
+ *           - SD_OK: Success.
+ *           - SD_ERROR: Failure.
+ */
 SD_RESULT SD_IO_RW_Extended(SD_HdlTypeDef *hsd, u8 RWFlag, u8 Func, u8 OpCode,
 							u32 Addr, u8 *pData, u8 IsBlock, u16 Cnt)
 {
@@ -720,15 +833,17 @@ SD_RESULT SD_IO_RW_Extended(SD_HdlTypeDef *hsd, u8 RWFlag, u8 Func, u8 OpCode,
 }
 
 /**
- * @brief  Reads block(s) from a specified address in a card. The Data transfer
- *         is managed by polling mode.
+ * @brief  Read block(s) from a specified address in a card. The Data transfer
+ *         is managed in polling mode.
  * @note   This API should be followed by a check on the card state through SD_GetCardState().
- * @param  hsd: Pointer to SD handle
- * @param  pData: pointer to the buffer that will contain the received data
- * @param  BlockAdd: Block Address from where data is to be read
- * @param  NumberOfBlocks: Number of SD blocks to read
- * @param  Timeout: Specify timeout value
- * @retval HAL status
+ * @param  hsd Pointer to SD handle.
+ * @param  pData Pointer to the buffer that will contain the received data.
+ * @param  BlockAdd Block Address from where data is to be read.
+ * @param  NumberOfBlocks Number of SD blocks to read.
+ * @param  Timeout Timeout value for the operation.
+ * @return SD operation result:
+ *           - SD_OK: Success.
+ *           - Others: Failure.
  */
 SD_RESULT SD_ReadBlocks_PIO(SD_HdlTypeDef *hsd, u8 *pData, u32 BlockAdd, u32 NumberOfBlocks, u32 Timeout)
 {
@@ -888,15 +1003,17 @@ SD_RESULT SD_ReadBlocks_PIO(SD_HdlTypeDef *hsd, u8 *pData, u32 BlockAdd, u32 Num
 }
 
 /**
- * @brief  Allows to write block(s) to a specified address in a card. The Data
- *         transfer is managed by polling mode.
+ * @brief  Write block(s) to a specified address in a card. The Data
+ *         transfer is managed in polling mode.
  * @note   This API should be followed by a check on the card state through SD_GetCardState().
- * @param  hsd: Pointer to SD handle
- * @param  pData: pointer to the buffer that will contain the data to transmit
- * @param  BlockAdd: Block Address where data will be written
- * @param  NumberOfBlocks: Number of SD blocks to write
- * @param  Timeout: Specify timeout value
- * @retval HAL status
+ * @param  hsd Pointer to SD handle.
+ * @param  pData Pointer to the buffer that will contain the data to transmit.
+ * @param  BlockAdd Block Address where data will be written.
+ * @param  NumberOfBlocks Number of SD blocks to write.
+ * @param  Timeout Timeout value for the operation.
+ * @return SD operation result:
+ *           - SD_OK: Success.
+ *           - Others: Failure.
  */
 SD_RESULT SD_WriteBlocks_PIO(SD_HdlTypeDef *hsd, u8 *pData, u32 BlockAdd, u32 NumberOfBlocks, u32 Timeout)
 {
@@ -1044,16 +1161,18 @@ SD_RESULT SD_WriteBlocks_PIO(SD_HdlTypeDef *hsd, u8 *pData, u32 BlockAdd, u32 Nu
 }
 
 /**
- * @brief  Reads block(s) from a specified address in a card. The Data transfer
+ * @brief  Read block(s) from a specified address in a card. The Data transfer
  *         is managed in interrupt mode.
  * @note   This API should be followed by a check on the card state through SD_GetCardState().
  * @note   You could also check the IT transfer process through the SD Rx
  *         interrupt event.
- * @param  hsd: Pointer to SD handle
- * @param  pData: Pointer to the buffer that will contain the received data
- * @param  BlockAdd: Block Address from where data is to be read
- * @param  NumberOfBlocks: Number of blocks to read.
- * @retval HAL status
+ * @param  hsd Pointer to SD handle.
+ * @param  pData Pointer to the buffer that will contain the received data.
+ * @param  BlockAdd Block Address from where data is to be read.
+ * @param  NumberOfBlocks Number of blocks to read.
+ * @return SD operation result:
+ *           - SD_OK: Success.
+ *           - Others: Failure.
  */
 SD_RESULT SD_ReadBlocks_IT(SD_HdlTypeDef *hsd, u8 *pData, u32 BlockAdd, u32 NumberOfBlocks)
 {
@@ -1128,16 +1247,18 @@ SD_RESULT SD_ReadBlocks_IT(SD_HdlTypeDef *hsd, u8 *pData, u32 BlockAdd, u32 Numb
 }
 
 /**
- * @brief  Writes block(s) to a specified address in a card. The Data transfer
+ * @brief  Write block(s) to a specified address in a card. The Data transfer
  *         is managed in interrupt mode.
  * @note   This API should be followed by a check on the card state through SD_GetCardState().
  * @note   You could also check the IT transfer process through the SD Tx
  *         interrupt event.
- * @param  hsd: Pointer to SD handle
- * @param  pData: Pointer to the buffer that will contain the data to transmit
- * @param  BlockAdd: Block Address where data will be written
- * @param  NumberOfBlocks: Number of blocks to write
- * @retval HAL status
+ * @param  hsd Pointer to SD handle.
+ * @param  pData Pointer to the buffer that will contain the data to transmit.
+ * @param  BlockAdd Block Address where data will be written.
+ * @param  NumberOfBlocks Number of blocks to write.
+ * @return SD operation result:
+ *           - SD_OK: Success.
+ *           - Others: Failure.
  */
 SD_RESULT SD_WriteBlocks_IT(SD_HdlTypeDef *hsd, u8 *pData, u32 BlockAdd, u32 NumberOfBlocks)
 {
@@ -1225,16 +1346,18 @@ SD_RESULT SD_WriteBlocks_IT(SD_HdlTypeDef *hsd, u8 *pData, u32 BlockAdd, u32 Num
 }
 
 /**
- * @brief  Reads block(s) from a specified address in a card. The Data transfer
- *         is managed by DMA mode.
+ * @brief  Read block(s) from a specified address in a card. The Data transfer
+ *         is managed in DMA mode.
  * @note   This API should be followed by a check on the card state through SD_GetCardState().
  * @note   You could also check the DMA transfer process through the SD Rx
  *         interrupt event.
- * @param  hsd: Pointer SD handle
- * @param  pData: Pointer to the buffer that will contain the received data
- * @param  BlockAdd: Block Address from where data is to be read
- * @param  NumberOfBlocks: Number of blocks to read.
- * @retval HAL status
+ * @param  hsd Pointer to SD handle.
+ * @param  pData Pointer to the buffer that will contain the received data.
+ * @param  BlockAdd Block Address from where data is to be read.
+ * @param  NumberOfBlocks Number of blocks to read.
+ * @return SD operation result:
+ *           - SD_OK: Success.
+ *           - Others: Failure.
  */
 SD_RESULT SD_ReadBlocks_DMA(SD_HdlTypeDef *hsd, u8 *pData, u32 BlockAdd, u32 NumberOfBlocks)
 {
@@ -1309,16 +1432,18 @@ SD_RESULT SD_ReadBlocks_DMA(SD_HdlTypeDef *hsd, u8 *pData, u32 BlockAdd, u32 Num
 }
 
 /**
- * @brief  Writes block(s) to a specified address in a card. The Data transfer
- *         is managed by DMA mode.
+ * @brief  Write block(s) to a specified address in a card. The Data transfer
+ *         is managed in DMA mode.
  * @note   This API should be followed by a check on the card state through SD_GetCardState().
  * @note   You could also check the DMA transfer process through the SD Tx
  *         interrupt event.
- * @param  hsd: Pointer to SD handle
- * @param  pData: Pointer to the buffer that will contain the data to transmit
- * @param  BlockAdd: Block Address where data will be written
- * @param  NumberOfBlocks: Number of blocks to write
- * @retval HAL status
+ * @param  hsd Pointer to SD handle.
+ * @param  pData Pointer to the buffer that will contain the data to transmit.
+ * @param  BlockAdd Block Address where data will be written.
+ * @param  NumberOfBlocks Number of blocks to write.
+ * @return SD operation result:
+ *           - SD_OK: Success.
+ *           - Others: Failure.
  */
 SD_RESULT SD_WriteBlocks_DMA(SD_HdlTypeDef *hsd, u8 *pData, u32 BlockAdd, u32 NumberOfBlocks)
 {
@@ -1407,7 +1532,15 @@ SD_RESULT SD_WriteBlocks_DMA(SD_HdlTypeDef *hsd, u8 *pData, u32 BlockAdd, u32 Nu
 	}
 }
 
+/// @cond
 /* copied from pro2 -  hal_rtl_sdiohost_create_adma_entry */
+/**
+ * @brief  Create one ADMA2 descriptor entry pointing to a data buffer.
+ * @param  pBuf Pointer to the data buffer described by this ADMA entry.
+ * @param  Length Length in bytes of the data buffer.
+ * @param  End Flag indicating whether this is the last descriptor entry.
+ * @param  pDescTable Pointer to the descriptor table slot to fill.
+ */
 void SD_CreateADMAEntry(u32 *pBuf, u16 Length, sdioh_adma_line_end_t End, u32 *pDescTable)
 {
 	u32 *adma_desc_table_ptr = pDescTable;
@@ -1429,6 +1562,18 @@ void SD_CreateADMAEntry(u32 *pBuf, u16 Length, sdioh_adma_line_end_t End, u32 *p
 	DCache_CleanInvalidate((u32)adma_desc_table_ptr, 2 * sizeof(u32));
 }
 
+/**
+ * @brief  Read block(s) from a specified address using ADMA2 scatter-gather DMA.
+ * @note   This API should be followed by a check on the card state through SD_GetCardState().
+ * @param  hsd Pointer to SD handle.
+ * @param  pData Pointer to the destination data buffer (used only for pre-transfer checks).
+ * @param  BlockAdd Block Address from where data is to be read.
+ * @param  pDescTbl Pointer to the ADMA2 descriptor table.
+ * @param  DescItemNum Number of entries in the descriptor table.
+ * @return SD operation result:
+ *           - SD_OK: Success.
+ *           - SD_ERROR: Failure.
+ */
 SD_RESULT SD_ReadBlocks_ADMA(SD_HdlTypeDef *hsd, u8 *pData, u32 BlockAdd, u32 *pDescTbl, u32 DescItemNum)
 {
 	SDIOHOST_TypeDef *SDIOx = hsd->Instance;
@@ -1521,6 +1666,18 @@ SD_RESULT SD_ReadBlocks_ADMA(SD_HdlTypeDef *hsd, u8 *pData, u32 BlockAdd, u32 *p
 	}
 }
 
+/**
+ * @brief  Write block(s) to a specified address using ADMA2 scatter-gather DMA.
+ * @note   This API should be followed by a check on the card state through SD_GetCardState().
+ * @param  hsd Pointer to SD handle.
+ * @param  pData Pointer to the source data buffer (used only for pre-transfer checks).
+ * @param  BlockAdd Block Address where data will be written.
+ * @param  pDescTbl Pointer to the ADMA2 descriptor table.
+ * @param  DescItemNum Number of entries in the descriptor table.
+ * @return SD operation result:
+ *           - SD_OK: Success.
+ *           - SD_ERROR: Failure.
+ */
 SD_RESULT SD_WriteBlocks_ADMA(SD_HdlTypeDef *hsd, u8 *pData, u32 BlockAdd, u32 *pDescTbl,
 							  u32 DescItemNum)
 {
@@ -1627,14 +1784,17 @@ SD_RESULT SD_WriteBlocks_ADMA(SD_HdlTypeDef *hsd, u8 *pData, u32 BlockAdd, u32 *
 		return SD_ERROR;
 	}
 }
+/// @endcond
 
 /**
- * @brief  Erases the specified memory area of the given SD card.
+ * @brief  Erase data in the SD card.
  * @note   This API should be followed by a check on the card state through SD_GetCardState().
- * @param  hsd: Pointer to SD handle
- * @param  BlockStartAdd: Start Block address
- * @param  BlockEndAdd: End Block address
- * @retval HAL status
+ * @param  hsd Pointer to SD handle.
+ * @param  BlockStartAdd The start block to erase.
+ * @param  BlockEndAdd The end block to erase.
+ * @return SD operation result:
+ *           - SD_OK: Erase data successfully.
+ *           - Others: Failed to erase data.
  */
 SD_RESULT SD_Erase(SD_HdlTypeDef *hsd, u32 BlockStartAdd, u32 BlockEndAdd)
 {
@@ -1684,7 +1844,7 @@ SD_RESULT SD_Erase(SD_HdlTypeDef *hsd, u32 BlockStartAdd, u32 BlockEndAdd)
 			end_add *= SD_BLOCK_SIZE;
 		}
 
-		/* According to sd-card spec 1.0 ERASE_GROUP_START (CMD32) and erase_group_end(CMD33) */
+		/* According to SD card spec 1.0 ERASE_GROUP_START (CMD32) and ERASE_GROUP_END(CMD33) */
 		/* Send CMD32 SD_ERASE_GRP_START with argument as addr  */
 		errorstate = SDMMC_CmdSDEraseStartAdd(SDIOx, start_add);
 		if (errorstate != SD_ERROR_NONE) {
@@ -1724,15 +1884,9 @@ SD_RESULT SD_Erase(SD_HdlTypeDef *hsd, u32 BlockStartAdd, u32 BlockEndAdd)
 	}
 }
 
-__weak void SD_IRQ_NOTIFY(void)
-{
-	return;
-}
-
 /**
- * @brief  This function handles SD card interrupt request.
- * @param  hsd: Pointer to SD handle
- * @retval None
+ * @brief  SD Host interrupt handler.
+ * @return 0.
  */
 u32 SD_IRQHandler(void *pData)
 {
@@ -1742,22 +1896,20 @@ u32 SD_IRQHandler(void *pData)
 	u32 context = hsd->Context;
 	u32 norm_sts, err_sts;
 
-	norm_sts = SDIO_GetNormSts(SDIOx);
-	err_sts = SDIO_GetErrSts(SDIOx);
+	/* get masked sts */
+	norm_sts = SDIO_GetNormSts(SDIOx) & SDIOx->SDIOHOST_NORMAL_SIG_EN;
+	err_sts = SDIO_GetErrSts(SDIOx) & SDIOx->SDIOHOST_ERR_SIG_EN;
 
-	/* clear interrupts */
+	/* clear masked interrupts */
+	/* note: in case of clearing cmd_comp when clearing xfer_comp when sending short data with cmd53 */
 	SDIO_ClearNormSts(SDIOx, norm_sts);
 	SDIO_ClearErrSts(SDIOx, err_sts);
-
-	/* get masked sts */
-	norm_sts &= SDIOx->SDIOHOST_NORMAL_SIG_EN;
-	err_sts &= SDIOx->SDIOHOST_ERR_SIG_EN;
 
 	if (norm_sts & SDIOHOST_BIT_CARD_INT) {
 		/* note1: Writing 1 to card int status bit does not clear card int status. */
 		/* note2: Set STATUS_EN to 0 to clear card int status. */
 		// SDIO_ConfigNormIntSts(SDIOx, SDIOHOST_BIT_CARD_INT_STATUS_EN, DISABLE);
-		SD_IRQ_NOTIFY();
+		SD_IRQ_Notify();
 	}
 
 	/* Check for SDIO interrupt flags */
@@ -1819,12 +1971,10 @@ u32 SD_IRQHandler(void *pData)
 }
 
 /**
- * @brief  Returns information the information of the card which are stored on
- *         the CID register.
- * @param  hsd: Pointer to SD handle
- * @param  pCID: Pointer to a SD_CardCIDTypeDef structure that
- *         contains all CID register parameters
- * @retval HAL status
+ * @brief  Return card identification information stored in the CID register.
+ * @param  hsd Pointer to SD handle.
+ * @param  pCID Pointer to an @ref SD_CardCIDTypeDef structure that
+ *         contains all CID register parameters.
  */
 void SD_GetCardCID(SD_HdlTypeDef *hsd, SD_CardCIDTypeDef *pCID)
 {
@@ -1853,12 +2003,13 @@ void SD_GetCardCID(SD_HdlTypeDef *hsd, SD_CardCIDTypeDef *pCID)
 }
 
 /**
- * @brief  Returns information the information of the card which are stored on
- *         the CSD register.
- * @param  hsd: Pointer to SD handle
- * @param  pCSD: Pointer to a SD_CardCSDTypeDef structure that
- *         contains all CSD register parameters
- * @retval HAL status
+ * @brief  Return card-specific data stored in the CSD register.
+ * @param  hsd Pointer to SD handle.
+ * @param  pCSD Pointer to an @ref SD_CardCSDTypeDef structure that
+ *         contains all CSD register parameters.
+ * @return SD operation result:
+ *           - SD_OK: Success.
+ *           - Others: Failure.
  */
 SD_RESULT SD_GetCardCSD(SD_HdlTypeDef *hsd, SD_CardCSDTypeDef *pCSD)
 {
@@ -1965,11 +2116,10 @@ SD_RESULT SD_GetCardCSD(SD_HdlTypeDef *hsd, SD_CardCSDTypeDef *pCSD)
 }
 
 /**
- * @brief  Gets the SD card info.
- * @param  hsd: Pointer to SD handle
- * @param  pCardInfo: Pointer to the SDIO_CardInfoTypeDef structure that
- *         will contain the SD card status information
- * @retval HAL status
+ * @brief  Get the SD card info.
+ * @param  hsd Pointer to SD handle.
+ * @param  pCardInfo Pointer to the @ref SDIO_CardInfoTypeDef structure that
+ *         will contain the SD card information.
  */
 void SD_GetCardInfo(SD_HdlTypeDef *hsd, SDIO_CardInfoTypeDef *pCardInfo)
 {
@@ -1984,11 +2134,13 @@ void SD_GetCardInfo(SD_HdlTypeDef *hsd, SDIO_CardInfoTypeDef *pCardInfo)
 }
 
 /**
- * @brief  Gets the SD status info.
- * @param  hsd: Pointer to SD handle
- * @param  pStatus: Pointer to the SD_StatusTypeDef structure that
- *         will contain the SD card status information
- * @retval HAL status
+ * @brief  Get the SD status info.
+ * @param  hsd Pointer to SD handle.
+ * @param  pStatus Pointer to the @ref SD_StatusTypeDef structure that
+ *         will contain the SD Status register data.
+ * @return SD operation result:
+ *           - SD_OK: Success.
+ *           - Others: Failure.
  */
 SD_RESULT SD_GetSDStatus(SD_HdlTypeDef *hsd, SD_StatusTypeDef *pStatus)
 {
@@ -2044,9 +2196,9 @@ SD_RESULT SD_GetSDStatus(SD_HdlTypeDef *hsd, SD_StatusTypeDef *pStatus)
 }
 
 /**
- * @brief  Gets the current sd card data state.
- * @param  hsd: pointer to SD handle
- * @retval Card state
+ * @brief  Get the current SD card data state.
+ * @param  hsd Pointer to SD handle.
+ * @return @ref SD_CardStateTypeDef current card state.
  */
 SD_CardStateTypeDef SD_GetCardState(SD_HdlTypeDef *hsd)
 {
@@ -2067,10 +2219,11 @@ SD_CardStateTypeDef SD_GetCardState(SD_HdlTypeDef *hsd)
 
 /**
  * @brief  Send Status info command.
- * @param  hsd: pointer to SD handle
- * @param  pSDstatus: Pointer to the buffer that will contain the SD card status
- *         SD Status register)
- * @retval error state
+ * @param  hsd Pointer to SD handle.
+ * @param  pSDstatus Pointer to the buffer that will contain the SD Status register data (512 bits).
+ * @return SD operation result:
+ *           - SD_OK: Success.
+ *           - Others: Failure.
  */
 static SD_RESULT SD_SendSDStatus(SD_HdlTypeDef *hsd, u32 *pSDstatus)
 {
@@ -2113,15 +2266,14 @@ static SD_RESULT SD_SendSDStatus(SD_HdlTypeDef *hsd, u32 *pSDstatus)
 	config.DmaEn = SDIO_TRANS_DMA_DIS;
 	SDIO_ConfigData(SDIOx, &config);
 
-	/* Send ACMD13 (SD_APP_STAUS)  with argument as card's RCA */
+	/* Send ACMD13 (SD_APP_STATUS)  with argument as card's RCA */
 	errorstate = SDMMC_CmdStatusRegister(SDIOx);
 	if (errorstate != SD_ERROR_NONE) {
 		hsd->ErrorCode |= errorstate;
 		return SD_ERROR;
 	}
 
-	/* Get status data */
-	/* Read STA register */
+	/* Read status register. */
 	while (!((SDIO_GetErrSts(SDIOx) & SDIO_DAT_ERR) || (SDIO_GetNormSts(SDIOx) & SDIOHOST_BIT_XFER_COMPLETE))) {
 		if (SDIO_GetNormSts(SDIOx) & SDIOHOST_BIT_BUFF_READ_READY) {
 			for (count = 0U; count < 8U; count++) {
@@ -2163,11 +2315,13 @@ static SD_RESULT SD_SendSDStatus(SD_HdlTypeDef *hsd, u32 *pSDstatus)
 }
 
 /**
- * @brief  Returns the current card's status.
- * @param  hsd: Pointer to SD handle
- * @param  pCardStatus: pointer to the buffer that will contain the SD card
- *         status (Card Status register)
- * @retval error state
+ * @brief  Return the current card's status.
+ * @param  hsd Pointer to SD handle.
+ * @param  pCardStatus Pointer to the buffer that will contain the SD card
+ *         status (Card Status register).
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 static u32 SD_SendCardStatus(SD_HdlTypeDef *hsd, u32 *pCardStatus)
 {
@@ -2178,8 +2332,7 @@ static u32 SD_SendCardStatus(SD_HdlTypeDef *hsd, u32 *pCardStatus)
 		return SD_ERROR_INVALID_PARAMETER;
 	}
 
-	/* Send Status command */
-	/* CMD13 */
+	/* Send Status command (CMD13). */
 	errorstate = SDMMC_CmdSendStatus(SDIOx, (u32)(hsd->Card.RelCardAdd << 16U));
 	if (errorstate != SD_ERROR_NONE) {
 		return errorstate;
@@ -2192,12 +2345,15 @@ static u32 SD_SendCardStatus(SD_HdlTypeDef *hsd, u32 *pCardStatus)
 }
 
 /**
-  * @brief  Check switchable function(mode 0) or switch card function(mode 1).
+  * @brief  Check (Mode 0) or switch (Mode 1) a card function using CMD6.
+  * @param  hsd Pointer to an SD handle.
   * @param  mode Operation mode, which can be a value of @ref SD_CMD6_OpMode.
   * @param  grp Function group, which can be a value of @ref SD_CMD6_FuncGroup.
   * @param  func Function, which can be a value of 0x0-0xF.
-  * @param  pData pointer to a buffer to save the switch function status, which should be 32byte aligned.
-  * @retval  SD_OK or SD_ERROR.
+  * @param  pData Pointer to a buffer to store the switch function status, which should be 32-byte aligned.
+  * @return SD operation result:
+  *           - SD_OK: success.
+  *           - SD_ERROR: fail.
   */
 SD_RESULT SD_SwitchFunction(SD_HdlTypeDef *hsd, u8 mode, u8 grp, u8 func, u8 *pData)
 {
@@ -2208,15 +2364,15 @@ SD_RESULT SD_SwitchFunction(SD_HdlTypeDef *hsd, u8 mode, u8 grp, u8 func, u8 *pD
 	u32 arg = 0xFFFFFF;
 	u32 grp_shift = (grp - 1) << 2;
 
-	assert_param(((u32)pData & 0x1F) == 0); // cache_line(32) aligned
+	assert_param(((u32)pData % CACHE_LINE_SIZE) == 0);
 
-	/* check card spec version and card commmand class */
+	/* check card spec version and card command class */
 	if ((hsd->Card.CardSpecVer < SD_SPEC_V110) || ((hsd->Card.Class & SDMMC_CCC_SWITCH) == 0)) {
 		RTK_LOGW(TAG, "This card doesn't support CMD6 and can't switch bus speed!\n");
 		return SD_ERROR;
 	}
 
-	SDIO_ConfigNormIntSig(SDIOx, 0xFFFFFFFF, DISABLE); // disabLe alLl the normal int without err int
+	SDIO_ConfigNormIntSig(SDIOx, 0xFFFFFFFF, DISABLE); // disable all the normal int without err int
 	SDIO_ClearNormSts(SDIOx, SDIO_GetNormSts(SDIOx)); // clear old flags
 
 	config.TransType = SDIO_TRANS_SINGLE_BLK;
@@ -2260,54 +2416,54 @@ SD_RESULT SD_SwitchFunction(SD_HdlTypeDef *hsd, u8 mode, u8 grp, u8 func, u8 *pD
 	return SD_OK;
 }
 
+/**
+ * @brief  Switch the SD bus speed.
+ * @param  hsd Pointer to SD handle.
+ * @param  BusSpeed Bus speed mode: SD_SPEED_DS or SD_SPEED_HS.
+ * @return SD operation result:
+ *           - SD_OK: Success.
+ *           - Others: Failure.
+ */
 SD_RESULT SD_SwitchBusSpeed(SD_HdlTypeDef *hsd, u8 BusSpeed)
 {
-	u8 cmd6_resp[64]__attribute__((aligned(32))); // 512bit/8
+	u8 cmd6_resp[64]__attribute__((aligned(CACHE_LINE_SIZE))); // 512bit/8
 	SD_RESULT ret;
 
-	/* Send CMD6 to check(mode0) whether target mode is supported  */
-	ret = SD_SwitchFunction(hsd, SD_CMD6_CHECK_MODE, SD_ACCESS_MODE, SD_KEEP_CUR_SPEED, cmd6_resp); // check group1
+	/* CMD6 (1): CHECK Group1 = target speed, query supported speed modes */
+	ret = SD_SwitchFunction(hsd, SD_CMD6_CHECK_MODE, SD_ACCESS_MODE, BusSpeed, cmd6_resp); // check group1
 	if (ret != SD_OK) {
 		return ret;
 	}
 
+	/* cmd6_resp[13] reports all supported speed modes regardless of the Group1 arg above */
 	if ((cmd6_resp[13] & BIT(BusSpeed)) == 0) { // Group1 information [407:400]
 		RTK_LOGW(TAG, "This card does not support target speed mode(%d)!\n", BusSpeed);
 		return SD_ERROR;
 	}
 
-	if ((cmd6_resp[16] & 0xF) == BusSpeed) { // Group1 [383:376]
-		RTK_LOGI(TAG, "Current speed mode is already the target setting.\n");
-	} else {
-		/* Send CMD6 to check(mode0) whether target mode is ready  */
-		ret = SD_SwitchFunction(hsd, SD_CMD6_CHECK_MODE, SD_ACCESS_MODE, BusSpeed, cmd6_resp); // check group1
-		if (ret != SD_OK) {
-			return ret;
-		}
-
-		if ((cmd6_resp[16] & 0xF) != BusSpeed) { // Group1 [383:376]
-			RTK_LOGW(TAG, "The target speed mode(%d) cannot be switched!\n", BusSpeed);
-			return SD_ERROR;
-		} else {
-			/* Send CMD6 to switch(mode1) access_mode to target mode  */
-			ret = SD_SwitchFunction(hsd, SD_CMD6_SWITCH_MODE, SD_ACCESS_MODE, BusSpeed, cmd6_resp); // switch group1
-			if (ret != SD_OK) {
-				return ret;
-			}
-
-			if ((cmd6_resp[16] & 0xF) == BusSpeed) { // Group1 [383:376]
-				RTK_LOGI(TAG, "SD card has been changed to target speed mode(%d).\n", BusSpeed);
-				return SD_OK;
-			} else {
-				RTK_LOGW(TAG, "The switch request is cancelled!\n");
-				return SD_ERROR;
-			}
-		}
+	/* CMD6 (2): SET Group1 = target speed, verify from response */
+	ret = SD_SwitchFunction(hsd, SD_CMD6_SWITCH_MODE, SD_ACCESS_MODE, BusSpeed, cmd6_resp); // switch group1
+	if (ret != SD_OK) {
+		return ret;
 	}
 
-	return SD_OK;
+	if ((cmd6_resp[16] & 0xF) == BusSpeed) { // Group1 [383:376]
+		RTK_LOGI(TAG, "SD card has been changed to target speed mode(%d).\n", BusSpeed);
+		return SD_OK;
+	} else {
+		RTK_LOGW(TAG, "The switch request is cancelled!\n");
+		return SD_ERROR;
+	}
 }
 
+/**
+ * @brief  Configure the SD bus clock speed by switching the card mode and updating the host clock.
+ * @param  hsd Pointer to SD handle.
+ * @param  BusSpeed Target bus speed mode: SD_SPEED_DS or SD_SPEED_HS.
+ * @return SD operation result:
+ *           - SD_OK: Success.
+ *           - SD_ERROR: Failure.
+ */
 SD_RESULT SD_ConfigBusSpeed(SD_HdlTypeDef *hsd, u8 BusSpeed)
 {
 	SDIOHOST_TypeDef *SDIOx = hsd->Instance;
@@ -2377,14 +2533,16 @@ SD_RESULT SD_ConfigBusSpeed(SD_HdlTypeDef *hsd, u8 BusSpeed)
 }
 
 /**
- * @brief  Enable wide bus for the requested card if supported by card.
- * @param  hsd: Pointer to SD handle
- * @param  WideMode: Specifies the SD card wide bus mode
+ * @brief  Configure the SD bus width if the requested mode is supported by the card.
+ * @param  hsd Pointer to SD handle.
+ * @param  WideMode Specifies the SD card wide bus mode
  *          This parameter can be one of the following values:
  *            @arg SDIOH_BUS_WIDTH_8BIT: 8-bit data transfer
  *            @arg SDIOH_BUS_WIDTH_4BIT: 4-bit data transfer
  *            @arg SDIOH_BUS_WIDTH_1BIT: 1-bit data transfer
- * @retval HAL status
+ * @return SD operation result:
+ *           - SD_OK: Success.
+ *           - Others: Failure.
  */
 SD_RESULT SD_ConfigBusWidth(SD_HdlTypeDef *hsd, u8 WideMode)
 {
@@ -2437,9 +2595,11 @@ SD_RESULT SD_ConfigBusWidth(SD_HdlTypeDef *hsd, u8 WideMode)
 }
 
 /**
- * @brief  Enables the SDIO wide bus mode.
- * @param  hsd: pointer to SD handle
- * @retval error state
+ * @brief  Enable wide bus mode of SD card or SDIO card.
+ * @param  hsd Pointer to SD handle.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 static u32 SD_WideBus_Enable(SD_HdlTypeDef *hsd)
 {
@@ -2490,9 +2650,11 @@ static u32 SD_WideBus_Enable(SD_HdlTypeDef *hsd)
 }
 
 /**
- * @brief  Disables the SDIO wide bus mode.
- * @param  hsd: Pointer to SD handle
- * @retval error state
+ * @brief  Disable wide bus mode of SD card or SDIO card.
+ * @param  hsd Pointer to SD handle.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 static u32 SD_WideBus_Disable(SD_HdlTypeDef *hsd)
 {
@@ -2543,8 +2705,10 @@ static u32 SD_WideBus_Disable(SD_HdlTypeDef *hsd)
 
 /**
  * @brief  Get the SD card SCR register value.
- * @param  hsd: Pointer to SD handle
- * @retval error state
+ * @param  hsd Pointer to SD handle.
+ * @return Error state:
+ *           - SD_ERROR_NONE: No error.
+ *           - Others: Error detected.
  */
 static u32 SD_GetCardSCR(SD_HdlTypeDef *hsd)
 {
@@ -2617,9 +2781,8 @@ static u32 SD_GetCardSCR(SD_HdlTypeDef *hsd)
 
 /**
  * @brief  Wrap up reading in non-blocking mode.
- * @param  hsd: pointer to a SD_HdlTypeDef structure that contains
+ * @param  hsd Pointer to an @ref SD_HdlTypeDef structure that contains
  *              the configuration information.
- * @retval None
  */
 static void SD_Read_IT(SD_HdlTypeDef *hsd)
 {
@@ -2654,9 +2817,8 @@ static void SD_Read_IT(SD_HdlTypeDef *hsd)
 
 /**
  * @brief  Wrap up writing in non-blocking mode.
- * @param  hsd: pointer to a SD_HdlTypeDef structure that contains
+ * @param  hsd Pointer to an @ref SD_HdlTypeDef structure that contains
  *              the configuration information.
- * @retval None
  */
 static void SD_Write_IT(SD_HdlTypeDef *hsd)
 {
@@ -2690,11 +2852,19 @@ static void SD_Write_IT(SD_HdlTypeDef *hsd)
 }
 
 /**
-  *  @brief Sema stub function for sd transfer. If this funtcion is not called, polling mode will be used
-  *         when waiting for transfer dma done.
-  *  @param sema_take_fn: semaphore take function instance given by user.
-  *         sema_give_isr_fn: semaphore give function instance given by user.
-  *  @retval  None.
+ *  @brief  Register the card-detect IRQ callback.
+ *  @param  cd_callback Pointer to the callback function called on card insertion or removal, receiving the detection result as @ref SD_RESULT.
+ */
+void SD_SetCdCallback(void (*cd_callback)(SD_RESULT))
+{
+	cd_cb = cd_callback;
+}
+
+/**
+  *  @brief  Register semaphore functions for SD DMA transfer synchronization. If not called, polling mode is used
+  *          while waiting for DMA transfer completion.
+  *  @param  sema_take_fn Pointer to the semaphore take function provided by the caller.
+  *  @param  sema_give_isr_fn Pointer to the semaphore give function provided by the caller, invoked from ISR context.
   */
 void SD_SetSema(int (*sema_take_fn)(u32), int (*sema_give_isr_fn)(u32))
 {
@@ -2703,12 +2873,12 @@ void SD_SetSema(int (*sema_take_fn)(u32), int (*sema_give_isr_fn)(u32))
 }
 /**
   * @brief  Wait until transfer is done before timeout.
-  * @param  hsd: pointer to a SD_HdlTypeDef structure that contains
+  * @param  hsd Pointer to an @ref SD_HdlTypeDef structure that contains
   *              the configuration information.
-  * @param  timeout_us: timeout value in microseconds.
-  * @return wait status:
-  * 		- HAL_TIMEOUT: Timeout.
-  * 		- HAL_OK: Transfer is done within a specified time.
+  * @param  timeout_us Timeout value in microseconds.
+  * @return Wait status:
+  *         - HAL_TIMEOUT: Timeout.
+  *         - HAL_OK: Transfer is done within a specified time.
   */
 u32 SD_WaitTransDone(SD_HdlTypeDef *hsd, u32 timeout_us)
 {
@@ -2755,6 +2925,10 @@ u32 SD_WaitTransDone(SD_HdlTypeDef *hsd, u32 timeout_us)
 	return HAL_OK;
 }
 
+/**
+  *  @brief  Get the current status of the SD card.
+  *  @return SD_OK.
+  */
 SD_RESULT SD_Status(void)
 {
 	// TODO
@@ -2762,16 +2936,29 @@ SD_RESULT SD_Status(void)
 	return SD_OK;
 }
 
+/**
+  *  @brief Read blocks of data from the SD card.
+  *  @param  sector The start index of blocks to read from.
+  *  @param  data Pointer to data buffer. If the address of data buffer is 32-byte aligned, the read performance would be higher.
+  *  @param  count Number of blocks to read.
+  *  @return SD operation result:
+  *             - SD_OK: Read blocks successfully.
+  *             - SD_ERROR: Failed to read blocks.
+  */
 SD_RESULT SD_ReadBlocks(u32 sector, u8 *data, u32 count)
 {
 	SD_RESULT ret = SD_ERROR;
-	u32 i;
+	u8 *ptr;
+	u32 blk_remaining = count;
+	u32 blk_to_read;
+	u32 current_sector = sector;
 
 	if (SD_CheckStatusTO(&hsd0, SD_FATFS_TIMEOUT) < 0) {
 		return ret; // SD card did not turn ready before timeout
 	}
 
-	if (!((u32)data & 0x1F) && !((count * SD_BLOCK_SIZE) & 0x1F)) { // 32Byte-aligned
+	if (((u32)data % CACHE_LINE_SIZE) == 0) { // cache-line aligned
+		DCache_CleanInvalidate((u32)data, count * SD_BLOCK_SIZE);
 		if (SD_ReadBlocks_DMA(&hsd0, (u8 *)data, (u32)(sector), count) == SD_OK) {
 			if (SD_CheckStatusTO(&hsd0, SD_FATFS_TIMEOUT) >= 0) {
 				DCache_Invalidate((u32)data, count * SD_BLOCK_SIZE);
@@ -2779,23 +2966,34 @@ SD_RESULT SD_ReadBlocks(u32 sector, u8 *data, u32 count)
 			}
 		}
 	} else {
-		/* Slow path, fetch each sector a part and _memcpy to destination buffer */
-		for (i = 0; i < count; i++) {
-			if (SD_ReadBlocks_DMA(&hsd0, (u8 *)scratch, (u32)sector++, 1) == SD_OK) {
-				if (SD_CheckStatusTO(&hsd0, SD_FATFS_TIMEOUT) >= 0) {
-					/* invalidate the scratch buffer before the next read to get the actual data instead of the cached one */
-					DCache_Invalidate((u32)scratch, SD_BLOCK_SIZE);
-					_memcpy(data, scratch, SD_BLOCK_SIZE);
-					data += SD_BLOCK_SIZE;
-				} else {
-					break;
-				}
-			} else {
-				break;
-			}
+		/* Not cache-line aligned: use bounce buffer from rtos_mem_malloc (32B aligned) */
+		ptr = rtos_mem_malloc(SD_MALLOC_BLK_CNT * SD_BLOCK_SIZE);
+		if (ptr == NULL) {
+			RTK_LOGS(TAG, RTK_LOG_ERROR, "Allocate buffer error!\n");
+			return SD_ERROR;
 		}
 
-		if (i == count) {
+		while (blk_remaining > 0) {
+			blk_to_read = blk_remaining > SD_MALLOC_BLK_CNT ? SD_MALLOC_BLK_CNT : blk_remaining;
+
+			DCache_CleanInvalidate((u32)ptr, blk_to_read * SD_BLOCK_SIZE);
+			if (SD_ReadBlocks_DMA(&hsd0, (u8 *)ptr, current_sector, blk_to_read) != SD_OK) {
+				break;
+			}
+			if (SD_CheckStatusTO(&hsd0, SD_FATFS_TIMEOUT) < 0) {
+				break;
+			}
+			DCache_Invalidate((u32)ptr, blk_to_read * SD_BLOCK_SIZE);
+			_memcpy(data, ptr, blk_to_read * SD_BLOCK_SIZE);
+
+			current_sector += blk_to_read;
+			data += blk_to_read * SD_BLOCK_SIZE;
+			blk_remaining -= blk_to_read;
+		}
+
+		rtos_mem_free(ptr);
+
+		if (blk_remaining == 0) {
 			ret = SD_OK;
 		}
 	}
@@ -2803,17 +3001,35 @@ SD_RESULT SD_ReadBlocks(u32 sector, u8 *data, u32 count)
 	return ret;
 }
 
+/**
+  *  @brief Write blocks of data to the SD card.
+  *  @param  sector The start index of blocks to write to.
+  *  @param  data Pointer to data buffer. If the address of data buffer is 32-byte aligned, the write performance would be higher.
+  *  @param  count Number of blocks to write.
+  *  @return SD operation result:
+  *             - SD_OK: Wrote blocks successfully.
+  *             - SD_ERROR: Failed to write blocks.
+  */
 SD_RESULT SD_WriteBlocks(u32 sector, const u8 *data, u32 count)
 {
 	SD_RESULT ret = SD_ERROR;
-	u32 i;
+	u8 *ptr;
+	u32 current_sector = sector;
+	const u8 *current_data = data;
+	u32 blk_remaining = count;
+	u32 blk_to_write;
+
+	if ((data == NULL) || (count == 0)) {
+		RTK_LOGS(TAG, RTK_LOG_ERROR, "Invalid data addr or block cnt!\n");
+		return SD_ERROR;
+	}
 
 	if (SD_CheckStatusTO(&hsd0, SD_FATFS_TIMEOUT) < 0) {
 		return ret; // SD card did not turn ready before timeout
 	}
 
-	if (!((u32)data & 0x1F) && !((count * SD_BLOCK_SIZE) & 0x1F)) { // 32Byte-aligned
-		/* the SCB_CleanDCache_by_Addr() requires a 32-Byte aligned address adjust the address and the D-Cache size to clean accordingly. */
+	if (((u32)data % SDIOH_DMA_ALIGN_SZ) == 0) {
+		/* SDIOH_DMA_ALIGN_SZ aligned */
 		DCache_CleanInvalidate((u32)data, count * SD_BLOCK_SIZE);
 
 		if (SD_WriteBlocks_DMA(&hsd0, (u8 *)data, (u32)sector, count) == SD_OK) {
@@ -2824,25 +3040,37 @@ SD_RESULT SD_WriteBlocks(u32 sector, const u8 *data, u32 count)
 			}
 		}
 	} else {
-		/* Slow path, fetch each sector a part and _memcpy to destination buffer */
-		for (i = 0; i < count; i++) {
-			_memcpy((void *)scratch, (void *)data, SD_BLOCK_SIZE);
-			data += SD_BLOCK_SIZE;
+		/* Not SDIOH_DMA_ALIGN_SZ aligned */
+		ptr = rtos_mem_malloc(SD_MALLOC_BLK_CNT * SD_BLOCK_SIZE); // 4KByte
+		if (ptr == NULL) {
+			RTK_LOGS(TAG, RTK_LOG_ERROR, "Allocate buffer error!\n");
+			return SD_ERROR;
+		}
 
-			DCache_CleanInvalidate((u32)scratch, SD_BLOCK_SIZE);
+		while (blk_remaining > 0) {
+			blk_to_write = blk_remaining > SD_MALLOC_BLK_CNT ? SD_MALLOC_BLK_CNT : blk_remaining;
 
-			if (SD_WriteBlocks_DMA(&hsd0, (u8 *)scratch, (u32)sector++, 1) == SD_OK) {
+			_memcpy(ptr, current_data, blk_to_write * SD_BLOCK_SIZE);
+
+			DCache_CleanInvalidate((u32)ptr, blk_to_write * SD_BLOCK_SIZE);
+
+			if (SD_WriteBlocks_DMA(&hsd0, (u8 *)ptr, current_sector, blk_to_write) == SD_OK) {
 				/* Wait that writing process is completed or a timeout occurs */
-
 				if (SD_CheckStatusTO(&hsd0, SD_FATFS_TIMEOUT) < 0) {
 					break;
 				}
 			} else {
 				break;
 			}
+
+			current_sector += blk_to_write;
+			current_data += blk_to_write * SD_BLOCK_SIZE;
+			blk_remaining -= blk_to_write;
 		}
 
-		if (i == count) {
+		rtos_mem_free(ptr);
+
+		if (blk_remaining == 0) {
 			ret = SD_OK;
 		}
 	}
@@ -2850,6 +3078,13 @@ SD_RESULT SD_WriteBlocks(u32 sector, const u8 *data, u32 count)
 	return ret;
 }
 
+/**
+  *  @brief Get the capacity of the SD card.
+  *  @param  sector_count Pointer to a variable that will receive the card capacity in sectors (512-byte blocks).
+  *  @return SD operation result:
+  *             - SD_OK: Capacity retrieved successfully.
+  *             - SD_ERROR: Failed to get capacity.
+  */
 SD_RESULT SD_GetCapacity(u32 *sector_count)
 {
 	SDIO_CardInfoTypeDef CardInfo;
@@ -2863,6 +3098,13 @@ SD_RESULT SD_GetCapacity(u32 *sector_count)
 	return SD_ERROR;
 }
 
+/**
+ * @brief  Get the logical sector size of the SD card in bytes.
+ * @param  sector_size Pointer to a variable that will receive the sector size.
+ * @return SD operation result:
+ *           - SD_OK: Sector size is non-zero.
+ *           - SD_ERROR: Sector size is zero.
+ */
 SD_RESULT SD_GetSectorSize(u32 *sector_size)
 {
 	SDIO_CardInfoTypeDef CardInfo;
@@ -2876,6 +3118,13 @@ SD_RESULT SD_GetSectorSize(u32 *sector_size)
 	return SD_ERROR;
 }
 
+/**
+ * @brief  Get the logical block size of the SD card, in units of SD_BLOCK_SIZE bytes.
+ * @param  block_size Pointer to a variable that will receive the block size.
+ * @return SD operation result:
+ *           - SD_OK: Block size is non-zero.
+ *           - SD_ERROR: Block size is zero.
+ */
 SD_RESULT SD_GetBlockSize(u32 *block_size)
 {
 	SDIO_CardInfoTypeDef CardInfo;
@@ -2889,51 +3138,106 @@ SD_RESULT SD_GetBlockSize(u32 *block_size)
 	return SD_ERROR;
 }
 
+/**
+ * @brief  Read a byte sequence from an SDIO function space using CMD53.
+ * @param  FuncNum SDIO function number to read from.
+ * @param  Addr Starting address.
+ * @param  pData Pointer to the destination data buffer.
+ * @param  ByteCnt Number of bytes to read.
+ * @return SD operation result:
+ *           - SD_OK: Success.
+ *           - SD_ERROR: Failure.
+ */
 SD_RESULT SD_IO_ReadBytes(u8 FuncNum, u32 Addr, u8 *pData, u16 ByteCnt)
 {
+	SD_RESULT ret = SD_ERROR;
+	u8 *ptr;
+
 	assert_param(ByteCnt <= SD_BLOCK_SIZE);
 
-	if (!((u32)pData & 0x1F) && !(ByteCnt & 0x1F)) { // 32Byte-aligned
-
+	if (((u32)pData % CACHE_LINE_SIZE) == 0) {
+		/* cache-line aligned: safe for DCache_Invalidate */
+		DCache_CleanInvalidate((u32)pData, ByteCnt);
 		if (SD_IO_RW_Extended(&hsd0, BUS_READ, FuncNum, 0x1, Addr, pData, 0, ByteCnt) == SD_OK) {
 			DCache_Invalidate((u32)pData, ByteCnt);
-			return SD_OK;
+			ret = SD_OK;
 		}
 	} else {
-		if (SD_IO_RW_Extended(&hsd0, BUS_READ, FuncNum, 0x1, Addr, scratch, 0, ByteCnt) == SD_OK) {
-			DCache_Invalidate((u32)scratch, ByteCnt);
-			_memcpy(pData, scratch, ByteCnt);
-			return SD_OK;
+		/* Not cache-line aligned: use bounce buffer from rtos_mem_malloc (32B aligned) */
+		ptr = rtos_mem_malloc(SD_BLOCK_SIZE);
+		if (ptr == NULL) {
+			RTK_LOGS(TAG, RTK_LOG_ERROR, "Allocate buffer error!\n");
+			return SD_ERROR;
 		}
+
+		DCache_CleanInvalidate((u32)ptr, SD_BLOCK_SIZE);
+		if (SD_IO_RW_Extended(&hsd0, BUS_READ, FuncNum, 0x1, Addr, ptr, 0, ByteCnt) == SD_OK) {
+			DCache_Invalidate((u32)ptr, ByteCnt);
+			_memcpy(pData, ptr, ByteCnt);
+			ret = SD_OK;
+		}
+
+		rtos_mem_free(ptr);
 	}
 
-	return SD_ERROR;
+	return ret;
 }
 
+/**
+ * @brief  Read one or more blocks from an SDIO function space using CMD53.
+ * @param  FuncNum SDIO function number to read from.
+ * @param  Addr Starting address.
+ * @param  pData Pointer to the destination data buffer.
+ * @param  BlockCnt Number of blocks to read.
+ * @return SD operation result:
+ *           - SD_OK: Success.
+ *           - SD_ERROR: Failure.
+ */
 SD_RESULT SD_IO_ReadBlocks(u8 FuncNum, u32 Addr, u8 *pData, u16 BlockCnt)
 {
-	u32 i;
+	u8 *ptr;
+	u32 blk_remaining = BlockCnt;
+	u32 blk_to_read;
+	u32 current_addr = Addr;
 
-	if (!((u32)pData & 0x1F) && !((BlockCnt * SD_BLOCK_SIZE) & 0x1F)) { // 32Byte-aligned
+	if ((pData == NULL) || (BlockCnt == 0)) {
+		RTK_LOGS(TAG, RTK_LOG_ERROR, "Invalid data addr or block cnt!\n");
+		return SD_ERROR;
+	}
+
+	if (((u32)pData % CACHE_LINE_SIZE) == 0) {
+		/* cache-line aligned: safe for DCache_Invalidate */
+		DCache_CleanInvalidate((u32)pData, BlockCnt * SD_BLOCK_SIZE);
 		if (SD_IO_RW_Extended(&hsd0, BUS_READ, FuncNum, 0x1, Addr, pData, 1, BlockCnt) == SD_OK) {
 			DCache_Invalidate((u32)pData, BlockCnt * SD_BLOCK_SIZE);
 			return SD_OK;
 		}
 	} else {
-		/* Slow path, fetch each sector a part and _memcpy to destination buffer */
-		for (i = 0; i < BlockCnt; i++) {
-			if (SD_IO_RW_Extended(&hsd0, BUS_READ, FuncNum, 0x1, Addr, scratch, 1, 1) == SD_OK) {
-				/* invalidate the scratch buffer before the next read to get the actual data instead of the cached one */
-				DCache_Invalidate((u32)scratch, SD_BLOCK_SIZE);
+		/* Not cache-line aligned: use bounce buffer from rtos_mem_malloc (32B aligned) */
+		ptr = rtos_mem_malloc(SD_MALLOC_BLK_CNT * SD_BLOCK_SIZE);
+		if (ptr == NULL) {
+			RTK_LOGS(TAG, RTK_LOG_ERROR, "Allocate buffer error!\n");
+			return SD_ERROR;
+		}
 
-				_memcpy(pData, scratch, SD_BLOCK_SIZE);
-				pData += SD_BLOCK_SIZE;
-			} else {
+		while (blk_remaining > 0) {
+			blk_to_read = blk_remaining > SD_MALLOC_BLK_CNT ? SD_MALLOC_BLK_CNT : blk_remaining;
+
+			DCache_CleanInvalidate((u32)ptr, blk_to_read * SD_BLOCK_SIZE);
+			if (SD_IO_RW_Extended(&hsd0, BUS_READ, FuncNum, 0x1, current_addr, ptr, 1, blk_to_read) != SD_OK) {
 				break;
 			}
+			DCache_Invalidate((u32)ptr, blk_to_read * SD_BLOCK_SIZE);
+			_memcpy(pData, ptr, blk_to_read * SD_BLOCK_SIZE);
+
+			current_addr += blk_to_read;
+			pData += blk_to_read * SD_BLOCK_SIZE;
+			blk_remaining -= blk_to_read;
 		}
 
-		if (i == BlockCnt) {
+		rtos_mem_free(ptr);
+
+		if (blk_remaining == 0) {
 			return SD_OK;
 		}
 	}
@@ -2941,34 +3245,76 @@ SD_RESULT SD_IO_ReadBlocks(u8 FuncNum, u32 Addr, u8 *pData, u16 BlockCnt)
 	return SD_ERROR;
 }
 
+/**
+ * @brief  Write a byte sequence to an SDIO function space using CMD53.
+ * @param  FuncNum SDIO function number to write to.
+ * @param  Addr Starting address.
+ * @param  pData Pointer to the source data buffer.
+ * @param  ByteCnt Number of bytes to write.
+ * @return SD operation result:
+ *           - SD_OK: Success.
+ *           - SD_ERROR: Failure.
+ */
 SD_RESULT SD_IO_WriteBytes(u8 FuncNum, u32 Addr, u8 *pData, u16 ByteCnt)
 {
-	assert_param(ByteCnt <= SD_BLOCK_SIZE);
+	SD_RESULT ret = SD_ERROR;
+	u8 *ptr;
 
-	if (!((u32)pData & 0x1F) && !(ByteCnt & 0x1F)) { // 32Byte-aligned
-
-		DCache_CleanInvalidate((u32)pData, ByteCnt);
-
-		if (SD_IO_RW_Extended(&hsd0, BUS_WRITE, FuncNum, 0x1, Addr, pData, 0, ByteCnt) == SD_OK) {
-			return SD_OK;
-		}
-	} else {
-		_memcpy(scratch, pData, ByteCnt);
-		DCache_CleanInvalidate((u32)scratch, ByteCnt);
-
-		if (SD_IO_RW_Extended(&hsd0, BUS_WRITE, FuncNum, 0x1, Addr, scratch, 0, ByteCnt) == SD_OK) {
-			return SD_OK;
-		}
+	if ((pData == NULL) || (ByteCnt == 0) || (ByteCnt >= SD_BLOCK_SIZE)) {
+		RTK_LOGS(TAG, RTK_LOG_ERROR, "Invalid data addr or byte cnt!\n");
+		return SD_ERROR;
 	}
 
-	return SD_ERROR;
+	if (((u32)pData % SDIOH_DMA_ALIGN_SZ) == 0) {
+		/* SDIOH_DMA_ALIGN_SZ aligned */
+		DCache_CleanInvalidate((u32)pData, ByteCnt);
+
+		ret = SD_IO_RW_Extended(&hsd0, BUS_WRITE, FuncNum, 0x1, Addr, pData, 0, ByteCnt);
+
+	} else {
+		/* Not SDIOH_DMA_ALIGN_SZ aligned */
+		ptr = rtos_mem_malloc(SD_BLOCK_SIZE); // 512Byte
+		if (ptr == NULL) {
+			RTK_LOGS(TAG, RTK_LOG_ERROR, "Allocate buffer error!\n");
+			return SD_ERROR;
+		}
+
+		_memcpy(ptr, pData, ByteCnt);
+		DCache_CleanInvalidate((u32)ptr, ByteCnt);
+
+		ret = SD_IO_RW_Extended(&hsd0, BUS_WRITE, FuncNum, 0x1, Addr, ptr, 0, ByteCnt);
+
+		rtos_mem_free(ptr);
+	}
+
+	return ret;
 }
 
+/**
+ * @brief  Write one or more blocks to an SDIO function space using CMD53.
+ * @param  FuncNum SDIO function number to write to.
+ * @param  Addr Starting address.
+ * @param  pData Pointer to the source data buffer.
+ * @param  BlockCnt Number of blocks to write.
+ * @return SD operation result:
+ *           - SD_OK: Success.
+ *           - SD_ERROR: Failure.
+ */
 SD_RESULT SD_IO_WriteBlocks(u8 FuncNum, u32 Addr, u8 *pData, u16 BlockCnt)
 {
-	u32 i;
+	u8 *ptr;
+	u32 current_addr = Addr;
+	const u8 *current_data = pData;
+	u32 blk_remaining = BlockCnt;
+	u32 blk_to_write;
 
-	if (!((u32)pData & 0x1F) && !((BlockCnt * SD_BLOCK_SIZE) & 0x1F)) { // 32Byte-aligned
+	if ((pData == NULL) || (BlockCnt == 0)) {
+		RTK_LOGS(TAG, RTK_LOG_ERROR, "Invalid data addr or block cnt!\n");
+		return SD_ERROR;
+	}
+
+	if (((u32)pData % SDIOH_DMA_ALIGN_SZ) == 0) {
+		/* SDIOH_DMA_ALIGN_SZ aligned */
 		DCache_CleanInvalidate((u32)pData, BlockCnt * SD_BLOCK_SIZE);
 
 		if (SD_IO_RW_Extended(&hsd0, BUS_WRITE, FuncNum, 0x1, Addr, pData, 1, BlockCnt) == SD_OK) {
@@ -2976,22 +3322,45 @@ SD_RESULT SD_IO_WriteBlocks(u8 FuncNum, u32 Addr, u8 *pData, u16 BlockCnt)
 			return SD_OK;
 		}
 	} else {
-		/* Slow path, fetch each sector a part and _memcpy to destination buffer */
-		for (i = 0; i < BlockCnt; i++) {
-			_memcpy(scratch, pData, SD_BLOCK_SIZE);
-			pData += SD_BLOCK_SIZE;
-
-			DCache_CleanInvalidate((u32)scratch, SD_BLOCK_SIZE);
-
-			if (SD_IO_RW_Extended(&hsd0, BUS_WRITE, FuncNum, 0x1, Addr, scratch, 1, 1) != SD_OK) {
-				break;
-			}
+		/* Not SDIOH_DMA_ALIGN_SZ aligned */
+		ptr = rtos_mem_malloc(SD_MALLOC_BLK_CNT * SD_BLOCK_SIZE); // 4KByte
+		if (ptr == NULL) {
+			RTK_LOGS(TAG, RTK_LOG_ERROR, "Allocate buffer error!\n");
+			return SD_ERROR;
 		}
 
-		if (i == BlockCnt) {
+		while (blk_remaining > 0) {
+			blk_to_write = blk_remaining > SD_MALLOC_BLK_CNT ? SD_MALLOC_BLK_CNT : blk_remaining;
+
+			_memcpy(ptr, current_data, blk_to_write * SD_BLOCK_SIZE);
+
+			DCache_CleanInvalidate((u32)ptr, blk_to_write * SD_BLOCK_SIZE);
+
+			if (SD_IO_RW_Extended(&hsd0, BUS_WRITE, FuncNum, 0x1, current_addr, ptr, 1, blk_to_write) != SD_OK) {
+				break;
+			}
+
+			current_addr += blk_to_write;
+			current_data += blk_to_write * SD_BLOCK_SIZE;
+			blk_remaining -= blk_to_write;
+		}
+
+		rtos_mem_free(ptr);
+
+		if (blk_remaining == 0) {
 			return SD_OK;
 		}
 	}
 
 	return SD_ERROR;
 }
+
+/**
+  * @}
+  */
+
+/**
+  * @}
+  */
+
+/** @} */

@@ -293,7 +293,7 @@ typedef struct {
 } GDMA_TypeDef;
 /// @endcond
 
-/** @addtogroup GDMA_Exported_Types
+/** @addtogroup GDMA_Exported_Types GDMA Exported Types
   * @{
   */
 
@@ -302,87 +302,87 @@ typedef struct {
   */
 typedef struct {
 	u8	GDMA_Index;             /*!< Specifies the GDMA index.
-					                         This parameter can be the value 0.*/
+					                         This parameter can be the value 0. */
 
 	u8	GDMA_ChNum;             /*!< Specifies the GDMA channel number.
-					                         This parameter can be the value 0 ~ 7.*/
+					                         This parameter can be the value 0 ~ 7. */
 
 	u8	GDMA_ChPrior;           /*!< Specifies the GDMA channel priority.
 					                         This parameter can be the value 0 ~ 7, while 0 for highest priority.
 	                                 If more than one channel are set with the same priority value,
-							                     the channel with small channel number index has higher priority.*/
+							                     the channel with small channel number index has higher priority. */
 
 	u32	GDMA_DIR;	              /*!< Specifies the GDMA transmission direction.
-					                         This parameter can be a value of @ref GDMA_Data_Transfer_Direction */
+					                         This parameter can be a value of @ref GDMA_Data_Transfer_Direction. */
 
 	u32	GDMA_DstDataWidth;      /*!< Specifies the GDMA destination transfer width.
-					                         This parameter can be a value of @ref GDMA_Data_Size */
+					                         This parameter can be a value of @ref GDMA_Data_Size. */
 
 	u32	GDMA_SrcDataWidth;      /*!< Specifies the GDMA transfer width.
-					                         This parameter can be a value of @ref GDMA_Data_Size */
+					                         This parameter can be a value of @ref GDMA_Data_Size. */
 
 	u32	GDMA_DstInc;		        /*!< Specifies the GDMA destination address increment mode.
-					                         This parameter can be a value of @ref GDMA_Increment_Mode */
+					                         This parameter can be a value of @ref GDMA_Increment_Mode. */
 
 	u32	GDMA_SrcInc;            /*!< Specifies the GDMA source address increment mode.
-					                         This parameter can be a value of @ref GDMA_Increment_Mode */
+					                         This parameter can be a value of @ref GDMA_Increment_Mode. */
 
 	u32	GDMA_DstMsize;          /*!< Specifies the GDMA destination burst transaction length.
-					                         This parameter can be a value of @ref GDMA_Msize */
+					                         This parameter can be a value of @ref GDMA_Msize. */
 
 	u32	GDMA_SrcMsize;          /*!< Specifies the GDMA source burst transaction length.
-					                         This parameter can be a value of @ref GDMA_Msize */
+					                         This parameter can be a value of @ref GDMA_Msize. */
 
 	u32	GDMA_SrcAddr;           /*!< Specifies the GDMA source address.
 					                         This parameter can be a value of the memory or peripheral space address,
 					                         depending on the GDMA data transfer direction.If this address is configured,
-					                         GDMA will move data from here to the destination address space*/
+					                         GDMA will move data from here to the destination address space. */
 
 	u32	GDMA_DstAddr;           /*!< Specifies the GDMA destination address.
 					                         This parameter can be a value of the memory or peripheral space address,
 					                         depending on the GDMA data transfer direction.If this address is configured,
-					                         GDMA will move data here from source address space*/
+					                         GDMA will move data here from source address space. */
 
 	u32	GDMA_BlockSize; 	      /*!< Specifies the GDMA block transfer size.
 					                         @note This parameter indicates the total number of single transactions for
-					                         every block transfer.*/
+					                         every block transfer. */
 
 	u32	GDMA_IsrType;           /*!< Specifies the GDMA interrupt types.
-					                         This parameter can be a value of @ref GDMA_Interrupt_Type */
+					                         This parameter can be a value of @ref GDMA_Interrupt_Type. */
 
 	u32	GDMA_ReloadSrc;         /*!< Specifies the GDMA automatic source reload .
 					                         This parameter can be the 0 or 1.(0 : disable / 1 : enable).
-					                         @note if this value is set to 1, source address register can be automatically
+					                         @note If this value is set to 1, source address register can be automatically
 					                         reloaded from its initial value at the end of every block for multi-block transfers.
-					                         this parameter is only valid in multi block transmission mode*/
+					                         This parameter is only valid in multi block transmission mode. */
 
 	u32	GDMA_ReloadDst;         /*!< Specifies the GDMA automatic destination reload .
 					                         This parameter can be the 0 or 1.(0 : disable / 1 : enable).
-					                         @note if this parameter is set 1, destination address register can be automatically
+					                         @note If this parameter is set 1, destination address register can be automatically
 					                         reloaded from its initial value at the end of every block for multi-block transfers.
-					                         this parameter is only valid in multi block transmission mode*/
+					                         This parameter is only valid in multi block transmission mode. */
 
 	u32	GDMA_LlpDstEn;          /*!< Specifies the GDMA whether block chaining is enabled or disabled on the destination side only.
-					                         @note this parameter is only valid in multi-block transmission mode*/
+					                         @note This parameter is only valid in multi-block transmission mode. */
 
 	u32	GDMA_LlpSrcEn;          /*!< Specifies the GDMA whether block chaining is enabled or disabled on the source side only.
-                                   @note this parameter is only valid in multi-block transmission mode*/
+                                   @note This parameter is only valid in multi-block transmission mode. */
 
 	u32	GDMA_SrcHandshakeInterface;    /*!< Specifies the GDMA hardware handshaking interface for the source
 							                       peripheral of a GDMA channel.
-							                       This parameter can be a value of @ref GDMA0_HS_HandShake_Interface */
+							                       This parameter can be a value of @ref GDMA0_HS_HandShake_Interface. */
 
 	u32	GDMA_DstHandshakeInterface;   /*!< Specifies the GDMA hardware handshaking interface for the destination
 							                       peripheral of a GDMA channel.
-							                       This parameter can be a value of @ref GDMA0_HS_HandShake_Interface */
+							                       This parameter can be a value of @ref GDMA0_HS_HandShake_Interface. */
 
 	u32	MuliBlockCunt;          /*!< Specifies the GDMA Multi-block counter.
-					                         This parameter is used in multi-block transmission.*/
+					                         This parameter is used in multi-block transmission. */
 
 	u32	MaxMuliBlock;           /*!< Specifies the GDMA Max block number in Multi-block transmission.
-					                         This parameter is used in multi-block transmission.*/
+					                         This parameter is used in multi-block transmission. */
 	u32	SecureTransfer;		      /*!< Specifies the GDMA secure transmission.
-								                   This parameter is used in secure world of trustzone.*/
+								                   This parameter is used in secure world of trustzone. */
 } GDMA_InitTypeDef, *PGDMA_InitTypeDef;
 
 /**
@@ -390,21 +390,21 @@ typedef struct {
   */
 typedef struct {
 	u32 Sarx;                   /*!< Specifies the GDMA channel x Source Address Register (SARx) value field of a block descriptor in block chaining.
-					                        This parameter stores the source address of the current block transfer.*/
+					                        This parameter stores the source address of the current block transfer. */
 
 	u32 Darx;                   /*!< Specifies the GDMA channel x Destination Address Register(DARx) value field of a block descriptor in block chaining.
-					                         This parameter stores the destination address of the current block transfer.*/
+					                         This parameter stores the destination address of the current block transfer. */
 
 	u32 Llpx;                   /*!< Specifies the GDMA channel x Linked List Pointer Register(LLPx) value field of a block descriptor
-	                                 in block chaining. This parameter is a address, which points to the next block descriptor.*/
+	                                 in block chaining. This parameter is a address, which points to the next block descriptor. */
 
 	u32 CtlxLow;                /*!< Specifies the GDMA channel x Control Register(CTRx) Low 32 bit value field of a block descriptor
-	                                 in block chaining. This parameter stores the DMA control parameters of the current block transfer.*/
+	                                 in block chaining. This parameter stores the DMA control parameters of the current block transfer. */
 
 	u32 CtlxUp;                 /*!< Specifies the GDMA channel x Control Register(CTRx) High 32 bit value field of a block descriptor
-	                                 in block chaining. This parameter stores the DMA control parameters of the current block transfer.*/
+	                                 in block chaining. This parameter stores the DMA control parameters of the current block transfer. */
 
-	u32 Temp;                   /*!< Specifies the reserved GDMA channel x register value field of a block descriptor in block chaining.*/
+	u32 Temp;                   /*!< Specifies the reserved GDMA channel x register value field of a block descriptor in block chaining. */
 
 } GDMA_CH_LLI_ELE, *PGDMA_CH_LLI_ELE;
 
@@ -413,13 +413,13 @@ typedef struct {
   */
 struct GDMA_CH_LLI {
 	GDMA_CH_LLI_ELE	 LliEle;    /*!< Specifies the GDMA Linked List Item Element structure field of Linked List Item
-	                                 in block chaining. This structure variable stores the necessary parameters of a block descriptor.*/
+	                                 in block chaining. This structure variable stores the necessary parameters of a block descriptor. */
 
 	u32 BlockSize;              /*!< Specifies the GDMA block size of one block in block chaining.
-					                         This parameter indicates the block size of the current block transfer.*/
+					                         This parameter indicates the block size of the current block transfer. */
 
 	struct GDMA_CH_LLI *pNextLli;/*!< Specifies the GDMA Linked List Item pointer.
-					                          This parameter stores the address pointing to the next Linked List Item in block chaining.*/
+					                          This parameter stores the address pointing to the next Linked List Item in block chaining. */
 };
 
 /**
@@ -440,11 +440,11 @@ struct GDMA_CH_LLI {
 /** @defgroup GDMA_Index_Channel_Definition GDMA Index Channel Definition
   * @{
   */
-#define MAX_GDMA_INDX		            (0)
-#define MAX_GDMA_CHNL		            (7)
+#define MAX_GDMA_INDX		            (0) /*!< Maximum GDMA index value. */
+#define MAX_GDMA_CHNL		            (7) /*!< Maximum GDMA channel number. */
 
-#define IS_GDMA_ChannelNum(NUM)     ((NUM) <= MAX_GDMA_CHNL)
-#define IS_GDMA_Index(NUM)          ((NUM) <= MAX_GDMA_INDX)
+#define IS_GDMA_ChannelNum(NUM)     ((NUM) <= MAX_GDMA_CHNL) /*!< Check if GDMA channel number is valid. */
+#define IS_GDMA_Index(NUM)          ((NUM) <= MAX_GDMA_INDX) /*!< Check if GDMA index value is valid. */
 /**
   * @}
   */
@@ -452,15 +452,16 @@ struct GDMA_CH_LLI {
 /** @defgroup GDMA_Data_Transfer_Direction GDMA Data Transfer Direction
   * @{
   */
-#define TTFCMemToMem						    ((u32)0x00000000)
-#define TTFCMemToPeri						    ((u32)0x00000001)
-#define TTFCPeriToMem						    ((u32)0x00000002)
-#define TTFCPeriToPeri						  ((u32)0x00000003)
-#define TTFCPeriToMem_PerCtrl				((u32)0x00000004)
-#define TTFCPeriToPeri_SrcPerCtrl		((u32)0x00000005)
-#define TTFCMemToPeri_PerCtrl				((u32)0x00000006)
-#define TTFCPeriToPeri_DstPerCtrl		((u32)0x00000007)
+#define TTFCMemToMem						    ((u32)0x00000000) /*!< Memory to memory transfer. */
+#define TTFCMemToPeri						    ((u32)0x00000001) /*!< Memory to peripheral transfer. */
+#define TTFCPeriToMem						    ((u32)0x00000002) /*!< Peripheral to memory transfer. */
+#define TTFCPeriToPeri						  ((u32)0x00000003) /*!< Peripheral to peripheral transfer. */
+#define TTFCPeriToMem_PerCtrl				((u32)0x00000004) /*!< Peripheral to memory, peripheral as flow controller. */
+#define TTFCPeriToPeri_SrcPerCtrl		((u32)0x00000005) /*!< Peripheral to peripheral, source peripheral as flow controller. */
+#define TTFCMemToPeri_PerCtrl				((u32)0x00000006) /*!< Memory to peripheral, peripheral as flow controller. */
+#define TTFCPeriToPeri_DstPerCtrl		((u32)0x00000007) /*!< Peripheral to peripheral, destination peripheral as flow controller. */
 
+/** @brief Check if GDMA transfer direction value is valid. */
 #define IS_GDMA_DIR(DIR)            (((DIR) == TTFCMemToMem) || \
                                      ((DIR) == TTFCMemToPeri) || \
                                      ((DIR) == TTFCPeriToMem) ||\
@@ -476,9 +477,10 @@ struct GDMA_CH_LLI {
 /** @defgroup GDMA_Data_Size GDMA Data Size
   * @{
   */
-#define TrWidthOneByte						  ((u32)0x00000000)
-#define TrWidthTwoBytes						  ((u32)0x00000001)
-#define TrWidthFourBytes						((u32)0x00000002)
+#define TrWidthOneByte						  ((u32)0x00000000) /*!< Transfer width of one byte. */
+#define TrWidthTwoBytes						  ((u32)0x00000001) /*!< Transfer width of two bytes. */
+#define TrWidthFourBytes						((u32)0x00000002) /*!< Transfer width of four bytes. */
+/** @brief Check if GDMA data size value is valid. */
 #define IS_GDMA_DATA_SIZE(SIZE)     (((SIZE) == TrWidthOneByte) || \
                                      ((SIZE) == TrWidthTwoBytes) || \
                                      ((SIZE) == TrWidthFourBytes))
@@ -489,14 +491,23 @@ struct GDMA_CH_LLI {
 /** @defgroup GDMA_Msize GDMA Msize
   * @{
   */
-#define MsizeOne							      ((u32)0x00000000)
-#define MsizeFour							      ((u32)0x00000001)
-#define MsizeEight							    ((u32)0x00000002)
-#define MsizeSixteen						    ((u32)0x00000003)
+#define MsizeOne							      ((u32)0x00000000) /*!< Burst transaction length of 1 item. */
+#define MsizeFour							      ((u32)0x00000001) /*!< Burst transaction length of 4 items. */
+#define MsizeEight							    ((u32)0x00000002) /*!< Burst transaction length of 8 items. */
+#define MsizeSixteen						    ((u32)0x00000003) /*!< Burst transaction length of 16 items. */
+#define Msize32								        ((u32)0x00000004) /*!< Burst transaction length of 32 items. */
+#define Msize64								        ((u32)0x00000005) /*!< Burst transaction length of 64 items. */
+#define Msize128							        ((u32)0x00000006) /*!< Burst transaction length of 128 items. */
+#define Msize256							        ((u32)0x00000007) /*!< Burst transaction length of 256 items. */
+/** @brief Check if GDMA Msize value is valid. */
 #define IS_GDMA_MSIZE(SIZE)         (((SIZE) == MsizeOne) || \
                                      ((SIZE) == MsizeFour) || \
                                      ((SIZE) == MsizeEight)|| \
-                                     ((SIZE) == MsizeSixteen))
+                                     ((SIZE) == MsizeSixteen) || \
+                                     ((SIZE) == Msize32) || \
+                                     ((SIZE) == Msize64) || \
+                                     ((SIZE) == Msize128) || \
+                                     ((SIZE) == Msize256))
 /**
   * @}
   */
@@ -504,9 +515,10 @@ struct GDMA_CH_LLI {
 /** @defgroup GDMA_Increment_Mode GDMA Increment Mode
   * @{
   */
-#define IncType								      ((u32)0x00000000)
-#define DecType								      ((u32)0x00000001)
-#define NoChange							      ((u32)0x00000002)
+#define IncType								      ((u32)0x00000000) /*!< Address increment mode. */
+#define DecType								      ((u32)0x00000001) /*!< Address decrement mode. */
+#define NoChange							      ((u32)0x00000002) /*!< Address no-change mode. */
+/** @brief Check if GDMA increment mode value is valid. */
 #define IS_GDMA_IncMode(STATE)      (((STATE) == IncType) || \
                                      ((STATE) == DecType) || \
                                      ((STATE) == NoChange))
@@ -517,13 +529,11 @@ struct GDMA_CH_LLI {
 /** @defgroup GDMA_Interrupt_Type GDMA Interrupt Type
   * @{
   */
-#define TransferType							  ((u32)0x00000001)
-#define BlockType							      ((u32)0x00000002)
-#define SrcTransferType						  ((u32)0x00000004)
-#define DstTransferType						  ((u32)0x00000008)
-#define ErrType								      ((u32)0x000000010)
+#define TransferType							  ((u32)0x00000001) /*!< DMA transfer complete interrupt type. */
+#define BlockType							      ((u32)0x00000002) /*!< DMA block transfer complete interrupt type. */
+#define ErrType								      ((u32)0x000000010) /*!< DMA transfer error interrupt type. */
 
-#define IS_GDMA_CONFIG_IT(IT)       ((((IT) & 0xFFFFFFE0) == 0x00) && ((IT) != 0x00))
+#define IS_GDMA_CONFIG_IT(IT)       ((((IT) & 0xFFFFFFE0) == 0x00) && ((IT) != 0x00)) /*!< Check if GDMA interrupt type configuration is valid. */
 /**
   * @}
   */
@@ -531,9 +541,9 @@ struct GDMA_CH_LLI {
 /** @defgroup GDMA_Reload_Definition GDMA Reload Definition
   * @{
   */
-#define CLEAN_RELOAD_SRC					  ((u32)0x00000001)
-#define CLEAN_RELOAD_DST					  ((u32)0x00000002)
-#define CLEAN_RELOAD_SRC_DST				((u32)0x00000003)
+#define CLEAN_RELOAD_SRC					  ((u32)0x00000001) /*!< Clean source auto-reload. */
+#define CLEAN_RELOAD_DST					  ((u32)0x00000002) /*!< Clean destination auto-reload. */
+#define CLEAN_RELOAD_SRC_DST				((u32)0x00000003) /*!< Clean both source and destination auto-reload. */
 /**
   * @}
   */
@@ -541,51 +551,51 @@ struct GDMA_CH_LLI {
 /** @defgroup GDMA0_HS_HandShake_Interface GDMA0 HS HandShake Interface
   * @{
   */
-#define GDMA_HANDSHAKE_INTERFACE_UART0_TX		  (0)
-#define GDMA_HANDSHAKE_INTERFACE_UART0_RX		  (1)
-#define GDMA_HANDSHAKE_INTERFACE_UART1_TX		  (2)
-#define GDMA_HANDSHAKE_INTERFACE_UART1_RX		  (3)
-#define GDMA_HANDSHAKE_INTERFACE_UART2_TX		  (4)
-#define GDMA_HANDSHAKE_INTERFACE_UART2_RX		  (5)
-#define GDMA_HANDSHAKE_INTERFACE_SPI0_TX		  (6)
-#define GDMA_HANDSHAKE_INTERFACE_SPI0_RX		  (7)
-#define GDMA_HANDSHAKE_INTERFACE_SPI1_TX		  (8)
-#define GDMA_HANDSHAKE_INTERFACE_SPI1_RX		  (9)
-#define GDMA_HANDSHAKE_INTERFACE_QSPI_TX		  (10)
-#define GDMA_HANDSHAKE_INTERFACE_SPIC_TX		  (11)
-#define GDMA_HANDSHAKE_INTERFACE_SPIC_RX		  (12)
+#define GDMA_HANDSHAKE_INTERFACE_UART0_TX		  (0) /*!< Handshake interface for UART0 TX. */
+#define GDMA_HANDSHAKE_INTERFACE_UART0_RX		  (1) /*!< Handshake interface for UART0 RX. */
+#define GDMA_HANDSHAKE_INTERFACE_UART1_TX		  (2) /*!< Handshake interface for UART1 TX. */
+#define GDMA_HANDSHAKE_INTERFACE_UART1_RX		  (3) /*!< Handshake interface for UART1 RX. */
+#define GDMA_HANDSHAKE_INTERFACE_UART2_TX		  (4) /*!< Handshake interface for UART2 TX. */
+#define GDMA_HANDSHAKE_INTERFACE_UART2_RX		  (5) /*!< Handshake interface for UART2 RX. */
+#define GDMA_HANDSHAKE_INTERFACE_SPI0_TX		  (6) /*!< Handshake interface for SPI0 TX. */
+#define GDMA_HANDSHAKE_INTERFACE_SPI0_RX		  (7) /*!< Handshake interface for SPI0 RX. */
+#define GDMA_HANDSHAKE_INTERFACE_SPI1_TX		  (8) /*!< Handshake interface for SPI1 TX. */
+#define GDMA_HANDSHAKE_INTERFACE_SPI1_RX		  (9) /*!< Handshake interface for SPI1 RX. */
+#define GDMA_HANDSHAKE_INTERFACE_QSPI_TX		  (10) /*!< Handshake interface for QSPI TX. */
+#define GDMA_HANDSHAKE_INTERFACE_SPIC_TX		  (11) /*!< Handshake interface for SPIC TX. */
+#define GDMA_HANDSHAKE_INTERFACE_SPIC_RX		  (12) /*!< Handshake interface for SPIC RX. */
 
-#define GDMA_HANDSHAKE_INTERFACE_SPORT0F0_TX	(13)
-#define GDMA_HANDSHAKE_INTERFACE_SPORT0F1_TX	(14)
-#define GDMA_HANDSHAKE_INTERFACE_SPORT0F0_RX	(15)
-#define GDMA_HANDSHAKE_INTERFACE_SPORT0F1_RX	(16)
+#define GDMA_HANDSHAKE_INTERFACE_SPORT0F0_TX	(13) /*!< Handshake interface for SPORT0 FIFO0 TX. */
+#define GDMA_HANDSHAKE_INTERFACE_SPORT0F1_TX	(14) /*!< Handshake interface for SPORT0 FIFO1 TX. */
+#define GDMA_HANDSHAKE_INTERFACE_SPORT0F0_RX	(15) /*!< Handshake interface for SPORT0 FIFO0 RX. */
+#define GDMA_HANDSHAKE_INTERFACE_SPORT0F1_RX	(16) /*!< Handshake interface for SPORT0 FIFO1 RX. */
 
-#define GDMA_HANDSHAKE_INTERFACE_SPORT1F0_TX	(17)
-#define GDMA_HANDSHAKE_INTERFACE_SPORT1F1_TX	(18)
-#define GDMA_HANDSHAKE_INTERFACE_SPORT1F0_RX	(19)
-#define GDMA_HANDSHAKE_INTERFACE_SPORT1F1_RX	(20)
+#define GDMA_HANDSHAKE_INTERFACE_SPORT1F0_TX	(17) /*!< Handshake interface for SPORT1 FIFO0 TX. */
+#define GDMA_HANDSHAKE_INTERFACE_SPORT1F1_TX	(18) /*!< Handshake interface for SPORT1 FIFO1 TX. */
+#define GDMA_HANDSHAKE_INTERFACE_SPORT1F0_RX	(19) /*!< Handshake interface for SPORT1 FIFO0 RX. */
+#define GDMA_HANDSHAKE_INTERFACE_SPORT1F1_RX	(20) /*!< Handshake interface for SPORT1 FIFO1 RX. */
 
-#define GDMA_HANDSHAKE_INTERFACE_SPORT2F0_TX	(21)
-#define GDMA_HANDSHAKE_INTERFACE_SPORT2F1_TX	(22)
-#define GDMA_HANDSHAKE_INTERFACE_SPORT2F0_RX	(23)
-#define GDMA_HANDSHAKE_INTERFACE_SPORT2F1_RX	(24)
+#define GDMA_HANDSHAKE_INTERFACE_SPORT2F0_TX	(21) /*!< Handshake interface for SPORT2 FIFO0 TX. */
+#define GDMA_HANDSHAKE_INTERFACE_SPORT2F1_TX	(22) /*!< Handshake interface for SPORT2 FIFO1 TX. */
+#define GDMA_HANDSHAKE_INTERFACE_SPORT2F0_RX	(23) /*!< Handshake interface for SPORT2 FIFO0 RX. */
+#define GDMA_HANDSHAKE_INTERFACE_SPORT2F1_RX	(24) /*!< Handshake interface for SPORT2 FIFO1 RX. */
 
-#define GDMA_HANDSHAKE_INTERFACE_SPORT3F0_TX	(25)
-#define GDMA_HANDSHAKE_INTERFACE_SPORT3F1_TX	(26)
-#define GDMA_HANDSHAKE_INTERFACE_SPORT3F0_RX	(27)
-#define GDMA_HANDSHAKE_INTERFACE_SPORT3F1_RX	(28)
+#define GDMA_HANDSHAKE_INTERFACE_SPORT3F0_TX	(25) /*!< Handshake interface for SPORT3 FIFO0 TX. */
+#define GDMA_HANDSHAKE_INTERFACE_SPORT3F1_TX	(26) /*!< Handshake interface for SPORT3 FIFO1 TX. */
+#define GDMA_HANDSHAKE_INTERFACE_SPORT3F0_RX	(27) /*!< Handshake interface for SPORT3 FIFO0 RX. */
+#define GDMA_HANDSHAKE_INTERFACE_SPORT3F1_RX	(28) /*!< Handshake interface for SPORT3 FIFO1 RX. */
 
-#define GDMA_HANDSHAKE_INTERFACE_LEDC_TX		  (29)
-#define GDMA_HANDSHAKE_INTERFACE_Zigbee_TX		(30)
-#define GDMA_HANDSHAKE_INTERFACE_Zigbee_RX		(31)
+#define GDMA_HANDSHAKE_INTERFACE_LEDC_TX		  (29) /*!< Handshake interface for LEDC TX. */
+#define GDMA_HANDSHAKE_INTERFACE_Zigbee_TX		(30) /*!< Handshake interface for Zigbee TX. */
+#define GDMA_HANDSHAKE_INTERFACE_Zigbee_RX		(31) /*!< Handshake interface for Zigbee RX. */
 
-#define GDMA_HANDSHAKE_INTERFACE_UART3_TX		  (32)
-#define GDMA_HANDSHAKE_INTERFACE_UART3_RX		  (33)
-#define GDMA_HANDSHAKE_INTERFACE_I2C0_TX		(NULL)
-#define GDMA_HANDSHAKE_INTERFACE_I2C0_RX		(NULL)
-#define GDMA_HANDSHAKE_INTERFACE_ADC_RX			(NULL)
-#define GDMA_HANDSHAKE_INTERFACE_AUDIO_TX		(NULL)
-#define GDMA_HANDSHAKE_INTERFACE_AUDIO_RX		(NULL)
+#define GDMA_HANDSHAKE_INTERFACE_UART3_TX		  (32) /*!< Handshake interface for UART3 TX. */
+#define GDMA_HANDSHAKE_INTERFACE_UART3_RX		  (33) /*!< Handshake interface for UART3 RX. */
+#define GDMA_HANDSHAKE_INTERFACE_I2C0_TX		(NULL) /*!< Handshake interface for I2C0 TX. */
+#define GDMA_HANDSHAKE_INTERFACE_I2C0_RX		(NULL) /*!< Handshake interface for I2C0 RX. */
+#define GDMA_HANDSHAKE_INTERFACE_ADC_RX			(NULL) /*!< Handshake interface for ADC RX. */
+#define GDMA_HANDSHAKE_INTERFACE_AUDIO_TX		(NULL) /*!< Handshake interface for Audio TX. */
+#define GDMA_HANDSHAKE_INTERFACE_AUDIO_RX		(NULL) /*!< Handshake interface for Audio RX. */
 /**
   * @}
   */
@@ -594,12 +604,9 @@ struct GDMA_CH_LLI {
   * @}
   */
 
-/**
-  * @}
-  */
-
-/**
-  * @}
+/* Exported functions --------------------------------------------------------*/
+/** @defgroup GDMA_Exported_Functions GDMA Exported Functions
+  * @{
   */
 
 _LONG_CALL_ void GDMA_StructInit(PGDMA_InitTypeDef GDMA_InitStruct);
@@ -626,6 +633,18 @@ _LONG_CALL_ void GDMA_Suspend(u8 GDMA_Index, u8 GDMA_ChNum);
 _LONG_CALL_ void GDMA_Resume(u8 GDMA_Index, u8 GDMA_ChNum);
 _LONG_CALL_ u8   GDMA_Abort(u8 GDMA_Index, u8 GDMA_ChNum);
 _LONG_CALL_ u8   GDMA_ChannelIsActive(u8 GDMA_Index, u8 GDMA_ChNum);
+
+/**
+  * @}
+  */
+
+/**
+  * @}
+  */
+
+/**
+  * @}
+  */
 
 /* Other Definitions -------------------------------------------------------------------*/
 
