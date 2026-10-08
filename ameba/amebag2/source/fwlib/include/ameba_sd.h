@@ -498,7 +498,6 @@ SD_RESULT SD_GetCardCSD(SD_HdlTypeDef *hsd, SD_CardCSDTypeDef *pCSD);
 SD_RESULT SD_GetSDStatus(SD_HdlTypeDef *hsd, SD_StatusTypeDef *pStatus);
 
 _LONG_CALL_ void SD_SetSema(int (*sema_take_fn)(u32), int (*sema_give_isr_fn)(u32));
-u32 SD_IRQHandler(void *pData);
 _LONG_CALL_ void SD_SetCdCallback(void (*cd_callback)(SD_RESULT));
 _LONG_CALL_ void SD_PreDMATrans(SD_HdlTypeDef *hsd);
 _LONG_CALL_ u32 SD_WaitTransDone(SD_HdlTypeDef *hsd, u32 timeout_us);
@@ -509,6 +508,7 @@ _LONG_CALL_ SD_RESULT SD_WriteBlocks(u32 sector, const u8 *data, u32 count);
 _LONG_CALL_ SD_RESULT SD_GetCapacity(u32 *sector_count);
 _LONG_CALL_ SD_RESULT SD_GetSectorSize(u32 *sector_size);
 _LONG_CALL_ SD_RESULT SD_GetBlockSize(u32 *block_size);
+_LONG_CALL_ u32 SD_IRQHandler(void *pData);
 /**
   * @}
   */

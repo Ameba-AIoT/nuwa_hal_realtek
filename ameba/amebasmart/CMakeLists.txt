@@ -48,9 +48,11 @@ zephyr_include_directories(
   source/swlib
 )
 
-zephyr_include_directories(
-  ${ZEPHYR_MBEDTLS_MODULE_DIR}/include
-)
+if(NOT CONFIG_MCUBOOT)
+  zephyr_include_directories(
+    ${ZEPHYR_MBEDTLS_MODULE_DIR}/include
+  )
+endif()
 
 # Base SOC sources — compiled for all amebasmart targets (CA32 app and KM4 MCUboot)
 zephyr_library_sources(
@@ -81,6 +83,8 @@ zephyr_library_sources_ifdef(CONFIG_DMA_AMEBA source/fwlib/ram_common/ameba_gdma
 zephyr_library_sources_ifdef(CONFIG_I2C_AMEBA source/fwlib/ram_common/ameba_i2c.c)
 zephyr_library_sources_ifdef(CONFIG_LEDC_AMEBA source/fwlib/ram_common/ameba_ledc.c)
 zephyr_library_sources_ifdef(CONFIG_SPI_AMEBA source/fwlib/ram_hp/ameba_spi.c)
+zephyr_library_sources_ifdef(CONFIG_I2S_AMEBA source/fwlib/ram_hp/ameba_sport.c)
+zephyr_library_sources_ifdef(CONFIG_I2S_AMEBA source/fwlib/ram_hp/ameba_audio_clock.c)
 zephyr_library_sources_ifdef(CONFIG_COUNTER_TMR_AMEBA source/fwlib/ram_common/ameba_tim.c)
 zephyr_library_sources_ifdef(CONFIG_PWM_AMEBA source/fwlib/ram_common/ameba_tim.c)
 zephyr_library_sources_ifdef(CONFIG_UART_AMEBA source/fwlib/ram_hp/ameba_uart.c)

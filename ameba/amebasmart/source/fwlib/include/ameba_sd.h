@@ -225,15 +225,13 @@ typedef enum {
   * @}
   */
 
-#ifndef __ZEPHYR__
 /** @defgroup SD_RESP_ACMD SD RESP ACMD
   * @{
   */
-#define SD_APP_CMD						BIT(5)   /*!< Status bit indicating an application command follows. */
+#define SDIOH_R1_APP_CMD					BIT(5)   /*!< Card status bit indicating the card expects an application command next. */
 /**
   * @}
   */
-#endif
 
 /** @defgroup SDIO_RESP0_CMD SDIO RESP0 CMD
   * @{

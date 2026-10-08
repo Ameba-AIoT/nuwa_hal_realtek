@@ -352,7 +352,7 @@ class secure_boot():
             msg_bytes = string_at(addressof(msg), mlen)
             sig_bytes = privkey.sign(msg_bytes)
         # print(list_to_hex_str(sig_bytes))
-        memmove(addressof(sig), sig_bytes, ed25519._ED25519_SIG_SIZE)
+        memmove(addressof(sig), sig_bytes, 64)  # Ed25519 signature is fixed 64 bytes
         return 0
 
     def ecdsa_sign(self, id, privkey, pubkey, msg, mlen, sig):

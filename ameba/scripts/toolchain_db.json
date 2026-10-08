@@ -10,8 +10,8 @@
       "rtl8721f_evb"
     ]
   },
-  "asdk-10.3.1-4602": {
-    "url_base": "https://github.com/Ameba-AIoT/ameba-toolchain/releases/download/10.3.1_v7",
+  "asdk-10.3.1-4623": {
+    "url_base": "https://github.com/Ameba-AIoT/ameba-toolchain/releases/download/10.3.1_v8",
     "aliyun_url_base": "https://aiot.realmcu.com/download/toolchain",
     "suffix": "-x86_64_with_small_reent",
     "chips": [
