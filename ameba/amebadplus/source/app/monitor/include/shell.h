@@ -7,11 +7,11 @@
 #ifndef _RTK_CONSOL_H_
 #define _RTK_CONSOL_H_
 
-#if (defined (CONFIG_WHC_HOST) || defined(CONFIG_WHC_NONE))
-#define SHELL_TASK_FUNC_STACK_SIZE (4000 + 128 + CONTEXT_SAVE_SIZE)
-#else
-#define SHELL_TASK_FUNC_STACK_SIZE (632 + 128 + CONTEXT_SAVE_SIZE)	/* KM0 cost stack: max_size < 300 bytes, test by monitor cmd */
+#ifdef __cplusplus
+extern "C" {
 #endif
+
+#define SHELL_TASK_FUNC_STACK_SIZE (CONFIG_SHELL_TASK_STACK_BASIC_SIZE + CONTEXT_SAVE_SIZE_WITH_MARGIN)
 
 #ifdef CONFIG_LONGER_CMD
 #define UART_LOG_CMD_BUFLEN     2000
@@ -22,6 +22,8 @@
 #define UART_LOG_CMD_BUFLEN     127
 #define MAX_ARGV                16
 #endif
+
+#define CMD_BUFLEN UART_LOG_CMD_BUFLEN
 
 typedef u32(*ECHOFUNC)(u8 *, ...);   //UART LOG echo-function type.
 typedef u32(*monitor_cmd_handler)(u16 argc, u8 *argv[]);
@@ -36,12 +38,9 @@ typedef struct {
 } UART_LOG_BUF, *PUART_LOG_BUF;
 
 typedef struct _COMMAND_TABLE_ {
-	const   u8 *cmd;
-	u16     ArgvCnt;
+	const char *cmd;
 	u32(*func)(u16 argc, u8 *argv[]);
-	const   u8 *msg;
 } COMMAND_TABLE, *PCOMMAND_TABLE;
-
 
 typedef struct {
 	u8  ExecuteEsc;
@@ -93,9 +92,14 @@ _LONG_CALL_ u8 **shell_get_argv(const   u8  *string);
 _LONG_CALL_ u8 shell_get_argc(const   u8  *string);
 
 void shell_init_ram(void);
+void shell_cmd_inject(const char *cmd, u32 len);
 void shell_loguratRx_ipc_int(void *Data, u32 IrqStatus, u32 ChanNum);
 
 //#define RtlConsolTaskRom		shell_task_rom
 
 //extern u32 shell_interrupt_on;
+#ifdef __cplusplus
+}
+#endif
+
 #endif //_RTK_CONSOL_H_
