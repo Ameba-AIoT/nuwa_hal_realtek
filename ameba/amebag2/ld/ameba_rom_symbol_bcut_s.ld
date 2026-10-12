@@ -120,10 +120,12 @@ SECTIONS
     PROVIDE(SBOOT_SwapData = 0x3c63);
     PROVIDE(SBOOT_GetMdType = 0x3c7b);
     PROVIDE(SBOOT_EDDSA_Verify_HW = 0x3cc7);
-    PROVIDE(SBOOT_ECDSA_Verify_HW = 0x3d11);
+    /* This function address is patched to SBOOT_ECDSA_Verify_HW_Patched */
+    PROVIDE(SBOOT_ECDSA_Verify_HW = 0x6597);
     PROVIDE(SBOOT_Validate_Algorithm = 0x3e4f);
     PROVIDE(SBOOT_Validate_Signature = 0x3e97);
-    PROVIDE(SBOOT_Validate_PubKey = 0x3f8d);
+    /* This function address is patched to SBOOT_Validate_PubKey_Patched */
+    PROVIDE(SBOOT_Validate_PubKey = 0x66f9);
     PROVIDE(SBOOT_Validate_ImgHash = 0x40d7);
     PROVIDE(SBOOT_SignatureVerify = 0x4265);
     PROVIDE(SBOOT_Validate_Fail_Stuck = 0x44b3);
@@ -239,11 +241,11 @@ SECTIONS
     PROVIDE(OTPGetCRC = 0x9399);
     PROVIDE(OTP_Read8 = 0x93b5);
     PROVIDE(OTP_Read32 = 0x93f9);
-    PROVIDE(otp_logical_remain = 0x9475);
-    PROVIDE(OTPSetCRC = 0x948f);
-    PROVIDE(OTP_LogicalMap_Read = 0x959d);
+    PROVIDE(OTP_LogicalGetRemain = 0x9475);
+    PROVIDE(OTP_SetCRC = 0x948f);
+    PROVIDE(OTP_LogicalRead = 0x959d);
     PROVIDE(OTP_Write8 = 0x969d);
-    PROVIDE(OTP_LogicalMap_Write = 0x97e9);
+    PROVIDE(OTP_LogicalWrite = 0x97e9);
     PROVIDE(shell_array_init = 0x99a9);
     PROVIDE(shell_get_argc = 0x99b7);
     PROVIDE(shell_get_argv = 0x99e3);

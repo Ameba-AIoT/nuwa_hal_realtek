@@ -7,6 +7,11 @@
 #ifndef _AMEBA_EFUSE_H_
 #define _AMEBA_EFUSE_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /** @addtogroup AmebaD_Platform
   * @{
   */
@@ -154,9 +159,9 @@ _LONG_CALL_ extern int EFUSE_LogicalMap_Read(u8 *pbuf);
 /* please use EFUSE_LMAP_WRITE, dont use this API direclty, or chip will be damaged */
 _LONG_CALL_ extern int EFUSE_LogicalMap_Write(u32 addr, u32 cnts, u8 *data);
 
-int OTP_LogicalMap_Read(u8 *pbuf, u32 addr, u32 len);
-int OTP_LogicalMap_Write(u32 addr, u32 cnts, u8 *data);
-int OTPSetCRC(void);
+int OTP_LogicalRead(u8 *pbuf, u32 addr, u32 len);
+int OTP_LogicalWrite(u32 addr, u32 cnts, u8 *data);
+int OTP_SetCRC(void);
 int OTP_Read8(u32 Addr, u8 *Data);
 int OTP_Write8(u32 Addr, u8 Data);
 void EFUSE_GetUUID(u32 *UUID);
@@ -248,7 +253,7 @@ __STATIC_INLINE u32 EFUSE_IsSecure(u32 Addr)
   * @retval EFUSE physical address remain length
   */
 
-__STATIC_INLINE u32 otp_logical_remain(void)
+__STATIC_INLINE u32 OTP_LogicalGetRemain(void)
 {
 	u32 Idx = 0;
 	u8 DataTemp0, WordEn;
@@ -290,6 +295,11 @@ __STATIC_INLINE u32 otp_logical_remain(void)
 
 	return (LOGICAL_MAP_SECTION_LEN - Idx);
 }
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //_AMEBA_EFUSE_H_
 /******************* (C) COPYRIGHT 2016 Realtek Semiconductor *****END OF FILE****/

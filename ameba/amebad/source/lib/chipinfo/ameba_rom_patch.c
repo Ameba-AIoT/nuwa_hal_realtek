@@ -744,7 +744,7 @@ int EFUSE_LogicalMap_Write(u32 addr, u32 cnts, u8 *data)
 	}
 }
 
-int OTP_LogicalMap_Read(u8 *pbuf, u32 addr, u32 len)
+int OTP_LogicalRead(u8 *pbuf, u32 addr, u32 len)
 {
 	int ret = EFUSE_LogicalMap_Read(pbuf);
 
@@ -759,7 +759,7 @@ int OTP_LogicalMap_Read(u8 *pbuf, u32 addr, u32 len)
 	return RTK_SUCCESS;
 }
 
-int OTP_LogicalMap_Write(u32 addr, u32 cnts, u8 *data)
+int OTP_LogicalWrite(u32 addr, u32 cnts, u8 *data)
 {
 	return EFUSE_LogicalMap_Write(addr, cnts, data);
 }
@@ -784,7 +784,7 @@ int OTP_Write8(u32 Addr, u8 Data)
 	}
 }
 
-int OTPSetCRC(void)
+int OTP_SetCRC(void)
 {
 	RTK_LOGS(NOTAG, RTK_LOG_ERROR, "Not Support.\n");
 
@@ -796,17 +796,16 @@ u32 SYSCFG_OTP_RSIPEn(void)
 	return HAL_READ32(SYSTEM_CTRL_BASE_LP, REG_SYS_EFUSE_SYSCFG3) & BIT_SYS_FLASH_ENCRYPT_EN;
 }
 
-
 void SYSCFG_CHIPType_Set(void)
 {
-#ifdef CONFIG_FPGA
+
 	/* for simulation set ASIC */
-	if (BKUP_Read(BKUP_REG0) & BIT_SW_SIM_RSVD) {
-		IS_FPGA_VERIF = FALSE;
-	} else {
-		IS_FPGA_VERIF = TRUE;
-	}
-#endif
+	// if (BKUP_Read(BKUP_REG0) & BIT_SW_SIM_RSVD) {
+	// 	IS_FPGA_VERIF = FALSE;
+	// } else {
+	// 	IS_FPGA_VERIF = TRUE;
+	// }
+
 }
 
 SRAMDRAM_ONLY_TEXT_SECTION

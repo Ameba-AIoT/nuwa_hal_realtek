@@ -180,9 +180,10 @@ def collect_image_load_list(image_dir: str, images: List[List[str]],
         end = start + size
         images.append([file_path, f"0x{start:08x}", f"0x{end:08x}"])
 
-def prepare_flash_environment(device: str) -> str:
+def prepare_flash_environment(device: str, image_dir: Optional[Path] = None) -> str:
     """
     Validate device, copy necessary bootloader (floader), and return Profile file path.
+    A floader found in image_dir (signed for secure boot) takes precedence over the blob.
     """
     if not device:
         raise ValueError("Device argument must not be empty.")
@@ -201,6 +202,13 @@ def prepare_flash_environment(device: str) -> str:
 
     # 2. Handle Floader copy
     floader_src = BLOBS_ROOT / config["floader"]
+    if image_dir is not None:
+        signed_floader = Path(image_dir) / Path(config["floader"]).name
+        if signed_floader.is_file():
+            floader_src = signed_floader
+            logger.info(f"Floader: using signed {signed_floader}")
+        else:
+            logger.debug(f"Floader: no signed floader at {signed_floader}, using blobs")
     if not floader_src.is_file():
         raise FileNotFoundError(f"Floader file for {key} not found at: {floader_src}")
 
@@ -244,7 +252,8 @@ def validate_tool_path(tool_path: str) -> Path:
 def setup_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--tool-path', help='Path to flash.py (absolute or relative)')
     parser.add_argument('--device', required=True, help='Device type (e.g., amebag2)')
-    parser.add_argument('--image-dir', required=True, type=Path, help="Directory containing image files")
+    parser.add_argument('--image-dir', required=True, type=Path,
+                        help="Directory containing image files, and a signed floader if any")
 
     # Serial configuration
     parser.add_argument('--port', action='append', required=True,
@@ -421,7 +430,7 @@ def main(args):
 
     # 1. Prepare environment (Profile & Floader)
     try:
-        profile_path = prepare_flash_environment(args.device)
+        profile_path = prepare_flash_environment(args.device, args.image_dir)
     except Exception as e:
         logger.error(str(e))
         sys.exit(1)

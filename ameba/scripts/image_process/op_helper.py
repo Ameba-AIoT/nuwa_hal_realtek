@@ -25,6 +25,10 @@ class Helper(OperationBase):
         sub.add_argument('-o', '--output-file', help='Output file', required=True)
         sub.add_argument('-i', '--input-file', nargs='+', help='Input files', required=True)
 
+        #NOTE: args for query-manifest
+        sub = subparsers.add_parser('query-manifest', help='Query a boolean key from manifest.json5, prints ON or OFF')
+        sub.add_argument('--key', required=True, help='Key to query (e.g. sboot_enable)')
+
         #NOTE: args for cut-by-map
         sub = subparsers.add_parser('cut-by-map', help='Cut file by calculating size from map file symbols')
         sub.add_argument('-i', '--input-file', help='Input file', required=True)
@@ -35,10 +39,7 @@ class Helper(OperationBase):
 
     @staticmethod
     def require_manifest_file(context:Context) -> bool:
-        if context.args.sub_operation == "manifest-fmt":
-            return True
-        else:
-            return False
+        return context.args.sub_operation in ("manifest-fmt", "query-manifest")
 
     @staticmethod
     def require_layout_file(context:Context) -> bool:
@@ -66,6 +67,8 @@ class Helper(OperationBase):
                 self.context.args.output_file,
                 *self.context.args.input_file
             )
+        elif self.context.args.sub_operation == "query-manifest":
+            return self.query_manifest(self.context.args.key)
         elif self.context.args.sub_operation == "cut-by-map":
             return self.cut_by_map(
                 self.context.args.input_file,
@@ -78,6 +81,11 @@ class Helper(OperationBase):
             return Error(ErrorType.INVALID_INPUT)
 
     def post_process(self) -> Error:
+        return Error.success()
+
+    @exit_on_failure(catch_exception=True)
+    def query_manifest(self, key: str) -> Error:
+        print('ON' if self.context.manifest_data.get(key, False) else 'OFF')
         return Error.success()
 
     @exit_on_failure(catch_exception=True)
