@@ -36,23 +36,37 @@ class MemoryType(IntEnum):
     NOR = 1
     NAND = 2
 
-# Device configuration mapping
+# Device configuration mapping, one profile per memory type
 DEVICE_MAP = {
     "amebag2": {
-        "profile": "RTL8721F_NOR.rdev",
+        "profile": {
+            "nor": "RTL8721F_NOR.rdev",
+            "nand": "RTL8721F_NAND.rdev",
+        },
         "floader": "amebag2/bin/floader_amebagreen2.bin"
     },
     "amebadplus": {
-        "profile": "RTL8721Dx.rdev",
+        "profile": {
+            "nor": "RTL8721Dx.rdev",
+        },
         "floader": "amebadplus/bin/floader_amebadplus.bin"
     },
     "amebasmart": {
-        "profile": "RTL8730E_NOR.rdev",
+        "profile": {
+            "nor": "RTL8730E_NOR.rdev",
+            "nand": "RTL8730E_NAND.rdev",
+        },
         "floader": "amebasmart/bin/floader_amebasmart.bin"
     }
 }
 
 XIP_BASE: int = 0x08000000  # XIP base address
+
+# Image address base: NOR uses the XIP address, NAND the raw flash offset
+FLASH_BASE = {
+    "nor": XIP_BASE,
+    "nand": 0x00000000,
+}
 EDT_DEFAULT_NAME: str = "edt.pickle"
 ZEPHYR_DIR_NAME: str = "zephyr"
 
@@ -129,11 +143,12 @@ def _safe_get_first_reg(node) -> Optional[Tuple[int, int]]:
     return int(addr), int(size)
 
 def collect_image_load_list(image_dir: str, images: List[List[str]],
-                            file_to_label: Optional[Dict[str, str]] = None) -> None:
+                            file_to_label: Optional[Dict[str, str]] = None,
+                            flash_base: int = XIP_BASE) -> None:
     """
     Append [filename, start_hex, end_hex] entries to 'images' for each image
     file present under image_dir.  Addresses are derived from the partition's
-    reg (offset/size) in the domain-local edt.pickle plus XIP_BASE.
+    reg (offset/size) in the domain-local edt.pickle plus flash_base.
 
     file_to_label maps each expected filename to its DTS partition label.
     When omitted the caller must pass the correct mapping explicitly.
@@ -176,13 +191,15 @@ def collect_image_load_list(image_dir: str, images: List[List[str]],
                 f"Partition label '{label}' not found in EDT for image '{filename}'."
             )
         offset, size = label_to_reg[label]
-        start = XIP_BASE + offset
+        start = flash_base + offset
         end = start + size
         images.append([file_path, f"0x{start:08x}", f"0x{end:08x}"])
 
-def prepare_flash_environment(device: str, image_dir: Optional[Path] = None) -> str:
+def prepare_flash_environment(device: str, image_dir: Optional[Path] = None,
+                              memory_type: str = "nor") -> str:
     """
-    Validate device, copy necessary bootloader (floader), and return Profile file path.
+    Validate device, copy necessary bootloader (floader), and return the Profile
+    file path for the given memory type.
     A floader found in image_dir (signed for secure boot) takes precedence over the blob.
     """
     if not device:
@@ -195,8 +212,15 @@ def prepare_flash_environment(device: str, image_dir: Optional[Path] = None) -> 
 
     config = DEVICE_MAP[key]
 
-    # 1. Determine Profile path
-    profile_path = PROFILES_PATH / config["profile"]
+    # 1. Determine Profile path. RAM download keeps the NOR profile as before.
+    profiles = config["profile"]
+    if memory_type == "ram":
+        memory_type = "nor"
+    if memory_type not in profiles:
+        valid_types = ", ".join(sorted(profiles.keys()))
+        raise ValueError(f"Memory type '{memory_type}' is not supported on {key}. "
+                         f"Valid options: {valid_types}")
+    profile_path = PROFILES_PATH / profiles[memory_type]
     if not profile_path.is_file():
         raise FileNotFoundError(f"Profile file not found: {profile_path}")
 
@@ -261,13 +285,13 @@ def setup_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--baudrate', default='1500000', help='Serial baudrate (default: 1500000)')
 
     # Memory and addressing
-    parser.add_argument('--memory-type', choices=['nor', 'nand', 'ram'], default='nor',
+    parser.add_argument('-m', '--memory-type', choices=['nor', 'nand', 'ram'], default='nor',
                         help='Memory type (default: nor)')
     parser.add_argument('--images', nargs=3, action='append', metavar=('image-name', 'start-address', 'end-address'),
                         help="User defined image layout: name start_addr end_addr")
 
     # Erase control
-    parser.add_argument('--chip-erase', action='store_true', help='Perform Chip Erase (NOR only)')
+    parser.add_argument('--chip-erase', action='store_true', help='Perform Chip Erase')
 
     # Logging and remote
     parser.add_argument('--log-level', default='info', choices=['info', 'debug', 'warn', 'error'], help='Log level')
@@ -309,7 +333,7 @@ def build_partition_table(image_dir: Path, images: list, memory_type_str: str) -
             "ImageName": str(full_image_path),
             "StartAddress": start_addr,
             "EndAddress": end_addr,
-            "FullErase": False,
+            "FullErase": mem_type_val == MemoryType.NAND,
             "MemoryType": int(mem_type_val),
             "Mandatory": True,
             "Description": img_name
@@ -367,7 +391,7 @@ def _is_last_flash_domain(image_dir: str) -> bool:
 
 
 def collect_all_domain_images(image_dir: str, images: List[List[str]],
-                               device: str) -> None:
+                               device: str, flash_base: int = XIP_BASE) -> None:
     """
     In a multidomain build, collect flashable images from EVERY domain's
     image directory and append them to 'images'.
@@ -387,7 +411,7 @@ def collect_all_domain_images(image_dir: str, images: List[List[str]],
         data = yaml.safe_load(domains_file.read_text()) or {}
     except Exception as e:
         logger.warning(f"Could not parse domains.yaml: {e}; falling back to single-dir mode")
-        collect_image_load_list(image_dir, images, file_to_label)
+        collect_image_load_list(image_dir, images, file_to_label, flash_base)
         return
 
     for domain in data.get("domains", []):
@@ -395,12 +419,13 @@ def collect_all_domain_images(image_dir: str, images: List[List[str]],
         if not domain_image_dir.is_dir():
             continue
         try:
-            collect_image_load_list(str(domain_image_dir), images, file_to_label)
+            collect_image_load_list(str(domain_image_dir), images, file_to_label, flash_base)
         except Exception as e:
             logger.warning(f"Domain '{domain['name']}': skipping images — {e}")
 
 def main(args):
     multidomain = detect_multidomain(args.image_dir)
+    flash_base = FLASH_BASE.get(args.memory_type, XIP_BASE)
 
     # For TFM BL2 single-domain builds, auto-build the partition table from
     # edt.pickle so that tfm_s_signed.bin is flashed at the correct slot.
@@ -409,7 +434,8 @@ def main(args):
         if "tfm_s_signed.bin" in file_to_label:
             args.images = []
             try:
-                collect_image_load_list(str(args.image_dir), args.images, file_to_label)
+                collect_image_load_list(str(args.image_dir), args.images, file_to_label,
+                                        flash_base)
             except Exception as e:
                 logger.warning(f"TFM partition table auto-build failed: {e}; falling back to simple mode")
                 args.images = None
@@ -426,11 +452,11 @@ def main(args):
             return
         if args.images is None:
             args.images = []
-            collect_all_domain_images(args.image_dir, args.images, args.device)
+            collect_all_domain_images(args.image_dir, args.images, args.device, flash_base)
 
     # 1. Prepare environment (Profile & Floader)
     try:
-        profile_path = prepare_flash_environment(args.device, args.image_dir)
+        profile_path = prepare_flash_environment(args.device, args.image_dir, args.memory_type)
     except Exception as e:
         logger.error(str(e))
         sys.exit(1)
@@ -464,6 +490,10 @@ def main(args):
 
     if args.chip_erase:
         cmd.extend(['--chip-erase'])
+
+    # west flash --no-reset; None (flag not given) keeps the tool's default reset
+    if getattr(args, 'reset', None) is False:
+        cmd.append('--no-reset')
 
     # 5. Image and partition handling
     if not args.images:

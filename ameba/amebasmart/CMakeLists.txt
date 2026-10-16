@@ -85,6 +85,7 @@ zephyr_library_sources_ifdef(CONFIG_LEDC_AMEBA source/fwlib/ram_common/ameba_led
 zephyr_library_sources_ifdef(CONFIG_SPI_AMEBA source/fwlib/ram_hp/ameba_spi.c)
 zephyr_library_sources_ifdef(CONFIG_I2S_AMEBA source/fwlib/ram_hp/ameba_sport.c)
 zephyr_library_sources_ifdef(CONFIG_I2S_AMEBA source/fwlib/ram_hp/ameba_audio_clock.c)
+zephyr_library_sources_ifdef(CONFIG_AUDIO_AMEBA_DMIC source/fwlib/ram_hp/ameba_codec.c)
 zephyr_library_sources_ifdef(CONFIG_COUNTER_TMR_AMEBA source/fwlib/ram_common/ameba_tim.c)
 zephyr_library_sources_ifdef(CONFIG_PWM_AMEBA source/fwlib/ram_common/ameba_tim.c)
 zephyr_library_sources_ifdef(CONFIG_UART_AMEBA source/fwlib/ram_hp/ameba_uart.c)
